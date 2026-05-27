@@ -5,6 +5,20 @@ const GAME_EVENT_STATE = {
   FAILED: 'failed',
 };
 
+function destroyEvent(system, event, succeeded) {
+  const index = system.events.indexOf(event);
+  if (index !== -1) {
+    system.events.splice(index, 1);
+    if (succeeded) {
+      system.succeededEvents.push(event);
+      system.sendViewMessage({ message: 'eventSucceeded', args: [event] });
+    } else {
+      system.failedEvents.push(event);
+      system.sendViewMessage({ message: 'eventFailed', args: [event] });
+    }
+  }
+}
+
 class GameEventBase {
   constructor(id, { name, description, limitTimeMs }) {
     this.id = id;
@@ -13,19 +27,15 @@ class GameEventBase {
     this.limitTimeMs = limitTimeMs;
     this.state = GAME_EVENT_STATE.WAITING;
   }
-  update(state) {
+  update(system) {
     // イベント固有の更新処理
-    this.updateEvent(state);
+    this.updateEvent(system);
 
     // イベント共通の残り時間の減少処理
-    this.limitTimeMs -= state.frame.deltaTime;
+    this.limitTimeMs -= system.frame.deltaTime;
     if (this.limitTimeMs <= 0) {
-      destroyEvent(this, false);
+      destroyEvent(system, this, false);
     }
-  }
-  receiveMessage(message) {
-    // イベント固有のメッセージ処理
-    this.receiveMessageEvent(message);
   }
 }
 
@@ -37,15 +47,13 @@ class ClickEvent extends GameEventBase {
     this.state = GAME_EVENT_STATE.EXECUTING;
     this.clicked = false;
   }
-  updateEvent() {
+  updateEvent(system) {
     if (this.clicked) {
-      destroyEvent(this, true);
+      destroyEvent(system, this, true);
     }
   }
-  receiveMessageEvent(message) {
-    if (message === 'click') {
-      this.clicked = true;
-    }
+  click() {
+    this.clicked = true;
   }
 }
 
@@ -53,13 +61,13 @@ class ClickEvent extends GameEventBase {
 class InputEvent extends GameEventBase {
   constructor(id) {
     const targetInput = Array.from({ length: 5 }, () => String.fromCharCode(Math.floor(Math.random() * 26) + 97)).join(''); // ランダムな文字列
-    super(id, { name: "Input Event", description: `Type "${targetInput}" to complete`, limitTimeMs: 100000 });
+    super(id, { name: "Input Event", description: `Type "${targetInput}" to complete`, limitTimeMs: 5000 });
     this.targetInput = targetInput;
     this.inputReceived = false;
   }
-  updateEvent() {
+  updateEvent(system) {
     if (this.inputReceived) {
-      destroyEvent(this, true);
+      destroyEvent(system, this, true);
     }
   }
   receiveMessageEvent(message) {

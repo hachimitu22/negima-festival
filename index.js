@@ -1,5 +1,5 @@
 import { getRandomInt, rollChance } from './src/random.js';
-import { InputEvent } from './src/gameEvent.js';
+import { ClickEvent, InputEvent } from './src/gameEvent.js';
 
 
 const GameSystem = {
@@ -17,6 +17,16 @@ const GameSystem = {
   gameObjects: [],  // { model, view }
 
   nextView: 'menu',
+
+  sendInput(input) {
+    this.inputs.push(input);
+  },
+  sendViewMessage(message) {
+    this.viewMessages.push(message);
+  },
+
+  inputs: [],
+  viewMessages: [],
 };
 
 window.onload = () => {
@@ -24,19 +34,20 @@ window.onload = () => {
 };
 
 function main() {
-  mainLoop();
-  // setInterval(() => {
-  //   mainLoop();
-  // }, Math.floor(1000 / GameSystem.fps));
+  // mainLoop();
+  setInterval(() => {
+    mainLoop();
+  }, Math.floor(1000 / GameSystem.fps));
 }
 
 const GAME_EVENTS = [
+  ClickEvent,
   InputEvent,
 ];
 
 // イベントをランダム生成する。生成されないこともある。
 function createEventRandom() {
-  if (rollChance(10)) {
+  if (rollChance(1)) {
     const randomIndex = getRandomInt(0, GAME_EVENTS.length - 1);
     const event = new GAME_EVENTS[randomIndex](GameSystem.lastEventId++);
     return event;
@@ -44,17 +55,6 @@ function createEventRandom() {
   return null;
 }
 
-function destroyEvent(event, succeeded) {
-  const index = GameSystem.events.indexOf(event);
-  if (index !== -1) {
-    GameSystem.events.splice(index, 1);
-    if (succeeded) {
-      GameSystem.succeededEvents.push(event);
-    } else {
-      GameSystem.failedEvents.push(event);
-    }
-  }
-}
 
 function setCurrentEvent(system, event) {
   system.currentEvent = event;
@@ -63,29 +63,30 @@ function setCurrentEvent(system, event) {
 
 // メインループ
 function mainLoop() {
-  while (true) {
-    const now = Date.now();
-    if (GameSystem.frame.beforeDate === null) {
-      GameSystem.frame.beforeDate = now;
-    }
-    GameSystem.frame.deltaTime = now - GameSystem.frame.beforeDate;
+  const now = Date.now();
+  if (GameSystem.frame.beforeDate === null) {
     GameSystem.frame.beforeDate = now;
-
-    update(GameSystem);
-    render(GameSystem);
   }
+  GameSystem.frame.deltaTime = now - GameSystem.frame.beforeDate;
+  GameSystem.frame.beforeDate = now;
+
+  update(GameSystem);
+  render(GameSystem);
 }
 
 // ゲームの状態を更新する関数
 function update(system) {
-  const event = createEventRandom();
-  if (event) {
-    system.events.push(event);
-  }
   // イベントの更新
   system.events.forEach(event => {
     event.update(system);
   });
+
+  // ランダムにイベントを生成
+  const event = createEventRandom();
+  if (event) {
+    system.events.push(event);
+    system.sendViewMessage({ message: 'addEvent', args: [event] });
+  }
 }
 
 const VIEW_LIST = {
@@ -180,15 +181,47 @@ const VIEW_LIST = {
   },
 };
 
+const VIEW_MESSAGE_LIST = {
+  'addEvent': event => {
+    const eventList = document.getElementById('event-list');
+    const eventItem = document.createElement('li');
+    eventItem.id = `event-${event.id}`;
+    eventItem.textContent = `${event.id}: ${event.name}: ${event.description} (残り時間: ${Math.ceil(event.limitTimeMs / 1000)}秒)`;
+    if (event instanceof ClickEvent) {
+      eventItem.addEventListener('click', () => {
+        event.click();
+      });
+    }
+    eventList.appendChild(eventItem);
+  },
+  'eventSucceeded': event => {
+    const eventList = document.getElementById('succeeded-event-list');
+    const eventItem = document.getElementById(`event-${event.id}`);
+    eventItem.textContent = `${event.id}: ${event.name}: ${event.description} (成功)`;
+    eventItem.remove(); // 発生中のイベントから削除
+    eventList.appendChild(eventItem);
+  },
+  'eventFailed': event => {
+    const eventList = document.getElementById('failed-event-list');
+    const eventItem = document.getElementById(`event-${event.id}`);
+    eventItem.textContent = `${event.id}: ${event.name}: ${event.description} (失敗)`;
+    eventItem.remove(); // 発生中のイベントから削除
+    eventList.appendChild(eventItem);
+  },
+};
+
 // ゲームの状態を描画する関数
 function render(system) {
-  const view = VIEW_LIST[system.nextView];
-  if (view) {
-    view.render(system);
-    const input = prompt();
-    view.controller(system, input);
-  } else {
-    console.log('無効なビューです。');
-  }
+  // メッセージ処理
+  system.viewMessages.forEach(message => {
+    if (VIEW_MESSAGE_LIST[message.message]) {
+      VIEW_MESSAGE_LIST[message.message](...message.args);
+    } else {
+      console.log(`Unknown view message: ${message}`);
+    }
+  });
+  system.viewMessages.length = 0;
+
+  // ビュー更新
 }
 
