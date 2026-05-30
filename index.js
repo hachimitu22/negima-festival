@@ -1,10 +1,13 @@
-import { handleClickEvent, handleInputChange, handleInputSubmit } from './src/gameController.js';
+import { handlerClickMenu, handleClickEvent, handleInputChange, handleInputSubmit } from './src/gameController.js';
 import { updateGame } from './src/gameLogic.js';
 import { createGameState } from './src/gameState.js';
 import { render } from './src/gameView.js';
 
 const gameState = createGameState();
 const viewHandlers = {
+  onClickMenu: menuId => {
+    handlerClickMenu(gameState, menuId);
+  },
   onClickEvent: eventId => {
     handleClickEvent(gameState, eventId);
   },

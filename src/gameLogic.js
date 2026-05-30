@@ -6,6 +6,13 @@ const GAME_EVENTS = [
   InputEvent,
 ];
 
+const MENU_LIST = {
+  TOP_MENU: 'TOP_MENU',
+  EXECUTING_EVENTS_MENU: 'EXECUTING_EVENTS_MENU',
+  SUCCEEDED_EVENTS_MENU: 'SUCCEEDED_EVENTS_MENU',
+  FAILED_EVENTS_MENU: 'FAILED_EVENTS_MENU',
+};
+
 function updateGame(state) {
   state.events.forEach(event => {
     event.update(state.frame.deltaTime);
@@ -49,4 +56,5 @@ function createEventRandom(state) {
 
 export {
   updateGame,
+  MENU_LIST,
 };
