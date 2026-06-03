@@ -1,249 +1,232 @@
-import { MENU_LIST } from './gameLogic.js';
+import { ACTION_TYPES, MENU_IDS } from './actions.js';
 
-function render(state, handlers) {
-  hiddenMenu();
-  hiddenBackButton();
-  hiddenEvent();
+function createDomGameView() {
+  let elements = null;
+  let dispatch = null;
 
-  if (state.currentMenu === MENU_LIST.TOP_MENU) {
-    visibilityMenu();
-    renderMenu(state, handlers);
-  } else if (state.currentMenu === MENU_LIST.EXECUTING_EVENTS_MENU) {
-    visibilityBackButton();
-    visibilityExecutingEvent();
-    renderBackButton(state, handlers);
-    renderExecutingEvents(state, handlers);
-  } else if (state.currentMenu === MENU_LIST.SUCCEEDED_EVENTS_MENU) {
-    visibilityBackButton();
-    visibilitySucceededEvents();
-    renderBackButton(state, handlers);
-    renderCompletedEvents(
-      document.getElementById('succeeded-event-list'),
-      state.succeededEvents,
-      '成功',
-    );
-  } else if (state.currentMenu === MENU_LIST.FAILED_EVENTS_MENU) {
-    visibilityBackButton();
-    visibilityFailedEvents();
-    renderBackButton(state, handlers);
-    renderCompletedEvents(
-      document.getElementById('failed-event-list'),
-      state.failedEvents,
-      '失敗',
-    );
-  }
-}
-
-function renderMenu(state, handlers) {
-  const menu = document.getElementById('menu');
-
-  if (state.currentMenu !== MENU_LIST.TOP_MENU) {
-    menu.style.display = 'none';
-    return;
+  function mount(rootElement, options) {
+    dispatch = options.dispatch;
+    elements = {
+      root: rootElement,
+      menu: rootElement.querySelector('#menu'),
+      back: rootElement.querySelector('#back'),
+      eventList: rootElement.querySelector('#event-list'),
+      succeededEventList: rootElement.querySelector('#succeeded-event-list'),
+      failedEventList: rootElement.querySelector('#failed-event-list'),
+    };
   }
 
-  const menuItems = [
-    { label: '実行中イベント', id: 'executing' },
-    { label: '成功イベント', id: 'succeeded' },
-    { label: '失敗イベント', id: 'failed' },
-  ];
-  const menuItemIds = new Set(menuItems.map(item => item.id));
+  function render(snapshot) {
+    hideAll();
 
-  // レンダリング未完了のメニューがあるか。なければ再レンダリングしない。
-  const completedRender = menu.children.length === 0 ? false : Array.from(menu.children).every(menuItem => {
-    return menuItemIds.has(menuItem.dataset.eventId);
-  });
-  if (completedRender) {
-    return;
-  }
-
-  menu.replaceChildren();
-  menuItems.forEach(item => {
-    const menuItem = document.createElement('li');
-    menuItem.textContent = item.label;
-    menuItem.dataset.eventId = item.id;
-    menuItem.addEventListener('click', () => {
-      handlers.onClickMenu(item.id);
-    });
-    menu.appendChild(menuItem);
-  });
-}
-
-function visibilityMenu() {
-  const menu = document.getElementById('menu');
-  menu.style.display = 'block';
-}
-
-function hiddenMenu() {
-  const menu = document.getElementById('menu');
-  menu.style.display = 'none';
-}
-
-function renderBackButton(state, handlers) {
-  const back = document.getElementById('back');
-
-  if (back.querySelector('#back-button')) {
-    return;
-  }
-
-  const backButton = document.createElement('button');
-  backButton.id = 'back-button';
-  backButton.type = 'button';
-  backButton.textContent = 'メニューに戻る';
-  backButton.addEventListener('click', () => {
-    handlers.onClickMenu('top');
-  });
-  back.prepend(backButton);
-}
-
-function visibilityBackButton() {
-  const back = document.getElementById('back');
-  back.style.display = 'block';
-}
-
-function hiddenBackButton() {
-  const back = document.getElementById('back');
-  back.style.display = 'none';
-}
-
-function renderExecutingEvents(state, handlers) {
-  const eventList = document.getElementById('event-list');
-  const eventIds = new Set(state.events.map(event => String(event.id)));
-
-  // 終了イベントをビューから削除する
-  Array.from(eventList.children).forEach(eventItem => {
-    if (!eventIds.has(eventItem.dataset.eventId)) {
-      eventItem.remove();
+    if (snapshot.currentMenu === MENU_IDS.TOP) {
+      show(elements.menu);
+      renderMenu(snapshot);
+    } else if (snapshot.currentMenu === MENU_IDS.EXECUTING) {
+      show(elements.back);
+      show(elements.eventList);
+      renderBackButton();
+      renderExecutingEvents(snapshot.executingEvents);
+    } else if (snapshot.currentMenu === MENU_IDS.SUCCEEDED) {
+      show(elements.back);
+      show(elements.succeededEventList);
+      renderBackButton();
+      renderCompletedEvents(elements.succeededEventList, snapshot.succeededEvents, '成功');
+    } else if (snapshot.currentMenu === MENU_IDS.FAILED) {
+      show(elements.back);
+      show(elements.failedEventList);
+      renderBackButton();
+      renderCompletedEvents(elements.failedEventList, snapshot.failedEvents, '失敗');
     }
-  });
+  }
 
-  // 未表示の実行中イベントをビューに追加する
-  state.events.forEach(event => {
-    const eventItem = getOrCreateExecutingEventItem(state, handlers, event);
-    eventItem.querySelector('[data-event-label]').textContent = formatExecutingEvent(event);
-
-    if (!eventItem.isConnected) {
-      eventList.appendChild(eventItem);
+  function destroy() {
+    if (!elements) {
+      return;
     }
-  });
-}
 
-function getOrCreateExecutingEventItem(state, handlers, event) {
-  const eventList = document.getElementById('event-list');
-  const existingItem = eventList.querySelector(`[data-event-id="${event.id}"]`);
-  if (existingItem) {
-    return existingItem;
+    elements.menu.replaceChildren();
+    elements.back.replaceChildren();
+    elements.eventList.replaceChildren();
+    elements.succeededEventList.replaceChildren();
+    elements.failedEventList.replaceChildren();
+    elements = null;
+    dispatch = null;
   }
 
-  const eventItem = document.createElement('li');
-  const label = document.createElement('span');
-  const action = createEventAction(state, handlers, event);
+  function renderMenu(snapshot) {
+    const menuItemIds = new Set(snapshot.menuItems.map(item => item.id));
+    const completedRender = elements.menu.children.length > 0
+      && Array.from(elements.menu.children).every(menuItem => menuItemIds.has(menuItem.dataset.menuId));
 
-  eventItem.id = `event-${event.id}`;
-  eventItem.dataset.eventId = String(event.id);
+    if (completedRender) {
+      return;
+    }
 
-  label.dataset.eventLabel = '';
-  eventItem.appendChild(label);
-
-  if (action) {
-    eventItem.appendChild(action);
-  }
-
-  return eventItem;
-}
-
-function createEventAction(state, handlers, event) {
-  if (event.type === 'click') {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = '成功';
-    button.addEventListener('click', () => {
-      handlers.onClickEvent(event.id);
+    elements.menu.replaceChildren();
+    snapshot.menuItems.forEach(item => {
+      const menuItem = document.createElement('li');
+      menuItem.textContent = item.label;
+      menuItem.dataset.menuId = item.id;
+      menuItem.addEventListener('click', () => {
+        dispatch({
+          type: ACTION_TYPES.MENU_SELECT,
+          menuId: item.id,
+        });
+      });
+      elements.menu.appendChild(menuItem);
     });
-    return button;
   }
 
-  if (event.type === 'input') {
-    const form = document.createElement('form');
-    const input = document.createElement('input');
-    const button = document.createElement('button');
+  function renderBackButton() {
+    if (elements.back.querySelector('#back-button')) {
+      return;
+    }
 
-    input.type = 'text';
-    input.value = state.inputValues[event.id] ?? '';
-    input.placeholder = event.targetInput;
-    input.addEventListener('input', () => {
-      handlers.onInputChange(event.id, input.value);
+    const backButton = document.createElement('button');
+    backButton.id = 'back-button';
+    backButton.type = 'button';
+    backButton.textContent = 'メニューに戻る';
+    backButton.addEventListener('click', () => {
+      dispatch({
+        type: ACTION_TYPES.MENU_SELECT,
+        menuId: MENU_IDS.TOP,
+      });
     });
-
-    button.type = 'submit';
-    button.textContent = '送信';
-
-    form.addEventListener('submit', submitEvent => {
-      submitEvent.preventDefault();
-      handlers.onInputSubmit(event.id);
-    });
-
-    form.append(input, button);
-    return form;
+    elements.back.prepend(backButton);
   }
 
-  return null;
-}
+  function renderExecutingEvents(events) {
+    const eventIds = new Set(events.map(event => String(event.id)));
 
-function renderCompletedEvents(eventList, events, statusText) {
-  eventList.replaceChildren();
+    Array.from(elements.eventList.children).forEach(eventItem => {
+      if (!eventIds.has(eventItem.dataset.eventId)) {
+        eventItem.remove();
+      }
+    });
 
-  events.forEach(event => {
+    events.forEach(event => {
+      const eventItem = getOrCreateExecutingEventItem(event);
+      eventItem.querySelector('[data-event-label]').textContent = formatExecutingEvent(event);
+
+      if (!eventItem.isConnected) {
+        elements.eventList.appendChild(eventItem);
+      }
+    });
+  }
+
+  function getOrCreateExecutingEventItem(event) {
+    const existingItem = elements.eventList.querySelector(`[data-event-id="${event.id}"]`);
+    if (existingItem) {
+      return existingItem;
+    }
+
     const eventItem = document.createElement('li');
-    eventItem.textContent = formatCompletedEvent(event, statusText);
-    eventList.appendChild(eventItem);
-  });
+    const label = document.createElement('span');
+    const action = createEventAction(event);
+
+    eventItem.id = `event-${event.id}`;
+    eventItem.dataset.eventId = String(event.id);
+
+    label.dataset.eventLabel = '';
+    eventItem.appendChild(label);
+
+    if (action) {
+      eventItem.appendChild(action);
+    }
+
+    return eventItem;
+  }
+
+  function createEventAction(event) {
+    if (event.type === 'click') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = '成功';
+      button.addEventListener('click', () => {
+        dispatch({
+          type: ACTION_TYPES.EVENT_CLICK,
+          eventId: event.id,
+        });
+      });
+      return button;
+    }
+
+    if (event.type === 'input') {
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      const button = document.createElement('button');
+
+      input.type = 'text';
+      input.value = event.inputValue ?? '';
+      input.placeholder = event.targetInput;
+      input.addEventListener('input', () => {
+        dispatch({
+          type: ACTION_TYPES.EVENT_INPUT_CHANGE,
+          eventId: event.id,
+          value: input.value,
+        });
+      });
+
+      button.type = 'submit';
+      button.textContent = '送信';
+
+      form.addEventListener('submit', submitEvent => {
+        submitEvent.preventDefault();
+        dispatch({
+          type: ACTION_TYPES.EVENT_INPUT_SUBMIT,
+          eventId: event.id,
+        });
+      });
+
+      form.append(input, button);
+      return form;
+    }
+
+    return null;
+  }
+
+  function renderCompletedEvents(eventList, events, statusText) {
+    eventList.replaceChildren();
+
+    events.forEach(event => {
+      const eventItem = document.createElement('li');
+      eventItem.textContent = formatCompletedEvent(event, statusText);
+      eventList.appendChild(eventItem);
+    });
+  }
+
+  function hideAll() {
+    hide(elements.menu);
+    hide(elements.back);
+    hide(elements.eventList);
+    hide(elements.succeededEventList);
+    hide(elements.failedEventList);
+  }
+
+  return {
+    mount,
+    render,
+    destroy,
+  };
+}
+
+function show(element) {
+  element.style.display = 'block';
+}
+
+function hide(element) {
+  element.style.display = 'none';
 }
 
 function formatExecutingEvent(event) {
-  return `${event.id}: ${event.name}: ${event.description} (残り時間: ${Math.ceil(event.limitTimeMs / 1000)}秒)`;
+  return `${event.id}: ${event.name}: ${event.description} (残り時間: ${event.remainingSeconds}秒)`;
 }
 
 function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
 }
 
-function visibilityExecutingEvent() {
-  const eventList = document.getElementById('event-list');
-  eventList.style.display = 'block';
-}
-
-function visibilitySucceededEvents() {
-  const succeededEventList = document.getElementById('succeeded-event-list');
-  succeededEventList.style.display = 'block';
-}
-
-function visibilityFailedEvents() {
-  const failedEventList = document.getElementById('failed-event-list');
-  failedEventList.style.display = 'block';
-}
-
-function hiddenExecutingEvent() {
-  const eventList = document.getElementById('event-list');
-  eventList.style.display = 'none';
-}
-
-function hiddenSucceededEvents() {
-  const succeededEventList = document.getElementById('succeeded-event-list');
-  succeededEventList.style.display = 'none';
-}
-
-function hiddenFailedEvents() {
-  const failedEventList = document.getElementById('failed-event-list');
-  failedEventList.style.display = 'none';
-}
-
-function hiddenEvent() {
-  hiddenExecutingEvent();
-  hiddenSucceededEvents();
-  hiddenFailedEvents();
-}
-
 export {
-  render,
+  createDomGameView,
 };

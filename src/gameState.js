@@ -1,4 +1,4 @@
-import { MENU_LIST } from './gameLogic.js';
+import { createEventListScene } from './eventListScene.js';
 
 function createGameState() {
   return {
@@ -6,12 +6,7 @@ function createGameState() {
       beforeTime: null,
       deltaTime: 0,
     },
-    events: [],
-    succeededEvents: [],
-    failedEvents: [],
-    lastEventId: 0,
-    inputValues: {},
-    currentMenu: MENU_LIST.TOP_MENU,
+    currentScene: createEventListScene(),
   };
 }
 
