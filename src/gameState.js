@@ -5,6 +5,8 @@ function createGameState() {
     frame: {
       beforeTime: null,
       deltaTime: 0,
+      count: 0,
+      targetFrameTimeMs: 1000 / 60,
     },
     currentScene: createEventListScene(),
   };

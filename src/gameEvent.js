@@ -13,7 +13,7 @@ class GameEventBase {
     this.state = GAME_EVENT_STATE.EXECUTING;
   }
 
-  update(deltaTime) {
+  update(context) {
     if (this.state !== GAME_EVENT_STATE.EXECUTING) {
       return;
     }
@@ -24,7 +24,7 @@ class GameEventBase {
       return;
     }
 
-    this.limitTimeMs -= deltaTime;
+    this.limitTimeMs -= context.deltaTimeMs;
     if (this.limitTimeMs <= 0) {
       this.limitTimeMs = 0;
       this.state = GAME_EVENT_STATE.FAILED;

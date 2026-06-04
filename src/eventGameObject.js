@@ -7,8 +7,8 @@ class EventGameObject {
     this.inputValue = '';
   }
 
-  update(deltaTime) {
-    this.event.update(deltaTime);
+  update(context) {
+    this.event.update(context);
   }
 
   handleAction(action) {

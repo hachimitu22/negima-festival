@@ -23,9 +23,9 @@ class EventListScene {
     this.lastEventId = 0;
   }
 
-  update(deltaTime) {
+  update(context) {
     this.events.forEach(eventObject => {
-      eventObject.update(deltaTime);
+      eventObject.update(context);
     });
 
     this.moveFinishedEvents();

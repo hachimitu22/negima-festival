@@ -20,7 +20,7 @@ function main() {
 
 function mainLoop(now) {
   updateFrame(gameState, now);
-  gameState.currentScene.update(gameState.frame.deltaTime);
+  gameState.currentScene.update(createUpdateContext(gameState));
   gameView.render(gameState.currentScene.createSnapshot());
 
   requestAnimationFrame(mainLoop);
@@ -34,4 +34,14 @@ function updateFrame(state, now) {
 
   frame.deltaTime = now - frame.beforeTime;
   frame.beforeTime = now;
+  frame.count += 1;
+}
+
+function createUpdateContext(state) {
+  return {
+    deltaTimeMs: state.frame.deltaTime,
+    frameCount: state.frame.count,
+    targetFrameTimeMs: state.frame.targetFrameTimeMs,
+    deltaFrames: state.frame.deltaTime / state.frame.targetFrameTimeMs,
+  };
 }
