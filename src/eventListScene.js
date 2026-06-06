@@ -14,6 +14,8 @@ const MENU_ITEMS = [
   { id: MENU_IDS.FAILED, label: '失敗イベント' },
 ];
 
+const EVENT_SPAWN_INTERVAL_HOURS = 2;
+
 class EventListScene {
   constructor() {
     this.currentMenu = MENU_IDS.TOP;
@@ -21,6 +23,7 @@ class EventListScene {
     this.succeededEvents = [];
     this.failedEvents = [];
     this.lastEventId = 0;
+    this.nextEventTimeHours = 1;
   }
 
   update(context) {
@@ -30,7 +33,7 @@ class EventListScene {
 
     this.moveFinishedEvents();
 
-    const eventObject = this.createEventRandom();
+    const eventObject = this.createEventRandom(context);
     if (eventObject) {
       this.events.push(eventObject);
     }
@@ -79,13 +82,31 @@ class EventListScene {
     this.events = executingEvents;
   }
 
-  createEventRandom() {
-    if (!rollChance(1)) {
+  rewindTo(currentHours) {
+    this.events = [];
+    this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
+  }
+
+  createEventRandom(context) {
+    if (
+      context.isFestivalEnded
+      || typeof context.gameTimeHours !== 'number'
+      || context.gameTimeHours < this.nextEventTimeHours
+    ) {
+      return null;
+    }
+
+    this.nextEventTimeHours += EVENT_SPAWN_INTERVAL_HOURS;
+
+    if (!rollChance(50)) {
       return null;
     }
 
     const randomIndex = getRandomInt(0, GAME_EVENTS.length - 1);
     const event = new GAME_EVENTS[randomIndex](this.lastEventId++);
+    if (typeof context.rememberEvent === 'function') {
+      context.rememberEvent(event.name);
+    }
     return new EventGameObject(event);
   }
 }

@@ -40,8 +40,8 @@ class GameEventBase {
 class ClickEvent extends GameEventBase {
   constructor(id) {
     super(id, {
-      name: 'Click Event',
-      description: 'A simple click event',
+      name: '校内巡回',
+      description: '巡回地点を確認する',
       limitTimeMs: 5000,
     });
 
@@ -69,8 +69,8 @@ class InputEvent extends GameEventBase {
     ).join('');
 
     super(id, {
-      name: 'Input Event',
-      description: `Type "${targetInput}" to complete`,
+      name: '伝言確認',
+      description: `合言葉 "${targetInput}" を入力する`,
       limitTimeMs: 5000,
     });
 

@@ -1,4 +1,11 @@
-import { createGameState } from './src/gameState.js';
+import { ACTION_TYPES } from './src/actions.js';
+import {
+  createGameSnapshot,
+  createGameState,
+  rememberEvent,
+  updateGameTime,
+  useCassiopeia,
+} from './src/gameState.js';
 import { createDomGameView } from './src/gameView.js';
 
 const gameState = createGameState();
@@ -11,6 +18,11 @@ window.addEventListener('load', () => {
 function main() {
   gameView.mount(document.getElementById('game'), {
     dispatch: action => {
+      if (action.type === ACTION_TYPES.CASSIOPEIA_USE) {
+        useCassiopeia(gameState);
+        return;
+      }
+
       gameState.currentScene.handleAction(action);
     },
   });
@@ -20,8 +32,9 @@ function main() {
 
 function mainLoop(now) {
   updateFrame(gameState, now);
+  updateGameTime(gameState);
   gameState.currentScene.update(createUpdateContext(gameState));
-  gameView.render(gameState.currentScene.createSnapshot());
+  gameView.render(createGameSnapshot(gameState));
 
   requestAnimationFrame(mainLoop);
 }
@@ -43,5 +56,8 @@ function createUpdateContext(state) {
     frameCount: state.frame.count,
     targetFrameTimeMs: state.frame.targetFrameTimeMs,
     deltaFrames: state.frame.deltaTime / state.frame.targetFrameTimeMs,
+    gameTimeHours: state.gameTime.currentHours,
+    isFestivalEnded: state.gameTime.isEnded,
+    rememberEvent: eventName => rememberEvent(state, eventName),
   };
 }

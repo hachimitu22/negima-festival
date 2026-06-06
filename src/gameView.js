@@ -8,16 +8,29 @@ function createDomGameView() {
     dispatch = options.dispatch;
     elements = {
       root: rootElement,
+      gameTime: rootElement.querySelector('#game-time'),
+      loopCount: rootElement.querySelector('#loop-count'),
+      festivalState: rootElement.querySelector('#festival-state'),
+      cassiopeia: rootElement.querySelector('#cassiopeia'),
+      knownEventList: rootElement.querySelector('#known-event-list'),
       menu: rootElement.querySelector('#menu'),
       back: rootElement.querySelector('#back'),
       eventList: rootElement.querySelector('#event-list'),
       succeededEventList: rootElement.querySelector('#succeeded-event-list'),
       failedEventList: rootElement.querySelector('#failed-event-list'),
     };
+
+    elements.cassiopeia.addEventListener('click', () => {
+      dispatch({
+        type: ACTION_TYPES.CASSIOPEIA_USE,
+      });
+    });
   }
 
   function render(snapshot) {
     hideAll();
+    renderStatus(snapshot);
+    renderKnownEvents(snapshot.knownEvents);
 
     if (snapshot.currentMenu === MENU_IDS.TOP) {
       show(elements.menu);
@@ -50,8 +63,35 @@ function createDomGameView() {
     elements.eventList.replaceChildren();
     elements.succeededEventList.replaceChildren();
     elements.failedEventList.replaceChildren();
+    elements.knownEventList.replaceChildren();
     elements = null;
     dispatch = null;
+  }
+
+  function renderStatus(snapshot) {
+    elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
+    elements.loopCount.textContent = `${snapshot.loop.count}周目`;
+    elements.festivalState.textContent = snapshot.gameTime.isEnded
+      ? 'フェス終了'
+      : 'フェス進行中';
+    elements.cassiopeia.textContent = `カシオペアを使う (${snapshot.loop.timeTravelHours}時間戻る)`;
+  }
+
+  function renderKnownEvents(knownEvents) {
+    elements.knownEventList.replaceChildren();
+
+    if (knownEvents.length === 0) {
+      const emptyItem = document.createElement('li');
+      emptyItem.textContent = 'まだ既知情報はありません';
+      elements.knownEventList.appendChild(emptyItem);
+      return;
+    }
+
+    knownEvents.forEach(eventName => {
+      const eventItem = document.createElement('li');
+      eventItem.textContent = eventName;
+      elements.knownEventList.appendChild(eventItem);
+    });
   }
 
   function renderMenu(snapshot) {
@@ -225,6 +265,13 @@ function formatExecutingEvent(event) {
 
 function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
+}
+
+function formatGameTime(currentHours) {
+  const totalMinutes = Math.floor(currentHours * 60);
+  const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+  const minutes = String(totalMinutes % 60).padStart(2, '0');
+  return `${hours}:${minutes}`;
 }
 
 export {
