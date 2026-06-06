@@ -27,6 +27,11 @@ function createGameState() {
   };
 }
 
+function updateGameState(state) {
+  updateGameTime(state);
+  state.currentScene.update(createUpdateContext(state));
+}
+
 function updateGameTime(state) {
   if (state.gameTime.isEnded) {
     return;
@@ -70,12 +75,23 @@ function createGameSnapshot(state) {
   };
 }
 
+function createUpdateContext(state) {
+  return {
+    deltaTimeMs: state.frame.deltaTime,
+    frameCount: state.frame.count,
+    targetFrameTimeMs: state.frame.targetFrameTimeMs,
+    deltaFrames: state.frame.deltaTime / state.frame.targetFrameTimeMs,
+    gameTimeHours: state.gameTime.currentHours,
+    isFestivalEnded: state.gameTime.isEnded,
+    rememberEvent: eventName => rememberEvent(state, eventName),
+  };
+}
+
 export {
   FESTIVAL_DURATION_HOURS,
   TIME_TRAVEL_HOURS,
   createGameSnapshot,
   createGameState,
-  rememberEvent,
-  updateGameTime,
+  updateGameState,
   useCassiopeia,
 };
