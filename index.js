@@ -19,20 +19,8 @@ function main() {
 }
 
 function mainLoop(now) {
-  updateFrame(gameController.getState(), now);
-  gameController.update();
+  gameController.update(now);
   gameView.render(gameController.createSnapshot());
 
   requestAnimationFrame(mainLoop);
-}
-
-function updateFrame(state, now) {
-  const frame = state.frame;
-  if (frame.beforeTime === null) {
-    frame.beforeTime = now;
-  }
-
-  frame.deltaTime = now - frame.beforeTime;
-  frame.beforeTime = now;
-  frame.count += 1;
 }

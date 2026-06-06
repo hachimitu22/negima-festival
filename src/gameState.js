@@ -27,9 +27,21 @@ function createGameState() {
   };
 }
 
-function updateGameState(state) {
+function updateGameState(state, now) {
+  updateFrame(state, now);
   updateGameTime(state);
   state.currentScene.update(createUpdateContext(state));
+}
+
+function updateFrame(state, now) {
+  const frame = state.frame;
+  if (frame.beforeTime === null) {
+    frame.beforeTime = now;
+  }
+
+  frame.deltaTime = now - frame.beforeTime;
+  frame.beforeTime = now;
+  frame.count += 1;
 }
 
 function updateGameTime(state) {

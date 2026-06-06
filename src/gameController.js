@@ -18,22 +18,17 @@ function createGameController() {
     state.currentScene.handleAction(action);
   }
 
-  function update() {
-    updateGameState(state);
+  function update(now) {
+    updateGameState(state, now);
   }
 
   function createSnapshot() {
     return createGameSnapshot(state);
   }
 
-  function getState() {
-    return state;
-  }
-
   return {
     createSnapshot,
     dispatch,
-    getState,
     update,
   };
 }
