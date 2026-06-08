@@ -16,7 +16,15 @@ function createStatusView() {
     elements.cassiopeia.addEventListener('click', handleCassiopeiaClick);
   }
 
+  function init(snapshot) {
+    renderStatus(snapshot);
+  }
+
   function update(snapshot) {
+    renderStatus(snapshot);
+  }
+
+  function renderStatus(snapshot) {
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;
     elements.festivalState.textContent = snapshot.gameTime.isEnded
@@ -43,6 +51,7 @@ function createStatusView() {
 
   return {
     destroy,
+    init,
     mount,
     update,
   };

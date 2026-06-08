@@ -3,39 +3,37 @@ import { ACTION_TYPES, MENU_IDS } from '../../actions.js';
 function createEventListSceneView() {
   let elements = null;
   let dispatch = null;
+  let activeMenu = null;
 
   function mount(rootElement, options) {
     dispatch = options.dispatch;
     elements = {
-      menu: rootElement.querySelector('#menu'),
-      back: rootElement.querySelector('#back'),
-      eventList: rootElement.querySelector('#event-list'),
-      succeededEventList: rootElement.querySelector('#succeeded-event-list'),
-      failedEventList: rootElement.querySelector('#failed-event-list'),
+      menu: createRegion(rootElement.querySelector('#menu')),
+      back: createRegion(rootElement.querySelector('#back')),
+      eventList: createRegion(rootElement.querySelector('#event-list')),
+      succeededEventList: createRegion(rootElement.querySelector('#succeeded-event-list')),
+      failedEventList: createRegion(rootElement.querySelector('#failed-event-list')),
     };
   }
 
+  function init(snapshot) {
+    update(snapshot);
+  }
+
   function update(snapshot) {
-    hideAll();
+    updateActiveMenu(snapshot.currentMenu);
 
     if (snapshot.currentMenu === MENU_IDS.TOP) {
-      show(elements.menu);
-      renderMenu(snapshot);
+      updateMenu(snapshot);
     } else if (snapshot.currentMenu === MENU_IDS.EXECUTING) {
-      show(elements.back);
-      show(elements.eventList);
-      renderBackButton();
-      renderExecutingEvents(snapshot.executingEvents);
+      updateBackButton();
+      updateExecutingEvents(snapshot.executingEvents);
     } else if (snapshot.currentMenu === MENU_IDS.SUCCEEDED) {
-      show(elements.back);
-      show(elements.succeededEventList);
-      renderBackButton();
-      renderCompletedEvents(elements.succeededEventList, snapshot.succeededEvents, '成功');
+      updateBackButton();
+      updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
     } else if (snapshot.currentMenu === MENU_IDS.FAILED) {
-      show(elements.back);
-      show(elements.failedEventList);
-      renderBackButton();
-      renderCompletedEvents(elements.failedEventList, snapshot.failedEvents, '失敗');
+      updateBackButton();
+      updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
     }
   }
 
@@ -44,44 +42,110 @@ function createEventListSceneView() {
       return;
     }
 
-    elements.menu.replaceChildren();
-    elements.back.replaceChildren();
-    elements.eventList.replaceChildren();
-    elements.succeededEventList.replaceChildren();
-    elements.failedEventList.replaceChildren();
+    Object.values(elements).forEach(region => {
+      region.element.replaceChildren();
+      region.element.remove();
+      region.anchor.remove();
+    });
     elements = null;
     dispatch = null;
+    activeMenu = null;
   }
 
-  function renderMenu(snapshot) {
-    const menuItemIds = new Set(snapshot.menuItems.map(item => item.id));
-    const completedRender = elements.menu.children.length > 0
-      && Array.from(elements.menu.children).every(menuItem => menuItemIds.has(menuItem.dataset.menuId));
-
-    if (completedRender) {
+  function updateActiveMenu(currentMenu) {
+    if (activeMenu === currentMenu) {
       return;
     }
 
-    elements.menu.replaceChildren();
-    snapshot.menuItems.forEach(item => {
-      const menuItem = document.createElement('li');
-      menuItem.textContent = item.label;
-      menuItem.dataset.menuId = item.id;
-      menuItem.addEventListener('click', () => {
-        dispatch({
-          type: ACTION_TYPES.MENU_SELECT,
-          menuId: item.id,
-        });
-      });
-      elements.menu.appendChild(menuItem);
+    detachInactiveRegions(currentMenu);
+    attachActiveRegions(currentMenu);
+    activeMenu = currentMenu;
+  }
+
+  function detachInactiveRegions(currentMenu) {
+    getInactiveRegions(currentMenu).forEach(region => {
+      region.element.remove();
     });
   }
 
-  function renderBackButton() {
-    if (elements.back.querySelector('#back-button')) {
+  function attachActiveRegions(currentMenu) {
+    getActiveRegions(currentMenu).forEach(region => {
+      if (!region.element.isConnected) {
+        region.anchor.after(region.element);
+      }
+    });
+  }
+
+  function getActiveRegions(currentMenu) {
+    if (currentMenu === MENU_IDS.TOP) {
+      return [elements.menu];
+    }
+
+    if (currentMenu === MENU_IDS.EXECUTING) {
+      return [elements.back, elements.eventList];
+    }
+
+    if (currentMenu === MENU_IDS.SUCCEEDED) {
+      return [elements.back, elements.succeededEventList];
+    }
+
+    if (currentMenu === MENU_IDS.FAILED) {
+      return [elements.back, elements.failedEventList];
+    }
+
+    return [];
+  }
+
+  function getInactiveRegions(currentMenu) {
+    const activeRegions = new Set(getActiveRegions(currentMenu));
+    return Object.values(elements).filter(region => !activeRegions.has(region));
+  }
+
+  function updateMenu(snapshot) {
+    const menuItemIds = new Set(snapshot.menuItems.map(item => item.id));
+
+    Array.from(elements.menu.element.children).forEach(menuItem => {
+      if (!menuItemIds.has(menuItem.dataset.menuId)) {
+        menuItem.remove();
+      }
+    });
+
+    snapshot.menuItems.forEach(item => {
+      const menuItem = getOrCreateMenuItem(item);
+      menuItem.textContent = item.label;
+
+      if (!menuItem.isConnected) {
+        elements.menu.element.appendChild(menuItem);
+      }
+    });
+  }
+
+  function getOrCreateMenuItem(item) {
+    const existingItem = elements.menu.element.querySelector(`[data-menu-id="${item.id}"]`);
+    if (existingItem) {
+      return existingItem;
+    }
+
+    const menuItem = document.createElement('li');
+    menuItem.dataset.menuId = item.id;
+    menuItem.addEventListener('click', () => {
+      dispatch({
+        type: ACTION_TYPES.MENU_SELECT,
+        menuId: item.id,
+      });
+    });
+    return menuItem;
+  }
+
+  function updateBackButton() {
+    if (elements.back.element.querySelector('#back-button')) {
       return;
     }
 
+    createBackButton();
+  }
+
+  function createBackButton() {
     const backButton = document.createElement('button');
     backButton.id = 'back-button';
     backButton.type = 'button';
@@ -92,13 +156,13 @@ function createEventListSceneView() {
         menuId: MENU_IDS.TOP,
       });
     });
-    elements.back.prepend(backButton);
+    elements.back.element.prepend(backButton);
   }
 
-  function renderExecutingEvents(events) {
+  function updateExecutingEvents(events) {
     const eventIds = new Set(events.map(event => String(event.id)));
 
-    Array.from(elements.eventList.children).forEach(eventItem => {
+    Array.from(elements.eventList.element.children).forEach(eventItem => {
       if (!eventIds.has(eventItem.dataset.eventId)) {
         eventItem.remove();
       }
@@ -109,13 +173,13 @@ function createEventListSceneView() {
       eventItem.querySelector('[data-event-label]').textContent = formatExecutingEvent(event);
 
       if (!eventItem.isConnected) {
-        elements.eventList.appendChild(eventItem);
+        elements.eventList.element.appendChild(eventItem);
       }
     });
   }
 
   function getOrCreateExecutingEventItem(event) {
-    const existingItem = elements.eventList.querySelector(`[data-event-id="${event.id}"]`);
+    const existingItem = elements.eventList.element.querySelector(`[data-event-id="${event.id}"]`);
     if (existingItem) {
       return existingItem;
     }
@@ -185,37 +249,51 @@ function createEventListSceneView() {
     return null;
   }
 
-  function renderCompletedEvents(eventList, events, statusText) {
-    eventList.replaceChildren();
+  function updateCompletedEvents(eventList, events, statusText) {
+    const eventIds = new Set(events.map(event => String(event.id)));
+
+    Array.from(eventList.children).forEach(eventItem => {
+      if (!eventIds.has(eventItem.dataset.eventId)) {
+        eventItem.remove();
+      }
+    });
 
     events.forEach(event => {
-      const eventItem = document.createElement('li');
+      const eventItem = getOrCreateCompletedEventItem(eventList, event);
       eventItem.textContent = formatCompletedEvent(event, statusText);
-      eventList.appendChild(eventItem);
+
+      if (!eventItem.isConnected) {
+        eventList.appendChild(eventItem);
+      }
     });
   }
 
-  function hideAll() {
-    hide(elements.menu);
-    hide(elements.back);
-    hide(elements.eventList);
-    hide(elements.succeededEventList);
-    hide(elements.failedEventList);
+  function getOrCreateCompletedEventItem(eventList, event) {
+    const existingItem = eventList.querySelector(`[data-event-id="${event.id}"]`);
+    if (existingItem) {
+      return existingItem;
+    }
+
+    const eventItem = document.createElement('li');
+    eventItem.dataset.eventId = String(event.id);
+    return eventItem;
   }
 
   return {
     destroy,
+    init,
     mount,
     update,
   };
 }
 
-function show(element) {
-  element.style.display = 'block';
-}
-
-function hide(element) {
-  element.style.display = 'none';
+function createRegion(element) {
+  const anchor = document.createComment(`${element.id}-anchor`);
+  element.before(anchor);
+  return {
+    anchor,
+    element,
+  };
 }
 
 function formatExecutingEvent(event) {

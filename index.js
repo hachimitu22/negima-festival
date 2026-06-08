@@ -14,6 +14,7 @@ function main() {
       gameController.dispatch(action);
     },
   });
+  gameView.init(gameController.createSnapshot());
 
   requestAnimationFrame(mainLoop);
 }

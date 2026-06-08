@@ -13,6 +13,12 @@ function createDomGameView() {
     eventListSceneView.mount(rootElement, options);
   }
 
+  function init(snapshot) {
+    statusView.init(snapshot);
+    knownEventsView.init(snapshot.knownEvents);
+    eventListSceneView.init(snapshot);
+  }
+
   function render(snapshot) {
     statusView.update(snapshot);
     knownEventsView.update(snapshot.knownEvents);
@@ -27,6 +33,7 @@ function createDomGameView() {
 
   return {
     mount,
+    init,
     render,
     destroy,
   };

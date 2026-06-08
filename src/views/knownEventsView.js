@@ -5,7 +5,15 @@ function createKnownEventsView() {
     element = rootElement.querySelector('#known-event-list');
   }
 
+  function init(knownEvents) {
+    renderKnownEvents(knownEvents);
+  }
+
   function update(knownEvents) {
+    renderKnownEvents(knownEvents);
+  }
+
+  function renderKnownEvents(knownEvents) {
     element.replaceChildren();
 
     if (knownEvents.length === 0) {
@@ -33,6 +41,7 @@ function createKnownEventsView() {
 
   return {
     destroy,
+    init,
     mount,
     update,
   };
