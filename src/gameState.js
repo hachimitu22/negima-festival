@@ -3,6 +3,9 @@ import { createEventListScene } from './eventListScene.js';
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
 const GAME_HOURS_PER_REAL_SECOND = 1;
+const MAX_MAGIC_POWER = 100;
+const CASSIOPEIA_MAGIC_POWER_COST = 30;
+const MAGIC_POWER_RECOVERY_PER_GAME_HOUR = 5;
 
 function createGameState() {
   return {
@@ -21,6 +24,14 @@ function createGameState() {
     loop: {
       count: 1,
       timeTravelHours: TIME_TRAVEL_HOURS,
+      cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
+    },
+    character: {
+      magicPower: {
+        current: MAX_MAGIC_POWER,
+        max: MAX_MAGIC_POWER,
+        recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
+      },
     },
     knownEvents: new Set(),
     currentScene: createEventListScene(),
@@ -29,7 +40,8 @@ function createGameState() {
 
 function updateGameState(state, now) {
   updateFrame(state, now);
-  updateGameTime(state);
+  const elapsedGameHours = updateGameTime(state);
+  recoverMagicPower(state, elapsedGameHours);
   state.currentScene.update(createUpdateContext(state));
 }
 
@@ -46,18 +58,38 @@ function updateFrame(state, now) {
 
 function updateGameTime(state) {
   if (state.gameTime.isEnded) {
-    return;
+    return 0;
   }
 
   const elapsedHours = (state.frame.deltaTime / 1000) * state.gameTime.hoursPerRealSecond;
+  const beforeHours = state.gameTime.currentHours;
   state.gameTime.currentHours = Math.min(
     state.gameTime.currentHours + elapsedHours,
     state.gameTime.durationHours,
   );
   state.gameTime.isEnded = state.gameTime.currentHours >= state.gameTime.durationHours;
+  return state.gameTime.currentHours - beforeHours;
+}
+
+function recoverMagicPower(state, elapsedGameHours) {
+  if (elapsedGameHours <= 0) {
+    return;
+  }
+
+  const magicPower = state.character.magicPower;
+  magicPower.current = Math.min(
+    magicPower.max,
+    magicPower.current + (elapsedGameHours * magicPower.recoveryPerGameHour),
+  );
 }
 
 function useCassiopeia(state) {
+  const magicPower = state.character.magicPower;
+  if (magicPower.current < state.loop.cassiopeiaMagicPowerCost) {
+    return false;
+  }
+
+  magicPower.current -= state.loop.cassiopeiaMagicPowerCost;
   state.gameTime.currentHours = Math.max(
     0,
     state.gameTime.currentHours - state.loop.timeTravelHours,
@@ -65,6 +97,7 @@ function useCassiopeia(state) {
   state.gameTime.isEnded = false;
   state.loop.count += 1;
   state.currentScene.rewindTo(state.gameTime.currentHours);
+  return true;
 }
 
 function rememberEvent(state, eventName) {
@@ -82,6 +115,14 @@ function createGameSnapshot(state) {
     loop: {
       count: state.loop.count,
       timeTravelHours: state.loop.timeTravelHours,
+      cassiopeiaMagicPowerCost: state.loop.cassiopeiaMagicPowerCost,
+    },
+    character: {
+      magicPower: {
+        current: state.character.magicPower.current,
+        max: state.character.magicPower.max,
+        recoveryPerGameHour: state.character.magicPower.recoveryPerGameHour,
+      },
     },
     knownEvents: Array.from(state.knownEvents),
   };
@@ -100,7 +141,10 @@ function createUpdateContext(state) {
 }
 
 export {
+  CASSIOPEIA_MAGIC_POWER_COST,
   FESTIVAL_DURATION_HOURS,
+  MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
+  MAX_MAGIC_POWER,
   TIME_TRAVEL_HOURS,
   createGameSnapshot,
   createGameState,

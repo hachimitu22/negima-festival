@@ -9,6 +9,7 @@ function createStatusView() {
     elements = {
       gameTime: rootElement.querySelector('#game-time'),
       loopCount: rootElement.querySelector('#loop-count'),
+      magicPower: rootElement.querySelector('#magic-power'),
       festivalState: rootElement.querySelector('#festival-state'),
       cassiopeia: rootElement.querySelector('#cassiopeia'),
     };
@@ -27,10 +28,12 @@ function createStatusView() {
   function renderStatus(snapshot) {
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;
+    elements.magicPower.textContent = `MP ${formatMagicPower(snapshot.character.magicPower.current)} / ${snapshot.character.magicPower.max}`;
     elements.festivalState.textContent = snapshot.gameTime.isEnded
       ? 'フェス終了'
       : 'フェス進行中';
-    elements.cassiopeia.textContent = `カシオペアを使う (${snapshot.loop.timeTravelHours}時間戻る)`;
+    elements.cassiopeia.textContent = `カシオペアを使う (${snapshot.loop.timeTravelHours}時間戻る / MP ${snapshot.loop.cassiopeiaMagicPowerCost})`;
+    elements.cassiopeia.disabled = snapshot.character.magicPower.current < snapshot.loop.cassiopeiaMagicPowerCost;
   }
 
   function destroy() {
@@ -62,6 +65,10 @@ function formatGameTime(currentHours) {
   const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
   const minutes = String(totalMinutes % 60).padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+function formatMagicPower(magicPower) {
+  return String(Math.floor(magicPower));
 }
 
 export {
