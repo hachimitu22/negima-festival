@@ -1,6 +1,7 @@
-import { ACTION_TYPES, MENU_IDS } from './actions.js';
+import { ACTION_TYPES, MAIN_GAME_LAYER_IDS } from './actions.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
+import { LOCATIONS } from './locations.js';
 import { getRandomInt, rollChance } from './random.js';
 
 const GAME_EVENTS = [
@@ -8,17 +9,18 @@ const GAME_EVENTS = [
   InputEvent,
 ];
 
-const MENU_ITEMS = [
-  { id: MENU_IDS.EXECUTING, label: '実行中イベント' },
-  { id: MENU_IDS.SUCCEEDED, label: '成功イベント' },
-  { id: MENU_IDS.FAILED, label: '失敗イベント' },
+const LAYER_ITEMS = [
+  { id: MAIN_GAME_LAYER_IDS.MAP, label: 'マップ' },
+  { id: MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS, label: '実行中イベント' },
+  { id: MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS, label: '成功イベント' },
+  { id: MAIN_GAME_LAYER_IDS.FAILED_EVENTS, label: '失敗イベント' },
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
 
-class EventListScene {
+class MainGameScene {
   constructor() {
-    this.currentMenu = MENU_IDS.TOP;
+    this.activeLayerId = MAIN_GAME_LAYER_IDS.MENU;
     this.events = [];
     this.succeededEvents = [];
     this.failedEvents = [];
@@ -40,8 +42,8 @@ class EventListScene {
   }
 
   handleAction(action) {
-    if (action.type === ACTION_TYPES.MENU_SELECT) {
-      this.selectMenu(action.menuId);
+    if (action.type === ACTION_TYPES.LAYER_SELECT) {
+      this.selectLayer(action.layerId);
       return;
     }
 
@@ -52,17 +54,18 @@ class EventListScene {
 
   createSnapshot() {
     return {
-      currentMenu: this.currentMenu,
-      menuItems: MENU_ITEMS,
+      activeLayerId: this.activeLayerId,
+      layerItems: LAYER_ITEMS,
+      mapLocations: LOCATIONS,
       executingEvents: this.events.map(eventObject => eventObject.getSnapshot()),
       succeededEvents: this.succeededEvents.map(eventObject => eventObject.getSnapshot()),
       failedEvents: this.failedEvents.map(eventObject => eventObject.getSnapshot()),
     };
   }
 
-  selectMenu(menuId) {
-    if ([MENU_IDS.TOP, MENU_IDS.EXECUTING, MENU_IDS.SUCCEEDED, MENU_IDS.FAILED].includes(menuId)) {
-      this.currentMenu = menuId;
+  selectLayer(layerId) {
+    if (Object.values(MAIN_GAME_LAYER_IDS).includes(layerId)) {
+      this.activeLayerId = layerId;
     }
   }
 
@@ -111,10 +114,10 @@ class EventListScene {
   }
 }
 
-function createEventListScene() {
-  return new EventListScene();
+function createMainGameScene() {
+  return new MainGameScene();
 }
 
 export {
-  createEventListScene,
+  createMainGameScene,
 };

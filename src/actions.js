@@ -1,19 +1,21 @@
 const ACTION_TYPES = {
-  MENU_SELECT: 'menu.select',
+  LAYER_SELECT: 'layer.select',
   CASSIOPEIA_USE: 'cassiopeia.use',
+  LOCATION_SELECT: 'location.select',
   EVENT_CLICK: 'event.click',
   EVENT_INPUT_CHANGE: 'event.input.change',
   EVENT_INPUT_SUBMIT: 'event.input.submit',
 };
 
-const MENU_IDS = {
-  TOP: 'top',
-  EXECUTING: 'executing',
-  SUCCEEDED: 'succeeded',
-  FAILED: 'failed',
+const MAIN_GAME_LAYER_IDS = {
+  MENU: 'menu',
+  MAP: 'map',
+  EXECUTING_EVENTS: 'executing-events',
+  SUCCEEDED_EVENTS: 'succeeded-events',
+  FAILED_EVENTS: 'failed-events',
 };
 
 export {
   ACTION_TYPES,
-  MENU_IDS,
+  MAIN_GAME_LAYER_IDS,
 };

@@ -9,6 +9,8 @@ DOM UIを完成させること自体を主目的にしないでください。
 - ゲームロジックはDOM、Vue、React、canvas APIに依存させないでください。
 - `gameState` と `gameController` をゲーム挙動の中心として扱ってください。
 - `gameView` と `src/views` 配下のファイルはrenderer/view実装として扱ってください。
+- sceneはタイトル、メインゲーム、サブゲームのような大きな実行単位として扱ってください。
+- メニュー、マップ、イベント一覧のようなメインゲーム内の切り替え表示はsceneではなくlayerとして扱ってください。
 - DOM rendererを後からcanvas rendererへ置き換えられるように、`snapshot -> renderer` の流れを維持してください。
 - rendererの公開APIは、将来の `createCanvasGameView()` でも実装できる形を優先してください。
 
@@ -18,5 +20,6 @@ DOM UIを完成させること自体を主目的にしないでください。
 
 ## 実装時の注意
 - DOM固有の状態はDOM view層の内部に閉じ込めてください。
-- ゲームルール、イベント発生タイミング、メニュー状態、ループ挙動をDOM要素やUIコンポーネントへ移さないでください。
+- ゲームルール、イベント発生タイミング、layer状態、ループ挙動をDOM要素やUIコンポーネントへ移さないでください。
+- sceneの切り替えはロードやゲームモードの大きな切り替えに使い、メインゲーム内の表示切り替えは `activeLayerId` のようなlayer状態で表してください。
 - viewの処理を追加する場合は、`mount`、`init`、`render`、`update`、`destroy` のようなライフサイクルを中心に公開契約を保ってください。

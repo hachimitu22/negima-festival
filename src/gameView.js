@@ -1,34 +1,34 @@
 import { createKnownEventsView } from './views/knownEventsView.js';
 import { createStatusView } from './views/statusView.js';
-import { createEventListSceneView } from './views/scenes/eventListSceneView.js';
+import { createMainGameSceneView } from './views/scenes/mainGameSceneView.js';
 
 function createDomGameView() {
   const statusView = createStatusView();
   const knownEventsView = createKnownEventsView();
-  const eventListSceneView = createEventListSceneView();
+  const mainGameSceneView = createMainGameSceneView();
 
   function mount(rootElement, options) {
     statusView.mount(rootElement, options);
     knownEventsView.mount(rootElement);
-    eventListSceneView.mount(rootElement, options);
+    mainGameSceneView.mount(rootElement, options);
   }
 
   function init(snapshot) {
     statusView.init(snapshot);
     knownEventsView.init(snapshot.knownEvents);
-    eventListSceneView.init(snapshot);
+    mainGameSceneView.init(snapshot);
   }
 
   function render(snapshot) {
     statusView.update(snapshot);
     knownEventsView.update(snapshot.knownEvents);
-    eventListSceneView.update(snapshot);
+    mainGameSceneView.update(snapshot);
   }
 
   function destroy() {
     statusView.destroy();
     knownEventsView.destroy();
-    eventListSceneView.destroy();
+    mainGameSceneView.destroy();
   }
 
   return {

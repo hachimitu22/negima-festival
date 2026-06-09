@@ -1,4 +1,5 @@
-import { createEventListScene } from './eventListScene.js';
+import { createMainGameScene } from './mainGameScene.js';
+import { LOCATION_IDS, findLocation } from './locations.js';
 
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
@@ -27,6 +28,7 @@ function createGameState() {
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
     },
     character: {
+      locationId: LOCATION_IDS.SCHOOL_BUILDING,
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,
@@ -34,7 +36,7 @@ function createGameState() {
       },
     },
     knownEvents: new Set(),
-    currentScene: createEventListScene(),
+    currentScene: createMainGameScene(),
   };
 }
 
@@ -100,6 +102,16 @@ function useCassiopeia(state) {
   return true;
 }
 
+function moveCharacterToLocation(state, locationId) {
+  const location = findLocation(locationId);
+  if (!location) {
+    return false;
+  }
+
+  state.character.locationId = location.id;
+  return true;
+}
+
 function rememberEvent(state, eventName) {
   state.knownEvents.add(eventName);
 }
@@ -118,6 +130,7 @@ function createGameSnapshot(state) {
       cassiopeiaMagicPowerCost: state.loop.cassiopeiaMagicPowerCost,
     },
     character: {
+      location: findLocation(state.character.locationId),
       magicPower: {
         current: state.character.magicPower.current,
         max: state.character.magicPower.max,
@@ -148,6 +161,7 @@ export {
   TIME_TRAVEL_HOURS,
   createGameSnapshot,
   createGameState,
+  moveCharacterToLocation,
   updateGameState,
   useCassiopeia,
 };

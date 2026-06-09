@@ -9,6 +9,7 @@ function createStatusView() {
     elements = {
       gameTime: rootElement.querySelector('#game-time'),
       loopCount: rootElement.querySelector('#loop-count'),
+      location: rootElement.querySelector('#location'),
       magicPower: rootElement.querySelector('#magic-power'),
       festivalState: rootElement.querySelector('#festival-state'),
       cassiopeia: rootElement.querySelector('#cassiopeia'),
@@ -28,6 +29,7 @@ function createStatusView() {
   function renderStatus(snapshot) {
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;
+    elements.location.textContent = `現在地: ${snapshot.character.location.name}`;
     elements.magicPower.textContent = `MP ${formatMagicPower(snapshot.character.magicPower.current)} / ${snapshot.character.magicPower.max}`;
     elements.festivalState.textContent = snapshot.gameTime.isEnded
       ? 'フェス終了'

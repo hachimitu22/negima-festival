@@ -2,6 +2,7 @@ import { ACTION_TYPES } from './actions.js';
 import {
   createGameSnapshot,
   createGameState,
+  moveCharacterToLocation,
   updateGameState,
   useCassiopeia,
 } from './gameState.js';
@@ -12,6 +13,11 @@ function createGameController() {
   function dispatch(action) {
     if (action.type === ACTION_TYPES.CASSIOPEIA_USE) {
       useCassiopeia(state);
+      return;
+    }
+
+    if (action.type === ACTION_TYPES.LOCATION_SELECT) {
+      moveCharacterToLocation(state, action.locationId);
       return;
     }
 

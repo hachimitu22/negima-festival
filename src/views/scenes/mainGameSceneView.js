@@ -1,15 +1,16 @@
-import { ACTION_TYPES, MENU_IDS } from '../../actions.js';
+import { ACTION_TYPES, MAIN_GAME_LAYER_IDS } from '../../actions.js';
 
-function createEventListSceneView() {
+function createMainGameSceneView() {
   let elements = null;
   let dispatch = null;
-  let activeMenu = null;
+  let activeLayerId = null;
 
   function mount(rootElement, options) {
     dispatch = options.dispatch;
     elements = {
       menu: createRegion(rootElement.querySelector('#menu')),
       back: createRegion(rootElement.querySelector('#back')),
+      mapList: createRegion(rootElement.querySelector('#map-list')),
       eventList: createRegion(rootElement.querySelector('#event-list')),
       succeededEventList: createRegion(rootElement.querySelector('#succeeded-event-list')),
       failedEventList: createRegion(rootElement.querySelector('#failed-event-list')),
@@ -21,17 +22,20 @@ function createEventListSceneView() {
   }
 
   function update(snapshot) {
-    updateActiveMenu(snapshot.currentMenu);
+    updateActiveLayer(snapshot.activeLayerId);
 
-    if (snapshot.currentMenu === MENU_IDS.TOP) {
-      updateMenu(snapshot);
-    } else if (snapshot.currentMenu === MENU_IDS.EXECUTING) {
+    if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MENU) {
+      updateLayerMenu(snapshot);
+    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
+      updateBackButton();
+      updateMap(snapshot.mapLocations, snapshot.character.location);
+    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       updateBackButton();
       updateExecutingEvents(snapshot.executingEvents);
-    } else if (snapshot.currentMenu === MENU_IDS.SUCCEEDED) {
+    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
       updateBackButton();
       updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
-    } else if (snapshot.currentMenu === MENU_IDS.FAILED) {
+    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
       updateBackButton();
       updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
     }
@@ -49,92 +53,96 @@ function createEventListSceneView() {
     });
     elements = null;
     dispatch = null;
-    activeMenu = null;
+    activeLayerId = null;
   }
 
-  function updateActiveMenu(currentMenu) {
-    if (activeMenu === currentMenu) {
+  function updateActiveLayer(nextLayerId) {
+    if (activeLayerId === nextLayerId) {
       return;
     }
 
-    detachInactiveRegions(currentMenu);
-    attachActiveRegions(currentMenu);
-    activeMenu = currentMenu;
+    detachInactiveRegions(nextLayerId);
+    attachActiveRegions(nextLayerId);
+    activeLayerId = nextLayerId;
   }
 
-  function detachInactiveRegions(currentMenu) {
-    getInactiveRegions(currentMenu).forEach(region => {
+  function detachInactiveRegions(layerId) {
+    getInactiveRegions(layerId).forEach(region => {
       region.element.remove();
     });
   }
 
-  function attachActiveRegions(currentMenu) {
-    getActiveRegions(currentMenu).forEach(region => {
+  function attachActiveRegions(layerId) {
+    getActiveRegions(layerId).forEach(region => {
       if (!region.element.isConnected) {
         region.anchor.after(region.element);
       }
     });
   }
 
-  function getActiveRegions(currentMenu) {
-    if (currentMenu === MENU_IDS.TOP) {
+  function getActiveRegions(layerId) {
+    if (layerId === MAIN_GAME_LAYER_IDS.MENU) {
       return [elements.menu];
     }
 
-    if (currentMenu === MENU_IDS.EXECUTING) {
+    if (layerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       return [elements.back, elements.eventList];
     }
 
-    if (currentMenu === MENU_IDS.SUCCEEDED) {
+    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
+      return [elements.back, elements.mapList];
+    }
+
+    if (layerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
       return [elements.back, elements.succeededEventList];
     }
 
-    if (currentMenu === MENU_IDS.FAILED) {
+    if (layerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
       return [elements.back, elements.failedEventList];
     }
 
     return [];
   }
 
-  function getInactiveRegions(currentMenu) {
-    const activeRegions = new Set(getActiveRegions(currentMenu));
+  function getInactiveRegions(layerId) {
+    const activeRegions = new Set(getActiveRegions(layerId));
     return Object.values(elements).filter(region => !activeRegions.has(region));
   }
 
-  function updateMenu(snapshot) {
-    const menuItemIds = new Set(snapshot.menuItems.map(item => item.id));
+  function updateLayerMenu(snapshot) {
+    const layerItemIds = new Set(snapshot.layerItems.map(item => item.id));
 
-    Array.from(elements.menu.element.children).forEach(menuItem => {
-      if (!menuItemIds.has(menuItem.dataset.menuId)) {
-        menuItem.remove();
+    Array.from(elements.menu.element.children).forEach(layerItem => {
+      if (!layerItemIds.has(layerItem.dataset.layerId)) {
+        layerItem.remove();
       }
     });
 
-    snapshot.menuItems.forEach(item => {
-      const menuItem = getOrCreateMenuItem(item);
-      menuItem.textContent = item.label;
+    snapshot.layerItems.forEach(item => {
+      const layerItem = getOrCreateLayerItem(item);
+      layerItem.textContent = item.label;
 
-      if (!menuItem.isConnected) {
-        elements.menu.element.appendChild(menuItem);
+      if (!layerItem.isConnected) {
+        elements.menu.element.appendChild(layerItem);
       }
     });
   }
 
-  function getOrCreateMenuItem(item) {
-    const existingItem = elements.menu.element.querySelector(`[data-menu-id="${item.id}"]`);
+  function getOrCreateLayerItem(item) {
+    const existingItem = elements.menu.element.querySelector(`[data-layer-id="${item.id}"]`);
     if (existingItem) {
       return existingItem;
     }
 
-    const menuItem = document.createElement('li');
-    menuItem.dataset.menuId = item.id;
-    menuItem.addEventListener('click', () => {
+    const layerItem = document.createElement('li');
+    layerItem.dataset.layerId = item.id;
+    layerItem.addEventListener('click', () => {
       dispatch({
-        type: ACTION_TYPES.MENU_SELECT,
-        menuId: item.id,
+        type: ACTION_TYPES.LAYER_SELECT,
+        layerId: item.id,
       });
     });
-    return menuItem;
+    return layerItem;
   }
 
   function updateBackButton() {
@@ -152,11 +160,52 @@ function createEventListSceneView() {
     backButton.textContent = 'メニューに戻る';
     backButton.addEventListener('click', () => {
       dispatch({
-        type: ACTION_TYPES.MENU_SELECT,
-        menuId: MENU_IDS.TOP,
+        type: ACTION_TYPES.LAYER_SELECT,
+        layerId: MAIN_GAME_LAYER_IDS.MENU,
       });
     });
     elements.back.element.prepend(backButton);
+  }
+
+  function updateMap(locations, currentLocation) {
+    const locationIds = new Set(locations.map(location => location.id));
+
+    Array.from(elements.mapList.element.children).forEach(locationItem => {
+      if (!locationIds.has(locationItem.dataset.locationId)) {
+        locationItem.remove();
+      }
+    });
+
+    locations.forEach(location => {
+      const locationItem = getOrCreateLocationItem(location);
+      const isCurrentLocation = currentLocation.id === location.id;
+      locationItem.textContent = isCurrentLocation
+        ? `${location.name} (現在地)`
+        : location.name;
+      locationItem.disabled = isCurrentLocation;
+
+      if (!locationItem.isConnected) {
+        elements.mapList.element.appendChild(locationItem);
+      }
+    });
+  }
+
+  function getOrCreateLocationItem(location) {
+    const existingItem = elements.mapList.element.querySelector(`[data-location-id="${location.id}"]`);
+    if (existingItem) {
+      return existingItem;
+    }
+
+    const locationItem = document.createElement('button');
+    locationItem.type = 'button';
+    locationItem.dataset.locationId = location.id;
+    locationItem.addEventListener('click', () => {
+      dispatch({
+        type: ACTION_TYPES.LOCATION_SELECT,
+        locationId: location.id,
+      });
+    });
+    return locationItem;
   }
 
   function updateExecutingEvents(events) {
@@ -305,5 +354,5 @@ function formatCompletedEvent(event, statusText) {
 }
 
 export {
-  createEventListSceneView,
+  createMainGameSceneView,
 };
