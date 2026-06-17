@@ -1,4 +1,4 @@
-import { enqueueInput, startGameEngine } from './src/gameEngine/gameEngine.js';
+import { enqueueInput, startGameEngine, updateGameEngine } from './src/gameEngine/gameEngine.js';
 import { createDomGameView } from './src/views/gameView.js';
 import { createMainGameScene } from './src/gameDomain/mainGameScene.js';
 
@@ -15,4 +15,11 @@ function main() {
     initialScene: createMainGameScene(),
     view: gameView,
   });
+
+  requestAnimationFrame(loop);
+}
+
+function loop(now) {
+  updateGameEngine(now);
+  requestAnimationFrame(loop);
 }

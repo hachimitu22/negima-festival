@@ -1,26 +1,34 @@
 let gameEngine = null;
-let gameRunner = null;
 
-function createGameEngine(currentScene) {
+function createGameEngine({ initialScene, view }) {
   return {
-    frame: {
-      beforeTime: null,
-      deltaTime: 0,
-      count: 0,
-      targetFrameTimeMs: 1000 / 60,
-    },
-    currentScene,
+    currentScene: initialScene,
+    frame: createInitialFrame(),
     inputQueue: [],
+    isRunning: false,
+    view,
   };
 }
 
-function initializeGameEngine({ initialScene }) {
-  gameEngine = createGameEngine(initialScene);
+function createInitialFrame() {
+  return {
+    beforeTime: null,
+    deltaTime: 0,
+    count: 0,
+    targetFrameTimeMs: 1000 / 60,
+  };
+}
+
+function initializeGameEngine({ initialScene, view }) {
+  gameEngine = createGameEngine({
+    initialScene,
+    view,
+  });
   return gameEngine;
 }
 
 function getGameEngine() {
-  if (!gameEngine) {
+  if (!gameEngine || !gameEngine.currentScene) {
     throw new Error('Game engine is not initialized.');
   }
 
@@ -33,57 +41,31 @@ function resetGameEngine() {
 }
 
 function startGameEngine({ initialScene, view }) {
-  if (typeof requestAnimationFrame !== 'function') {
-    throw new Error('requestAnimationFrame is not available.');
-  }
-
-  if (gameRunner) {
+  if (gameEngine?.isRunning) {
     stopGameEngine();
   }
 
   initializeGameEngine({
     initialScene,
+    view,
   });
 
   view.init(createGameSnapshot());
-
-  gameRunner = {
-    view,
-    isRunning: true,
-    requestId: null,
-  };
-
-  function runFrame(now) {
-    if (!gameRunner || !gameRunner.isRunning) {
-      return;
-    }
-
-    updateGameEngine(now);
-    view.render(createGameSnapshot());
-    gameRunner.requestId = requestAnimationFrame(runFrame);
-  }
-
-  gameRunner.requestId = requestAnimationFrame(runFrame);
+  gameEngine.isRunning = true;
 }
 
 function stopGameEngine() {
-  if (!gameRunner) {
+  if (!gameEngine) {
     return;
   }
 
-  gameRunner.isRunning = false;
-  if (
-    typeof cancelAnimationFrame === 'function'
-    && gameRunner.requestId !== null
-  ) {
-    cancelAnimationFrame(gameRunner.requestId);
+  gameEngine.isRunning = false;
+
+  if (gameEngine.view && typeof gameEngine.view.destroy === 'function') {
+    gameEngine.view.destroy();
   }
 
-  if (gameRunner.view && typeof gameRunner.view.destroy === 'function') {
-    gameRunner.view.destroy();
-  }
-
-  gameRunner = null;
+  gameEngine.view = null;
 }
 
 function enqueueInput(input) {
@@ -93,6 +75,15 @@ function enqueueInput(input) {
 
 function updateGameEngine(now) {
   const engine = getGameEngine();
+  if (!engine.isRunning) {
+    return;
+  }
+
+  updateScene(engine, now);
+  renderView(engine);
+}
+
+function updateScene(engine, now) {
   updateFrame(engine, now);
   const inputs = drainInputQueue(engine);
 
@@ -103,6 +94,12 @@ function updateGameEngine(now) {
   const context = createUpdateContext(engine.frame);
   context.inputs = inputs;
   engine.currentScene.update(context);
+}
+
+function renderView(engine) {
+  if (engine.view && typeof engine.view.render === 'function') {
+    engine.view.render(createGameSnapshot());
+  }
 }
 
 function createUpdateContext(frame) {
