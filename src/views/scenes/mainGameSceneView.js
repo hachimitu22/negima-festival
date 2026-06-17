@@ -1,20 +1,29 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../actions.js';
 
 function createMainGameSceneView() {
+  let root = null;
   let elements = null;
   let enqueueInput = null;
   let activeLayerId = null;
 
   function mount(rootElement, options) {
     enqueueInput = options.enqueueInput;
+    root = document.createElement('section');
+    root.id = 'main-game-scene';
+
     elements = {
-      menu: createRegion(rootElement.querySelector('#menu')),
-      back: createRegion(rootElement.querySelector('#back')),
-      mapList: createRegion(rootElement.querySelector('#map-list')),
-      eventList: createRegion(rootElement.querySelector('#event-list')),
-      succeededEventList: createRegion(rootElement.querySelector('#succeeded-event-list')),
-      failedEventList: createRegion(rootElement.querySelector('#failed-event-list')),
+      menu: createRegion(createList('menu')),
+      back: createRegion(createDiv('back')),
+      mapList: createRegion(createDiv('map-list')),
+      eventList: createRegion(createList('event-list')),
+      succeededEventList: createRegion(createList('succeeded-event-list')),
+      failedEventList: createRegion(createList('failed-event-list')),
     };
+
+    Object.values(elements).forEach(region => {
+      root.append(region.anchor, region.element);
+    });
+    rootElement.appendChild(root);
   }
 
   function init(snapshot) {
@@ -51,6 +60,8 @@ function createMainGameSceneView() {
       region.element.remove();
       region.anchor.remove();
     });
+    root.remove();
+    root = null;
     elements = null;
     enqueueInput = null;
     activeLayerId = null;
@@ -338,11 +349,22 @@ function createMainGameSceneView() {
 
 function createRegion(element) {
   const anchor = document.createComment(`${element.id}-anchor`);
-  element.before(anchor);
   return {
     anchor,
     element,
   };
+}
+
+function createDiv(id) {
+  const element = document.createElement('div');
+  element.id = id;
+  return element;
+}
+
+function createList(id) {
+  const element = document.createElement('ul');
+  element.id = id;
+  return element;
 }
 
 function formatExecutingEvent(event) {

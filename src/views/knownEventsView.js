@@ -1,8 +1,18 @@
 function createKnownEventsView() {
+  let root = null;
   let element = null;
 
   function mount(rootElement) {
-    element = rootElement.querySelector('#known-event-list');
+    root = document.createElement('section');
+
+    const heading = document.createElement('h2');
+    heading.textContent = '既知情報';
+
+    element = document.createElement('ul');
+    element.id = 'known-event-list';
+
+    root.append(heading, element);
+    rootElement.appendChild(root);
   }
 
   function init(knownEvents) {
@@ -36,6 +46,8 @@ function createKnownEventsView() {
     }
 
     element.replaceChildren();
+    root.remove();
+    root = null;
     element = null;
   }
 

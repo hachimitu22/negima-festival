@@ -1,20 +1,33 @@
 import { INPUT_TYPES, TARGET_PREFIXES } from '../actions.js';
 
 function createStatusView() {
+  let root = null;
   let elements = null;
   let enqueueInput = null;
 
   function mount(rootElement, options) {
     enqueueInput = options.enqueueInput;
+    root = document.createElement('section');
+    root.id = 'status';
+
     elements = {
-      gameTime: rootElement.querySelector('#game-time'),
-      loopCount: rootElement.querySelector('#loop-count'),
-      location: rootElement.querySelector('#location'),
-      magicPower: rootElement.querySelector('#magic-power'),
-      festivalState: rootElement.querySelector('#festival-state'),
-      cassiopeia: rootElement.querySelector('#cassiopeia'),
+      gameTime: createParagraph('game-time'),
+      loopCount: createParagraph('loop-count'),
+      location: createParagraph('location'),
+      magicPower: createParagraph('magic-power'),
+      festivalState: createParagraph('festival-state'),
+      cassiopeia: createButton('cassiopeia', 'カシオペアを使う'),
     };
 
+    root.append(
+      elements.gameTime,
+      elements.loopCount,
+      elements.location,
+      elements.magicPower,
+      elements.festivalState,
+      elements.cassiopeia,
+    );
+    rootElement.appendChild(root);
     elements.cassiopeia.addEventListener('click', handleCassiopeiaClick);
   }
 
@@ -44,6 +57,8 @@ function createStatusView() {
     }
 
     elements.cassiopeia.removeEventListener('click', handleCassiopeiaClick);
+    root.remove();
+    root = null;
     elements = null;
     enqueueInput = null;
   }
@@ -61,6 +76,20 @@ function createStatusView() {
     mount,
     update,
   };
+}
+
+function createParagraph(id) {
+  const paragraph = document.createElement('p');
+  paragraph.id = id;
+  return paragraph;
+}
+
+function createButton(id, textContent) {
+  const button = document.createElement('button');
+  button.id = id;
+  button.type = 'button';
+  button.textContent = textContent;
+  return button;
 }
 
 function formatGameTime(currentHours) {
