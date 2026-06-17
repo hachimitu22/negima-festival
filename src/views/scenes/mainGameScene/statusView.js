@@ -1,4 +1,4 @@
-import { INPUT_TYPES, TARGET_PREFIXES } from '../actions.js';
+import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 
 function createStatusView() {
   let root = null;

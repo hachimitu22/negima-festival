@@ -1,6 +1,6 @@
-import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../actions.js';
-import { createKnownEventsView } from '../knownEventsView.js';
-import { createStatusView } from '../statusView.js';
+import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
+import { createKnownEventsView } from './knownEventsView.js';
+import { createStatusView } from './statusView.js';
 
 function createMainGameSceneView(rootElement, options) {
   const statusView = createStatusView();

@@ -1,5 +1,5 @@
-import { SCENE_IDS } from './actions.js';
-import { createMainGameSceneView } from './views/scenes/mainGameSceneView.js';
+import { SCENE_IDS } from '../gameDomain/actions.js';
+import { createMainGameSceneView } from './scenes/mainGameScene/index.js';
 
 function createDomGameView(rootElement, options) {
   let sceneView = null;

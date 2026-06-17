@@ -1,6 +1,6 @@
-import { enqueueInput, startGameEngine } from './src/gameEngine.js';
-import { createDomGameView } from './src/gameView.js';
-import { createMainGameScene } from './src/mainGameScene.js';
+import { enqueueInput, startGameEngine } from './src/gameEngine/gameEngine.js';
+import { createDomGameView } from './src/views/gameView.js';
+import { createMainGameScene } from './src/gameDomain/mainGameScene.js';
 
 window.addEventListener('load', () => {
   main();
