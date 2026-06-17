@@ -1,4 +1,4 @@
-import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from './actions.js';
+import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
 import { createGameSystem, createGameSystemUpdateContext } from './gameSystem.js';
@@ -123,6 +123,7 @@ class MainGameScene {
   createSnapshot() {
     return {
       ...this.system.createSnapshot(),
+      sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.activeLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,

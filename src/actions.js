@@ -25,9 +25,14 @@ const MAIN_GAME_LAYER_IDS = {
   FAILED_EVENTS: 'failed-events',
 };
 
+const SCENE_IDS = {
+  MAIN_GAME: 'main-game',
+};
+
 export {
   ACTION_TYPES,
   INPUT_TYPES,
   MAIN_GAME_LAYER_IDS,
+  SCENE_IDS,
   TARGET_PREFIXES,
 };

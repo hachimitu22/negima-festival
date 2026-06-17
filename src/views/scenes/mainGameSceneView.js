@@ -1,10 +1,16 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../actions.js';
+import { createKnownEventsView } from '../knownEventsView.js';
+import { createStatusView } from '../statusView.js';
 
-function createMainGameSceneView() {
+function createMainGameSceneView(rootElement, options) {
+  const statusView = createStatusView();
+  const knownEventsView = createKnownEventsView();
   let root = null;
   let elements = null;
   let enqueueInput = null;
   let activeLayerId = null;
+
+  mount(rootElement, options);
 
   function mount(rootElement, options) {
     enqueueInput = options.enqueueInput;
@@ -20,6 +26,8 @@ function createMainGameSceneView() {
       failedEventList: createRegion(createList('failed-event-list')),
     };
 
+    statusView.mount(root, options);
+    knownEventsView.mount(root);
     Object.values(elements).forEach(region => {
       root.append(region.anchor, region.element);
     });
@@ -27,10 +35,18 @@ function createMainGameSceneView() {
   }
 
   function init(snapshot) {
-    update(snapshot);
+    statusView.init(snapshot);
+    knownEventsView.init(snapshot.knownEvents);
+    updateSceneContent(snapshot);
   }
 
   function update(snapshot) {
+    statusView.update(snapshot);
+    knownEventsView.update(snapshot.knownEvents);
+    updateSceneContent(snapshot);
+  }
+
+  function updateSceneContent(snapshot) {
     updateActiveLayer(snapshot.activeLayerId);
 
     if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MENU) {
@@ -60,6 +76,8 @@ function createMainGameSceneView() {
       region.element.remove();
       region.anchor.remove();
     });
+    statusView.destroy();
+    knownEventsView.destroy();
     root.remove();
     root = null;
     elements = null;
@@ -342,7 +360,6 @@ function createMainGameSceneView() {
   return {
     destroy,
     init,
-    mount,
     update,
   };
 }

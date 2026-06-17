@@ -32,7 +32,7 @@ function resetGameEngine() {
   gameEngine = null;
 }
 
-function startGameEngine({ rootElement, initialScene, view }) {
+function startGameEngine({ initialScene, view }) {
   if (typeof requestAnimationFrame !== 'function') {
     throw new Error('requestAnimationFrame is not available.');
   }
@@ -45,11 +45,6 @@ function startGameEngine({ rootElement, initialScene, view }) {
     initialScene,
   });
 
-  view.mount(rootElement, {
-    enqueueInput: input => {
-      enqueueInput(input);
-    },
-  });
   view.init(createGameSnapshot());
 
   gameRunner = {

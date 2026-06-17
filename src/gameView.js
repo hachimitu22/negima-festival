@@ -1,38 +1,56 @@
-import { createKnownEventsView } from './views/knownEventsView.js';
-import { createStatusView } from './views/statusView.js';
+import { SCENE_IDS } from './actions.js';
 import { createMainGameSceneView } from './views/scenes/mainGameSceneView.js';
 
-function createDomGameView() {
-  const statusView = createStatusView();
-  const knownEventsView = createKnownEventsView();
-  const mainGameSceneView = createMainGameSceneView();
-
-  function mount(rootElement, options) {
-    statusView.mount(rootElement, options);
-    knownEventsView.mount(rootElement);
-    mainGameSceneView.mount(rootElement, options);
-  }
+function createDomGameView(rootElement, options) {
+  let sceneView = null;
+  let sceneId = null;
 
   function init(snapshot) {
-    statusView.init(snapshot);
-    knownEventsView.init(snapshot.knownEvents);
-    mainGameSceneView.init(snapshot);
+    const view = getSceneView(snapshot);
+    view.init(snapshot);
   }
 
   function render(snapshot) {
-    statusView.update(snapshot);
-    knownEventsView.update(snapshot.knownEvents);
-    mainGameSceneView.update(snapshot);
+    const view = getSceneView(snapshot);
+    view.update(snapshot);
   }
 
   function destroy() {
-    statusView.destroy();
-    knownEventsView.destroy();
-    mainGameSceneView.destroy();
+    if (!sceneView) {
+      return;
+    }
+
+    sceneView.destroy();
+    sceneView = null;
+    sceneId = null;
+  }
+
+  function getSceneView(snapshot) {
+    if (!snapshot || typeof snapshot.sceneId !== 'string') {
+      throw new Error('Scene snapshot must include sceneId.');
+    }
+
+    if (!sceneView) {
+      sceneView = createSceneView(snapshot.sceneId);
+      sceneId = snapshot.sceneId;
+    }
+
+    if (sceneId !== snapshot.sceneId) {
+      throw new Error(`Scene view switching is not supported: ${sceneId} -> ${snapshot.sceneId}`);
+    }
+
+    return sceneView;
+  }
+
+  function createSceneView(nextSceneId) {
+    if (nextSceneId === SCENE_IDS.MAIN_GAME) {
+      return createMainGameSceneView(rootElement, options);
+    }
+
+    throw new Error(`Unsupported sceneId: ${nextSceneId}`);
   }
 
   return {
-    mount,
     init,
     render,
     destroy,
