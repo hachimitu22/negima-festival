@@ -1,12 +1,12 @@
-import { ACTION_TYPES, MAIN_GAME_LAYER_IDS } from '../../actions.js';
+import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../actions.js';
 
 function createMainGameSceneView() {
   let elements = null;
-  let dispatch = null;
+  let enqueueInput = null;
   let activeLayerId = null;
 
   function mount(rootElement, options) {
-    dispatch = options.dispatch;
+    enqueueInput = options.enqueueInput;
     elements = {
       menu: createRegion(rootElement.querySelector('#menu')),
       back: createRegion(rootElement.querySelector('#back')),
@@ -52,7 +52,7 @@ function createMainGameSceneView() {
       region.anchor.remove();
     });
     elements = null;
-    dispatch = null;
+    enqueueInput = null;
     activeLayerId = null;
   }
 
@@ -137,9 +137,9 @@ function createMainGameSceneView() {
     const layerItem = document.createElement('li');
     layerItem.dataset.layerId = item.id;
     layerItem.addEventListener('click', () => {
-      dispatch({
-        type: ACTION_TYPES.LAYER_SELECT,
-        layerId: item.id,
+      enqueueInput({
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: createTargetId(TARGET_PREFIXES.LAYER, item.id),
       });
     });
     return layerItem;
@@ -159,9 +159,9 @@ function createMainGameSceneView() {
     backButton.type = 'button';
     backButton.textContent = 'メニューに戻る';
     backButton.addEventListener('click', () => {
-      dispatch({
-        type: ACTION_TYPES.LAYER_SELECT,
-        layerId: MAIN_GAME_LAYER_IDS.MENU,
+      enqueueInput({
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: createTargetId(TARGET_PREFIXES.LAYER, MAIN_GAME_LAYER_IDS.MENU),
       });
     });
     elements.back.element.prepend(backButton);
@@ -200,9 +200,9 @@ function createMainGameSceneView() {
     locationItem.type = 'button';
     locationItem.dataset.locationId = location.id;
     locationItem.addEventListener('click', () => {
-      dispatch({
-        type: ACTION_TYPES.LOCATION_SELECT,
-        locationId: location.id,
+      enqueueInput({
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
     return locationItem;
@@ -256,9 +256,9 @@ function createMainGameSceneView() {
       button.type = 'button';
       button.textContent = '成功';
       button.addEventListener('click', () => {
-        dispatch({
-          type: ACTION_TYPES.EVENT_CLICK,
-          eventId: event.id,
+        enqueueInput({
+          type: INPUT_TYPES.TARGET_ACTIVATE,
+          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
         });
       });
       return button;
@@ -273,9 +273,9 @@ function createMainGameSceneView() {
       input.value = event.inputValue ?? '';
       input.placeholder = event.targetInput;
       input.addEventListener('input', () => {
-        dispatch({
-          type: ACTION_TYPES.EVENT_INPUT_CHANGE,
-          eventId: event.id,
+        enqueueInput({
+          type: INPUT_TYPES.TARGET_INPUT_CHANGE,
+          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
           value: input.value,
         });
       });
@@ -285,9 +285,9 @@ function createMainGameSceneView() {
 
       form.addEventListener('submit', submitEvent => {
         submitEvent.preventDefault();
-        dispatch({
-          type: ACTION_TYPES.EVENT_INPUT_SUBMIT,
-          eventId: event.id,
+        enqueueInput({
+          type: INPUT_TYPES.TARGET_SUBMIT,
+          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
         });
       });
 
@@ -351,6 +351,10 @@ function formatExecutingEvent(event) {
 
 function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
+}
+
+function createTargetId(prefix, id) {
+  return `${prefix}:${id}`;
 }
 
 export {

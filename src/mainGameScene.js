@@ -1,6 +1,7 @@
-import { ACTION_TYPES, MAIN_GAME_LAYER_IDS } from './actions.js';
+import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from './actions.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
+import { createGameSystem, createGameSystemUpdateContext } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
 import { getRandomInt, rollChance } from './random.js';
 
@@ -19,7 +20,8 @@ const LAYER_ITEMS = [
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
 
 class MainGameScene {
-  constructor() {
+  constructor(system = createGameSystem()) {
+    this.system = system;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.MENU;
     this.events = [];
     this.succeededEvents = [];
@@ -29,21 +31,87 @@ class MainGameScene {
   }
 
   update(context) {
+    this.system.update(context);
+    const sceneContext = {
+      ...createGameSystemUpdateContext(this.system.state, context),
+      inputs: context.inputs,
+    };
+
+    this.handleInputs(sceneContext.inputs, sceneContext);
+
     this.events.forEach(eventObject => {
-      eventObject.update(context);
+      eventObject.update(sceneContext);
     });
 
     this.moveFinishedEvents();
 
-    const eventObject = this.createEventRandom(context);
+    const eventObject = this.createEventRandom(sceneContext);
     if (eventObject) {
       this.events.push(eventObject);
     }
   }
 
-  handleAction(action) {
-    if (action.type === ACTION_TYPES.LAYER_SELECT) {
-      this.selectLayer(action.layerId);
+  handleInputs(inputs = [], context = {}) {
+    inputs.forEach(input => {
+      this.processInput(input, context);
+    });
+  }
+
+  processInput(input, context = {}) {
+    if (input.type === INPUT_TYPES.TARGET_ACTIVATE) {
+      this.handleTargetActivate(input.targetId, context);
+      return;
+    }
+
+    if (input.type === INPUT_TYPES.TARGET_INPUT_CHANGE) {
+      this.handleEventAction({
+        type: ACTION_TYPES.EVENT_INPUT_CHANGE,
+        eventId: getTargetValue(input.targetId, TARGET_PREFIXES.EVENT),
+        value: input.value,
+      });
+      return;
+    }
+
+    if (input.type === INPUT_TYPES.TARGET_SUBMIT) {
+      this.handleEventAction({
+        type: ACTION_TYPES.EVENT_INPUT_SUBMIT,
+        eventId: getTargetValue(input.targetId, TARGET_PREFIXES.EVENT),
+      });
+    }
+  }
+
+  handleTargetActivate(targetId, context) {
+    const layerId = getTargetValue(targetId, TARGET_PREFIXES.LAYER);
+    if (layerId) {
+      this.selectLayer(layerId);
+      return;
+    }
+
+    const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
+    if (locationId) {
+      this.system.moveCharacterToLocation(locationId);
+      return;
+    }
+
+    const eventId = getTargetValue(targetId, TARGET_PREFIXES.EVENT);
+    if (eventId !== null) {
+      this.handleEventAction({
+        type: ACTION_TYPES.EVENT_CLICK,
+        eventId,
+      });
+      return;
+    }
+
+    if (targetId === TARGET_PREFIXES.CASSIOPEIA) {
+      const result = this.system.useCassiopeia();
+      if (result) {
+        this.rewindTo(result.currentHours);
+      }
+    }
+  }
+
+  handleEventAction(action) {
+    if (action.eventId === null) {
       return;
     }
 
@@ -54,6 +122,7 @@ class MainGameScene {
 
   createSnapshot() {
     return {
+      ...this.system.createSnapshot(),
       activeLayerId: this.activeLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
@@ -114,8 +183,22 @@ class MainGameScene {
   }
 }
 
-function createMainGameScene() {
-  return new MainGameScene();
+function createMainGameScene(system) {
+  return new MainGameScene(system);
+}
+
+function getTargetValue(targetId, prefix) {
+  const expectedPrefix = `${prefix}:`;
+  if (typeof targetId !== 'string' || !targetId.startsWith(expectedPrefix)) {
+    return null;
+  }
+
+  const value = targetId.slice(expectedPrefix.length);
+  if (prefix === TARGET_PREFIXES.EVENT) {
+    return Number(value);
+  }
+
+  return value;
 }
 
 export {

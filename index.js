@@ -1,7 +1,7 @@
-import { createGameController } from './src/gameController.js';
+import { startGameEngine } from './src/gameEngine.js';
 import { createDomGameView } from './src/gameView.js';
+import { createMainGameScene } from './src/mainGameScene.js';
 
-const gameController = createGameController();
 const gameView = createDomGameView();
 
 window.addEventListener('load', () => {
@@ -9,19 +9,9 @@ window.addEventListener('load', () => {
 });
 
 function main() {
-  gameView.mount(document.getElementById('game'), {
-    dispatch: action => {
-      gameController.dispatch(action);
-    },
+  startGameEngine({
+    rootElement: document.getElementById('game'),
+    initialScene: createMainGameScene(),
+    view: gameView,
   });
-  gameView.init(gameController.createSnapshot());
-
-  requestAnimationFrame(mainLoop);
-}
-
-function mainLoop(now) {
-  gameController.update(now);
-  gameView.render(gameController.createSnapshot());
-
-  requestAnimationFrame(mainLoop);
 }

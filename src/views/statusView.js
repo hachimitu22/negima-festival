@@ -1,11 +1,11 @@
-import { ACTION_TYPES } from '../actions.js';
+import { INPUT_TYPES, TARGET_PREFIXES } from '../actions.js';
 
 function createStatusView() {
   let elements = null;
-  let dispatch = null;
+  let enqueueInput = null;
 
   function mount(rootElement, options) {
-    dispatch = options.dispatch;
+    enqueueInput = options.enqueueInput;
     elements = {
       gameTime: rootElement.querySelector('#game-time'),
       loopCount: rootElement.querySelector('#loop-count'),
@@ -45,12 +45,13 @@ function createStatusView() {
 
     elements.cassiopeia.removeEventListener('click', handleCassiopeiaClick);
     elements = null;
-    dispatch = null;
+    enqueueInput = null;
   }
 
   function handleCassiopeiaClick() {
-    dispatch({
-      type: ACTION_TYPES.CASSIOPEIA_USE,
+    enqueueInput({
+      type: INPUT_TYPES.TARGET_ACTIVATE,
+      targetId: TARGET_PREFIXES.CASSIOPEIA,
     });
   }
 
