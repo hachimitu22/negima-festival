@@ -1,5 +1,5 @@
-import { enqueueInput, startGameEngine, updateGameEngine } from './src/gameEngine/gameEngine.js';
-import { createDomGameView } from './src/views/gameView.js';
+import { GameEngine } from './src/gameEngine/gameEngine.js';
+import { DomGameView } from './src/views/gameView.js';
 import { MainGameScene } from './src/gameDomain/mainGameScene.js';
 
 window.addEventListener('load', () => {
@@ -7,19 +7,21 @@ window.addEventListener('load', () => {
 });
 
 function main() {
-  const gameView = createDomGameView(document.getElementById('game'), {
-    enqueueInput,
+  let engine = null;
+  const gameView = new DomGameView(document.getElementById('game'), {
+    enqueueInput: input => engine.enqueueInput(input),
   });
 
-  startGameEngine({
+  engine = new GameEngine({
     initialScene: new MainGameScene(),
     view: gameView,
   });
+  engine.start();
 
-  requestAnimationFrame(loop);
-}
+  function loop(now) {
+    engine.update(now);
+    requestAnimationFrame(loop);
+  }
 
-function loop(now) {
-  updateGameEngine(now);
   requestAnimationFrame(loop);
 }

@@ -1,15 +1,3 @@
-let gameEngine = null;
-
-function createGameEngine({ initialScene, view }) {
-  return {
-    currentScene: initialScene,
-    frame: createInitialFrame(),
-    inputQueue: [],
-    isRunning: false,
-    view,
-  };
-}
-
 function createInitialFrame() {
   return {
     beforeTime: null,
@@ -19,123 +7,97 @@ function createInitialFrame() {
   };
 }
 
-function getGameEngine() {
-  if (!gameEngine || !gameEngine.currentScene) {
-    throw new Error('Game engine is not initialized.');
+class GameEngine {
+  constructor({ initialScene, view }) {
+    this.currentScene = initialScene;
+    this.frame = createInitialFrame();
+    this.inputQueue = [];
+    this.isRunning = false;
+    this.view = view;
   }
 
-  return gameEngine;
-}
-
-function resetGameEngine() {
-  stopGameEngine();
-  gameEngine = null;
-}
-
-function startGameEngine({ initialScene, view }) {
-  if (gameEngine?.isRunning) {
-    stopGameEngine();
+  start() {
+    this.view.init(this.createSnapshot());
+    this.isRunning = true;
   }
 
-  gameEngine = createGameEngine({
-    initialScene,
-    view,
-  });
+  stop() {
+    this.isRunning = false;
 
-  view.init(createGameSnapshot());
-  gameEngine.isRunning = true;
-}
+    if (this.view && typeof this.view.destroy === 'function') {
+      this.view.destroy();
+    }
 
-function stopGameEngine() {
-  if (!gameEngine) {
-    return;
+    this.view = null;
   }
 
-  gameEngine.isRunning = false;
-
-  if (gameEngine.view && typeof gameEngine.view.destroy === 'function') {
-    gameEngine.view.destroy();
+  enqueueInput(input) {
+    this.inputQueue.push(input);
   }
 
-  gameEngine.view = null;
-}
+  update(now) {
+    if (!this.isRunning) {
+      return;
+    }
 
-function enqueueInput(input) {
-  const engine = getGameEngine();
-  engine.inputQueue.push(input);
-}
-
-function updateGameEngine(now) {
-  const engine = getGameEngine();
-  if (!engine.isRunning) {
-    return;
+    this.updateScene(now);
+    this.renderView();
   }
 
-  updateScene(engine, now);
-  renderView(engine);
-}
+  updateScene(now) {
+    this.updateFrame(now);
+    const inputs = this.drainInputQueue();
 
-function updateScene(engine, now) {
-  updateFrame(engine, now);
-  const inputs = drainInputQueue(engine);
+    if (!this.currentScene || typeof this.currentScene.update !== 'function') {
+      return;
+    }
 
-  if (!engine.currentScene || typeof engine.currentScene.update !== 'function') {
-    return;
+    const context = this.createUpdateContext();
+    context.inputs = inputs;
+    this.currentScene.update(context);
   }
 
-  const context = createUpdateContext(engine.frame);
-  context.inputs = inputs;
-  engine.currentScene.update(context);
-}
-
-function renderView(engine) {
-  if (engine.view && typeof engine.view.render === 'function') {
-    engine.view.render(createGameSnapshot());
-  }
-}
-
-function createUpdateContext(frame) {
-  return {
-    deltaFrames: frame.deltaTime / frame.targetFrameTimeMs,
-    deltaTimeMs: frame.deltaTime,
-    frameCount: frame.count,
-    targetFrameTimeMs: frame.targetFrameTimeMs,
-    inputs: [],
-  };
-}
-
-function drainInputQueue(engine) {
-  const inputs = engine.inputQueue;
-  engine.inputQueue = [];
-  return inputs;
-}
-
-function updateFrame(engine, now) {
-  const frame = engine.frame;
-  if (frame.beforeTime === null) {
-    frame.beforeTime = now;
+  renderView() {
+    if (this.view && typeof this.view.render === 'function') {
+      this.view.render(this.createSnapshot());
+    }
   }
 
-  frame.deltaTime = now - frame.beforeTime;
-  frame.beforeTime = now;
-  frame.count += 1;
-}
-
-function createGameSnapshot() {
-  const engine = getGameEngine();
-  if (!engine.currentScene || typeof engine.currentScene.createSnapshot !== 'function') {
-    return {};
+  createUpdateContext() {
+    return {
+      deltaFrames: this.frame.deltaTime / this.frame.targetFrameTimeMs,
+      deltaTimeMs: this.frame.deltaTime,
+      frameCount: this.frame.count,
+      targetFrameTimeMs: this.frame.targetFrameTimeMs,
+      inputs: [],
+    };
   }
 
-  return engine.currentScene.createSnapshot();
+  drainInputQueue() {
+    const inputs = this.inputQueue;
+    this.inputQueue = [];
+    return inputs;
+  }
+
+  updateFrame(now) {
+    if (this.frame.beforeTime === null) {
+      this.frame.beforeTime = now;
+    }
+
+    this.frame.deltaTime = now - this.frame.beforeTime;
+    this.frame.beforeTime = now;
+    this.frame.count += 1;
+  }
+
+  createSnapshot() {
+    if (!this.currentScene || typeof this.currentScene.createSnapshot !== 'function') {
+      return {};
+    }
+
+    return this.currentScene.createSnapshot();
+  }
 }
 
 export {
-  createGameSnapshot,
-  enqueueInput,
-  getGameEngine,
-  resetGameEngine,
-  startGameEngine,
-  stopGameEngine,
-  updateGameEngine,
+  GameEngine,
 };
