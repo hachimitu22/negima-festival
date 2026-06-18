@@ -36,7 +36,6 @@ function createGameSystem() {
   const state = createGameSystemState();
 
   return {
-    state,
     createSnapshot: () => createGameSystemSnapshot(state),
     createUpdateContext: frame => createGameSystemUpdateContext(state, frame),
     moveCharacterToLocation: locationId => moveCharacterToLocation(state, locationId),
@@ -166,10 +165,4 @@ export {
   MAX_MAGIC_POWER,
   TIME_TRAVEL_HOURS,
   createGameSystem,
-  createGameSystemSnapshot,
-  createGameSystemState,
-  createGameSystemUpdateContext,
-  moveCharacterToLocation,
-  updateGameSystem,
-  useCassiopeia,
 };

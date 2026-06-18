@@ -1,6 +1,6 @@
 import { enqueueInput, startGameEngine, updateGameEngine } from './src/gameEngine/gameEngine.js';
 import { createDomGameView } from './src/views/gameView.js';
-import { createMainGameScene } from './src/gameDomain/mainGameScene.js';
+import { MainGameScene } from './src/gameDomain/mainGameScene.js';
 
 window.addEventListener('load', () => {
   main();
@@ -12,7 +12,7 @@ function main() {
   });
 
   startGameEngine({
-    initialScene: createMainGameScene(),
+    initialScene: new MainGameScene(),
     view: gameView,
   });
 

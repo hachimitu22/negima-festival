@@ -1,7 +1,7 @@
 import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
-import { createGameSystem, createGameSystemUpdateContext } from './gameSystem.js';
+import { createGameSystem } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
 import { getRandomInt, rollChance } from './random.js';
 
@@ -33,7 +33,7 @@ class MainGameScene {
   update(context) {
     this.system.update(context);
     const sceneContext = {
-      ...createGameSystemUpdateContext(this.system.state, context),
+      ...this.system.createUpdateContext(context),
       inputs: context.inputs,
     };
 
@@ -184,10 +184,6 @@ class MainGameScene {
   }
 }
 
-function createMainGameScene(system) {
-  return new MainGameScene(system);
-}
-
 function getTargetValue(targetId, prefix) {
   const expectedPrefix = `${prefix}:`;
   if (typeof targetId !== 'string' || !targetId.startsWith(expectedPrefix)) {
@@ -203,5 +199,5 @@ function getTargetValue(targetId, prefix) {
 }
 
 export {
-  createMainGameScene,
+  MainGameScene,
 };

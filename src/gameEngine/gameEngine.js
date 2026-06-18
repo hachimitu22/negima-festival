@@ -19,14 +19,6 @@ function createInitialFrame() {
   };
 }
 
-function initializeGameEngine({ initialScene, view }) {
-  gameEngine = createGameEngine({
-    initialScene,
-    view,
-  });
-  return gameEngine;
-}
-
 function getGameEngine() {
   if (!gameEngine || !gameEngine.currentScene) {
     throw new Error('Game engine is not initialized.');
@@ -45,7 +37,7 @@ function startGameEngine({ initialScene, view }) {
     stopGameEngine();
   }
 
-  initializeGameEngine({
+  gameEngine = createGameEngine({
     initialScene,
     view,
   });
@@ -129,7 +121,7 @@ function updateFrame(engine, now) {
   frame.count += 1;
 }
 
-function createSceneSnapshot() {
+function createGameSnapshot() {
   const engine = getGameEngine();
   if (!engine.currentScene || typeof engine.currentScene.createSnapshot !== 'function') {
     return {};
@@ -138,13 +130,8 @@ function createSceneSnapshot() {
   return engine.currentScene.createSnapshot();
 }
 
-function createGameSnapshot() {
-  return createSceneSnapshot();
-}
-
 export {
   createGameSnapshot,
-  createSceneSnapshot,
   enqueueInput,
   getGameEngine,
   resetGameEngine,
