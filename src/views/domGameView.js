@@ -2,11 +2,15 @@ import { SCENE_IDS } from '../gameDomain/actions.js';
 import { createMainGameSceneView } from './scenes/mainGameScene/index.js';
 
 class DomGameView {
-  constructor(rootElement, options) {
+  constructor(rootElement) {
     this.rootElement = rootElement;
-    this.options = options;
+    this.context = null;
     this.sceneView = null;
     this.sceneId = null;
+  }
+
+  configure(context) {
+    this.context = context;
   }
 
   init(snapshot) {
@@ -48,7 +52,7 @@ class DomGameView {
 
   createSceneView(nextSceneId) {
     if (nextSceneId === SCENE_IDS.MAIN_GAME) {
-      return createMainGameSceneView(this.rootElement, this.options);
+      return createMainGameSceneView(this.rootElement, this.context);
     }
 
     throw new Error(`Unsupported sceneId: ${nextSceneId}`);

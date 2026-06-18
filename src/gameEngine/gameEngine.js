@@ -14,6 +14,12 @@ class GameEngine {
     this.inputQueue = [];
     this.isRunning = false;
     this.view = view;
+
+    if (this.view && typeof this.view.configure === 'function') {
+      this.view.configure({
+        enqueueInput: input => this.enqueueInput(input),
+      });
+    }
   }
 
   start() {

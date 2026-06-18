@@ -7,12 +7,9 @@ window.addEventListener('load', () => {
 });
 
 function main() {
-  let engine = null;
-  const gameView = new DomGameView(document.getElementById('game'), {
-    enqueueInput: input => engine.enqueueInput(input),
-  });
+  const gameView = new DomGameView(document.getElementById('game'));
 
-  engine = new GameEngine({
+  const engine = new GameEngine({
     initialScene: new MainGameScene(),
     view: gameView,
   });
