@@ -1,5 +1,5 @@
 import { GameEngine } from './src/gameEngine/gameEngine.js';
-import { DomGameView } from './src/views/gameView.js';
+import { DomGameView } from './src/views/domGameView.js';
 import { MainGameScene } from './src/gameDomain/mainGameScene.js';
 
 window.addEventListener('load', () => {
