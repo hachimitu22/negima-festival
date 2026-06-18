@@ -1,7 +1,7 @@
 import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
-import { createGameSystem } from './gameSystem.js';
+import { GameSystem } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
 import { getRandomInt, rollChance } from './random.js';
 
@@ -20,7 +20,7 @@ const LAYER_ITEMS = [
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
 
 class MainGameScene {
-  constructor(system = createGameSystem()) {
+  constructor(system = new GameSystem()) {
     this.system = system;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.MENU;
     this.events = [];

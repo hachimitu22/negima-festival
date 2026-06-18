@@ -7,143 +7,135 @@ const MAX_MAGIC_POWER = 100;
 const CASSIOPEIA_MAGIC_POWER_COST = 30;
 const MAGIC_POWER_RECOVERY_PER_GAME_HOUR = 5;
 
-function createGameSystemState() {
-  return {
-    gameTime: {
+class GameSystem {
+  constructor() {
+    this.gameTime = {
       currentHours: 0,
       durationHours: FESTIVAL_DURATION_HOURS,
       hoursPerRealSecond: GAME_HOURS_PER_REAL_SECOND,
       isEnded: false,
-    },
-    loop: {
+    };
+    this.loop = {
       count: 1,
       timeTravelHours: TIME_TRAVEL_HOURS,
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
-    },
-    character: {
+    };
+    this.character = {
       locationId: LOCATION_IDS.SCHOOL_BUILDING,
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
-    },
-    knownEvents: new Set(),
-  };
-}
-
-function createGameSystem() {
-  const state = createGameSystemState();
-
-  return {
-    createSnapshot: () => createGameSystemSnapshot(state),
-    createUpdateContext: frame => createGameSystemUpdateContext(state, frame),
-    moveCharacterToLocation: locationId => moveCharacterToLocation(state, locationId),
-    update: frame => updateGameSystem(state, frame),
-    useCassiopeia: () => useCassiopeia(state),
-  };
-}
-
-function updateGameSystem(systemState, frame) {
-  const elapsedGameHours = updateGameTime(systemState, frame);
-  recoverMagicPower(systemState, elapsedGameHours);
-  return {
-    elapsedGameHours,
-  };
-}
-
-function updateGameTime(systemState, frame) {
-  if (systemState.gameTime.isEnded) {
-    return 0;
+    };
+    this.knownEvents = new Set();
   }
 
-  const deltaTimeMs = getFrameDeltaTimeMs(frame);
-  const elapsedHours = (deltaTimeMs / 1000) * systemState.gameTime.hoursPerRealSecond;
-  const beforeHours = systemState.gameTime.currentHours;
-  systemState.gameTime.currentHours = Math.min(
-    systemState.gameTime.currentHours + elapsedHours,
-    systemState.gameTime.durationHours,
-  );
-  systemState.gameTime.isEnded = systemState.gameTime.currentHours >= systemState.gameTime.durationHours;
-  return systemState.gameTime.currentHours - beforeHours;
-}
-
-function recoverMagicPower(systemState, elapsedGameHours) {
-  if (elapsedGameHours <= 0) {
-    return;
+  update(frame) {
+    const elapsedGameHours = this.updateGameTime(frame);
+    this.recoverMagicPower(elapsedGameHours);
+    return {
+      elapsedGameHours,
+    };
   }
 
-  const magicPower = systemState.character.magicPower;
-  magicPower.current = Math.min(
-    magicPower.max,
-    magicPower.current + (elapsedGameHours * magicPower.recoveryPerGameHour),
-  );
-}
+  updateGameTime(frame) {
+    if (this.gameTime.isEnded) {
+      return 0;
+    }
 
-function useCassiopeia(systemState) {
-  const magicPower = systemState.character.magicPower;
-  if (magicPower.current < systemState.loop.cassiopeiaMagicPowerCost) {
-    return false;
+    const deltaTimeMs = getFrameDeltaTimeMs(frame);
+    const elapsedHours = (deltaTimeMs / 1000) * this.gameTime.hoursPerRealSecond;
+    const beforeHours = this.gameTime.currentHours;
+    this.gameTime.currentHours = Math.min(
+      this.gameTime.currentHours + elapsedHours,
+      this.gameTime.durationHours,
+    );
+    this.gameTime.isEnded = this.gameTime.currentHours >= this.gameTime.durationHours;
+    return this.gameTime.currentHours - beforeHours;
   }
 
-  magicPower.current -= systemState.loop.cassiopeiaMagicPowerCost;
-  systemState.gameTime.currentHours = Math.max(
-    0,
-    systemState.gameTime.currentHours - systemState.loop.timeTravelHours,
-  );
-  systemState.gameTime.isEnded = false;
-  systemState.loop.count += 1;
-  return {
-    currentHours: systemState.gameTime.currentHours,
-  };
-}
+  recoverMagicPower(elapsedGameHours) {
+    if (elapsedGameHours <= 0) {
+      return;
+    }
 
-function moveCharacterToLocation(systemState, locationId) {
-  const location = findLocation(locationId);
-  if (!location) {
-    return false;
+    const magicPower = this.character.magicPower;
+    magicPower.current = Math.min(
+      magicPower.max,
+      magicPower.current + (elapsedGameHours * magicPower.recoveryPerGameHour),
+    );
   }
 
-  systemState.character.locationId = location.id;
-  return true;
-}
+  useCassiopeia() {
+    const magicPower = this.character.magicPower;
+    if (magicPower.current < this.loop.cassiopeiaMagicPowerCost) {
+      return false;
+    }
 
-function createGameSystemSnapshot(systemState) {
-  return {
-    gameTime: {
-      currentHours: systemState.gameTime.currentHours,
-      durationHours: systemState.gameTime.durationHours,
-      isEnded: systemState.gameTime.isEnded,
-    },
-    loop: {
-      count: systemState.loop.count,
-      timeTravelHours: systemState.loop.timeTravelHours,
-      cassiopeiaMagicPowerCost: systemState.loop.cassiopeiaMagicPowerCost,
-    },
-    character: {
-      location: findLocation(systemState.character.locationId),
-      magicPower: {
-        current: systemState.character.magicPower.current,
-        max: systemState.character.magicPower.max,
-        recoveryPerGameHour: systemState.character.magicPower.recoveryPerGameHour,
+    magicPower.current -= this.loop.cassiopeiaMagicPowerCost;
+    this.gameTime.currentHours = Math.max(
+      0,
+      this.gameTime.currentHours - this.loop.timeTravelHours,
+    );
+    this.gameTime.isEnded = false;
+    this.loop.count += 1;
+    return {
+      currentHours: this.gameTime.currentHours,
+    };
+  }
+
+  moveCharacterToLocation(locationId) {
+    const location = findLocation(locationId);
+    if (!location) {
+      return false;
+    }
+
+    this.character.locationId = location.id;
+    return true;
+  }
+
+  createSnapshot() {
+    return {
+      gameTime: {
+        currentHours: this.gameTime.currentHours,
+        durationHours: this.gameTime.durationHours,
+        isEnded: this.gameTime.isEnded,
       },
-    },
-    knownEvents: Array.from(systemState.knownEvents),
-  };
-}
+      loop: {
+        count: this.loop.count,
+        timeTravelHours: this.loop.timeTravelHours,
+        cassiopeiaMagicPowerCost: this.loop.cassiopeiaMagicPowerCost,
+      },
+      character: {
+        location: findLocation(this.character.locationId),
+        magicPower: {
+          current: this.character.magicPower.current,
+          max: this.character.magicPower.max,
+          recoveryPerGameHour: this.character.magicPower.recoveryPerGameHour,
+        },
+      },
+      knownEvents: Array.from(this.knownEvents),
+    };
+  }
 
-function createGameSystemUpdateContext(systemState, frame) {
-  const deltaTimeMs = getFrameDeltaTimeMs(frame);
-  const targetFrameTimeMs = frame.targetFrameTimeMs;
-  return {
-    deltaTimeMs,
-    frameCount: getFrameCount(frame),
-    targetFrameTimeMs,
-    deltaFrames: deltaTimeMs / targetFrameTimeMs,
-    gameTimeHours: systemState.gameTime.currentHours,
-    isFestivalEnded: systemState.gameTime.isEnded,
-    rememberEvent: eventName => rememberEvent(systemState, eventName),
-  };
+  createUpdateContext(frame) {
+    const deltaTimeMs = getFrameDeltaTimeMs(frame);
+    const targetFrameTimeMs = frame.targetFrameTimeMs;
+    return {
+      deltaTimeMs,
+      frameCount: getFrameCount(frame),
+      targetFrameTimeMs,
+      deltaFrames: deltaTimeMs / targetFrameTimeMs,
+      gameTimeHours: this.gameTime.currentHours,
+      isFestivalEnded: this.gameTime.isEnded,
+      rememberEvent: eventName => this.rememberEvent(eventName),
+    };
+  }
+
+  rememberEvent(eventName) {
+    this.knownEvents.add(eventName);
+  }
 }
 
 function getFrameDeltaTimeMs(frame) {
@@ -154,15 +146,11 @@ function getFrameCount(frame) {
   return typeof frame.frameCount === 'number' ? frame.frameCount : frame.count;
 }
 
-function rememberEvent(systemState, eventName) {
-  systemState.knownEvents.add(eventName);
-}
-
 export {
   CASSIOPEIA_MAGIC_POWER_COST,
   FESTIVAL_DURATION_HOURS,
   MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
   MAX_MAGIC_POWER,
   TIME_TRAVEL_HOURS,
-  createGameSystem,
+  GameSystem,
 };
