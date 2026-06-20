@@ -21,7 +21,7 @@ class GameSystem {
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
     };
     this.character = {
-      locationId: LOCATION_IDS.SCHOOL_BUILDING,
+      locationId: LOCATION_IDS.GYM_FRONT_PARKING,
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,

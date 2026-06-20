@@ -197,35 +197,106 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function updateMap(locations, currentLocation) {
+    const groups = groupLocations(locations);
+    const groupNames = new Set(groups.map(group => group.name));
+
+    Array.from(elements.mapList.element.children).forEach(groupElement => {
+      if (!groupNames.has(groupElement.dataset.mapGroup)) {
+        groupElement.remove();
+      }
+    });
+
+    groups.forEach(group => {
+      const groupElement = getOrCreateMapGroup(group.name);
+      const locationList = groupElement.querySelector('[data-map-group-locations]');
+
+      updateMapGroupLocations(locationList, group.locations, currentLocation);
+
+      if (!groupElement.isConnected) {
+        elements.mapList.element.appendChild(groupElement);
+      }
+    });
+  }
+
+  function groupLocations(locations) {
+    const groups = [];
+    const groupsByName = new Map();
+
+    locations.forEach(location => {
+      const groupName = location.group;
+      let group = groupsByName.get(groupName);
+
+      if (!group) {
+        group = {
+          name: groupName,
+          locations: [],
+        };
+        groupsByName.set(groupName, group);
+        groups.push(group);
+      }
+
+      group.locations.push(location);
+    });
+
+    return groups;
+  }
+
+  function getOrCreateMapGroup(groupName) {
+    const existingGroup = Array.from(elements.mapList.element.children)
+      .find(groupElement => groupElement.dataset.mapGroup === groupName);
+
+    if (existingGroup) {
+      return existingGroup;
+    }
+
+    return createMapGroup(groupName);
+  }
+
+  function createMapGroup(groupName) {
+    const groupElement = document.createElement('section');
+    const groupTitle = document.createElement('h3');
+    const locationList = document.createElement('div');
+
+    groupElement.dataset.mapGroup = groupName;
+    groupTitle.textContent = groupName;
+    locationList.dataset.mapGroupLocations = '';
+
+    groupElement.append(groupTitle, locationList);
+    return groupElement;
+  }
+
+  function updateMapGroupLocations(locationList, locations, currentLocation) {
     const locationIds = new Set(locations.map(location => location.id));
 
-    Array.from(elements.mapList.element.children).forEach(locationItem => {
+    Array.from(locationList.children).forEach(locationItem => {
       if (!locationIds.has(locationItem.dataset.locationId)) {
         locationItem.remove();
       }
     });
 
     locations.forEach(location => {
-      const locationItem = getOrCreateLocationItem(location);
-      const isCurrentLocation = currentLocation.id === location.id;
-      locationItem.textContent = isCurrentLocation
-        ? `${location.name} (現在地)`
-        : location.name;
-      locationItem.disabled = isCurrentLocation;
+      const locationItem = getOrCreateLocationItem(locationList, location);
+      updateLocationItem(locationItem, location, currentLocation);
 
       if (!locationItem.isConnected) {
-        elements.mapList.element.appendChild(locationItem);
+        locationList.appendChild(locationItem);
       }
     });
   }
 
-  function getOrCreateLocationItem(location) {
-    const existingItem = elements.mapList.element.querySelector(`[data-location-id="${location.id}"]`);
+  function getOrCreateLocationItem(locationList, location) {
+    const existingItem = locationList.querySelector(`[data-location-id="${location.id}"]`);
+
     if (existingItem) {
       return existingItem;
     }
 
+    return createLocationItem(location);
+  }
+
+  function createLocationItem(location) {
     const locationItem = document.createElement('button');
+
     locationItem.type = 'button';
     locationItem.dataset.locationId = location.id;
     locationItem.addEventListener('click', () => {
@@ -234,7 +305,25 @@ function createMainGameSceneView(rootElement, options) {
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
+
     return locationItem;
+  }
+
+  function updateLocationItem(locationItem, location, currentLocation) {
+    const isCurrentLocation = currentLocation.id === location.id;
+    const isMovable = currentLocation.destinations.includes(location.name);
+    const textContent = isCurrentLocation
+      ? `${location.name} (現在地)`
+      : location.name;
+    const disabled = isCurrentLocation || !isMovable;
+
+    if (locationItem.textContent !== textContent) {
+      locationItem.textContent = textContent;
+    }
+
+    if (locationItem.disabled !== disabled) {
+      locationItem.disabled = disabled;
+    }
   }
 
   function updateExecutingEvents(events) {
