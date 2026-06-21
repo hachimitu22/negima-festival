@@ -1,4 +1,5 @@
 import { LOCATION_IDS, findLocation } from './locations.js';
+import { Student } from './student.js';
 
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
@@ -28,6 +29,39 @@ class GameSystem {
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
     };
+    this.students = [
+      new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
+      new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
+      new Student('朝倉和美'                              ,  3, LOCATION_IDS.CLASSROOM_3A),
+      new Student('綾瀬夕映'                              ,  4, LOCATION_IDS.LIBRARY_ROOM),
+      new Student('和泉亜子'                              ,  5, LOCATION_IDS.HEALTH_ROOM),
+      new Student('大河内アキラ'                          ,  6, LOCATION_IDS.SCHOOL_GROUND),
+      new Student('柿崎美砂'                              ,  7, LOCATION_IDS.GYM_ARENA),
+      new Student('神楽坂明日菜'                          ,  8, LOCATION_IDS.LIBRARY_ROOM_FRONT_CORRIDOR),
+      new Student('春日美空'                              ,  9, LOCATION_IDS.CHURCH_FRONT),
+      new Student('絡繰茶々丸'                            , 10, LOCATION_IDS.FOOD_STREET),
+      new Student('釘宮円'                                , 11, LOCATION_IDS.GYM_ARENA),
+      new Student('古菲'                                  , 12, LOCATION_IDS.CLUB_BUILDING),
+      new Student('近衛木乃香'                            , 13, LOCATION_IDS.LIBRARY_ROOM),
+      new Student('早乙女ハルナ'                          , 14, LOCATION_IDS.LIBRARY_ROOM),
+      new Student('桜咲刹那'                              , 15, LOCATION_IDS.DAVID_PLAZA),
+      new Student('佐々木まき絵'                          , 16, LOCATION_IDS.GYM_ARENA),
+      new Student('椎名桜子'                              , 17, LOCATION_IDS.GYM_ARENA),
+      new Student('龍宮真名'                              , 18, LOCATION_IDS.ROOF),
+      new Student('超鈴音'                                , 19, LOCATION_IDS.GYM_ARENA),
+      new Student('長瀬楓'                                , 20, LOCATION_IDS.CLUB_BUILDING),
+      new Student('那波千鶴'                              , 21, LOCATION_IDS.DAVID_PLAZA),
+      new Student('鳴滝風香'                              , 22, LOCATION_IDS.DAVID_PLAZA),
+      new Student('鳴滝史伽'                              , 23, LOCATION_IDS.DAVID_PLAZA),
+      new Student('葉加瀬聡美'                            , 24, LOCATION_IDS.CLUB_BUILDING),
+      new Student('長谷川千雨'                            , 25, LOCATION_IDS.REST_AREA),
+      new Student('エヴァンジェリン・A・K・マクダウェル'  , 26, LOCATION_IDS.FOOD_STREET),
+      new Student('宮崎のどか'                            , 27, LOCATION_IDS.LIBRARY_ROOM),
+      new Student('村上夏美'                              , 28, LOCATION_IDS.CLASSROOM_3A),
+      new Student('雪広あやか'                            , 29, LOCATION_IDS.FOOD_STREET),
+      new Student('四葉五月'                              , 30, LOCATION_IDS.FOOD_STREET),
+      new Student('ザジ・レイニーデイ'                    , 31, LOCATION_IDS.ROOF),
+    ];
     this.knownEvents = new Set();
   }
 
@@ -115,6 +149,11 @@ class GameSystem {
           recoveryPerGameHour: this.character.magicPower.recoveryPerGameHour,
         },
       },
+      students: this.students.map(student => ({
+        classAndNumber: student.classAndNumber,
+        name: student.name,
+        location: findLocation(student.locationId),
+      })),
       knownEvents: Array.from(this.knownEvents),
     };
   }

@@ -1,0 +1,16 @@
+[data-map-group-locations] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+[data-location-students] {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+[data-location-students] > li {
+  margin-left: 16px;
+}

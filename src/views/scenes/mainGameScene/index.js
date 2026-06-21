@@ -53,7 +53,7 @@ function createMainGameSceneView(rootElement, options) {
       updateLayerMenu(snapshot);
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
       updateBackButton();
-      updateMap(snapshot.mapLocations, snapshot.character.location);
+      updateMap(snapshot.mapLocations, snapshot.character.location, snapshot.students);
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       updateBackButton();
       updateExecutingEvents(snapshot.executingEvents);
@@ -196,9 +196,10 @@ function createMainGameSceneView(rootElement, options) {
     elements.back.element.prepend(backButton);
   }
 
-  function updateMap(locations, currentLocation) {
+  function updateMap(locations, currentLocation, students = []) {
     const groups = groupLocations(locations);
     const groupNames = new Set(groups.map(group => group.name));
+    const studentsByLocationId = groupStudentsByLocationId(students);
 
     Array.from(elements.mapList.element.children).forEach(groupElement => {
       if (!groupNames.has(groupElement.dataset.mapGroup)) {
@@ -210,12 +211,29 @@ function createMainGameSceneView(rootElement, options) {
       const groupElement = getOrCreateMapGroup(group.name);
       const locationList = groupElement.querySelector('[data-map-group-locations]');
 
-      updateMapGroupLocations(locationList, group.locations, currentLocation);
+      updateMapGroupLocations(locationList, group.locations, currentLocation, studentsByLocationId);
 
       if (!groupElement.isConnected) {
         elements.mapList.element.appendChild(groupElement);
       }
     });
+  }
+
+  function groupStudentsByLocationId(students) {
+    const studentsByLocationId = new Map();
+
+    students.forEach(student => {
+      const locationId = student.location?.id;
+      if (!locationId) {
+        return;
+      }
+
+      const locationStudents = studentsByLocationId.get(locationId) ?? [];
+      locationStudents.push(student);
+      studentsByLocationId.set(locationId, locationStudents);
+    });
+
+    return studentsByLocationId;
   }
 
   function groupLocations(locations) {
@@ -265,7 +283,7 @@ function createMainGameSceneView(rootElement, options) {
     return groupElement;
   }
 
-  function updateMapGroupLocations(locationList, locations, currentLocation) {
+  function updateMapGroupLocations(locationList, locations, currentLocation, studentsByLocationId) {
     const locationIds = new Set(locations.map(location => location.id));
 
     Array.from(locationList.children).forEach(locationItem => {
@@ -276,7 +294,12 @@ function createMainGameSceneView(rootElement, options) {
 
     locations.forEach(location => {
       const locationItem = getOrCreateLocationItem(locationList, location);
-      updateLocationItem(locationItem, location, currentLocation);
+      updateLocationItem(
+        locationItem,
+        location,
+        currentLocation,
+        studentsByLocationId.get(location.id) ?? [],
+      );
 
       if (!locationItem.isConnected) {
         locationList.appendChild(locationItem);
@@ -295,35 +318,47 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function createLocationItem(location) {
-    const locationItem = document.createElement('button');
+    const locationItem = document.createElement('div');
+    const locationButton = document.createElement('button');
+    const studentList = document.createElement('menu');
 
-    locationItem.type = 'button';
     locationItem.dataset.locationId = location.id;
-    locationItem.addEventListener('click', () => {
+    locationButton.type = 'button';
+    locationButton.value = location.name;
+    locationButton.dataset.locationButton = '';
+    locationButton.addEventListener('click', () => {
       enqueueInput({
         type: INPUT_TYPES.TARGET_ACTIVATE,
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
+    studentList.dataset.locationStudents = '';
 
+    locationItem.append(locationButton, studentList);
     return locationItem;
   }
 
-  function updateLocationItem(locationItem, location, currentLocation) {
+  function updateLocationItem(locationItem, location, currentLocation, students) {
+    const locationButton = locationItem.querySelector('[data-location-button]');
+    const studentList = locationItem.querySelector('[data-location-students]');
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
-    const textContent = isCurrentLocation
-      ? `${location.name} (現在地)`
-      : location.name;
+    const locationName = isCurrentLocation ? `${location.name} (現在地)` : location.name;
     const disabled = isCurrentLocation || !isMovable;
 
-    if (locationItem.textContent !== textContent) {
-      locationItem.textContent = textContent;
+    if (locationButton.value !== location.name) {
+      locationButton.value = location.name;
     }
 
-    if (locationItem.disabled !== disabled) {
-      locationItem.disabled = disabled;
+    if (locationButton.textContent !== locationName) {
+      locationButton.textContent = locationName;
     }
+
+    if (locationButton.disabled !== disabled) {
+      locationButton.disabled = disabled;
+    }
+
+    updateLocationStudents(studentList, students, isCurrentLocation);
   }
 
   function updateExecutingEvents(events) {
@@ -479,6 +514,52 @@ function formatExecutingEvent(event) {
 
 function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
+}
+
+function updateLocationStudents(studentList, students, isCurrentLocation) {
+  const studentIds = new Set(students.map(student => String(student.classAndNumber)));
+
+  Array.from(studentList.children).forEach(studentItem => {
+    if (!studentIds.has(studentItem.dataset.studentClassAndNumber)) {
+      studentItem.remove();
+    }
+  });
+
+  students.forEach(student => {
+    const studentItem = getOrCreateStudentItem(studentList, student);
+    const studentButton = studentItem.querySelector('[data-student-button]');
+    const disabled = !isCurrentLocation;
+
+    if (studentButton.textContent !== student.name) {
+      studentButton.textContent = student.name;
+    }
+
+    if (studentButton.disabled !== disabled) {
+      studentButton.disabled = disabled;
+    }
+
+    if (!studentItem.isConnected) {
+      studentList.appendChild(studentItem);
+    }
+  });
+}
+
+function getOrCreateStudentItem(studentList, student) {
+  const studentId = String(student.classAndNumber);
+  const existingItem = studentList.querySelector(`[data-student-class-and-number="${studentId}"]`);
+  if (existingItem) {
+    return existingItem;
+  }
+
+  const studentItem = document.createElement('li');
+  const studentButton = document.createElement('button');
+  studentButton.type = 'button';
+  studentButton.textContent = student.name;
+  studentButton.dataset.studentButton = '';
+  studentButton.setAttribute('compact', '');
+  studentItem.dataset.studentClassAndNumber = studentId;
+  studentItem.appendChild(studentButton);
+  return studentItem;
 }
 
 function createTargetId(prefix, id) {
