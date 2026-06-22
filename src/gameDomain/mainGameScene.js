@@ -18,6 +18,10 @@ const LAYER_ITEMS = [
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
+const DEFAULT_CONVERSATION_MESSAGES = [
+  '麻帆良祭、にぎやかですね。',
+  '何かあったらまた声をかけてください。',
+];
 
 class MainGameScene {
   constructor(system = new GameSystem()) {
@@ -28,16 +32,27 @@ class MainGameScene {
     this.failedEvents = [];
     this.lastEventId = 0;
     this.nextEventTimeHours = 1;
+    this.activeConversation = null;
   }
 
   update(context) {
-    this.system.update(context);
-    const sceneContext = {
+    const inputContext = {
       ...this.system.createUpdateContext(context),
       inputs: context.inputs,
     };
+    const wasConversationActive = this.isConversationActive();
 
-    this.handleInputs(sceneContext.inputs, sceneContext);
+    this.handleInputs(inputContext.inputs, inputContext);
+
+    if (wasConversationActive || this.isConversationActive()) {
+      return;
+    }
+
+    this.system.update(context);
+    const sceneContext = {
+      ...this.system.createUpdateContext(context),
+      inputs: inputContext.inputs,
+    };
 
     this.events.forEach(eventObject => {
       eventObject.update(sceneContext);
@@ -58,6 +73,11 @@ class MainGameScene {
   }
 
   processInput(input, context = {}) {
+    if (this.isConversationActive()) {
+      this.handleConversationInput(input);
+      return;
+    }
+
     if (input.type === INPUT_TYPES.TARGET_ACTIVATE) {
       this.handleTargetActivate(input.targetId, context);
       return;
@@ -81,6 +101,12 @@ class MainGameScene {
   }
 
   handleTargetActivate(targetId, context) {
+    const conversationAction = getTargetValue(targetId, TARGET_PREFIXES.CONVERSATION);
+    if (conversationAction) {
+      this.handleConversationAction(conversationAction);
+      return;
+    }
+
     const layerId = getTargetValue(targetId, TARGET_PREFIXES.LAYER);
     if (layerId) {
       this.selectLayer(layerId);
@@ -90,6 +116,12 @@ class MainGameScene {
     const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
     if (locationId) {
       this.system.moveCharacterToLocation(locationId);
+      return;
+    }
+
+    const studentClassAndNumber = getTargetValue(targetId, TARGET_PREFIXES.STUDENT);
+    if (studentClassAndNumber !== null) {
+      this.startConversation(studentClassAndNumber);
       return;
     }
 
@@ -127,6 +159,7 @@ class MainGameScene {
       activeLayerId: this.activeLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
+      activeConversation: this.createActiveConversationSnapshot(),
       executingEvents: this.events.map(eventObject => eventObject.getSnapshot()),
       succeededEvents: this.succeededEvents.map(eventObject => eventObject.getSnapshot()),
       failedEvents: this.failedEvents.map(eventObject => eventObject.getSnapshot()),
@@ -134,7 +167,10 @@ class MainGameScene {
   }
 
   selectLayer(layerId) {
-    if (Object.values(MAIN_GAME_LAYER_IDS).includes(layerId)) {
+    if (
+      layerId !== MAIN_GAME_LAYER_IDS.CONVERSATION
+      && Object.values(MAIN_GAME_LAYER_IDS).includes(layerId)
+    ) {
       this.activeLayerId = layerId;
     }
   }
@@ -158,6 +194,71 @@ class MainGameScene {
   rewindTo(currentHours) {
     this.events = [];
     this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
+  }
+
+  startConversation(classAndNumber) {
+    if (!this.system.canTalkToStudent(classAndNumber)) {
+      return false;
+    }
+
+    const student = this.system.createStudentSnapshotByClassAndNumber(classAndNumber);
+    if (!student) {
+      return false;
+    }
+
+    this.activeConversation = {
+      student,
+      messages: DEFAULT_CONVERSATION_MESSAGES,
+      messageIndex: 0,
+    };
+    this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
+    return true;
+  }
+
+  isConversationActive() {
+    return Boolean(this.activeConversation);
+  }
+
+  handleConversationInput(input) {
+    if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
+      return;
+    }
+
+    const conversationAction = getTargetValue(input.targetId, TARGET_PREFIXES.CONVERSATION);
+    if (conversationAction) {
+      this.handleConversationAction(conversationAction);
+    }
+  }
+
+  handleConversationAction(action) {
+    if (action !== 'next' || !this.activeConversation) {
+      return;
+    }
+
+    const nextMessageIndex = this.activeConversation.messageIndex + 1;
+    if (nextMessageIndex >= this.activeConversation.messages.length) {
+      this.activeConversation = null;
+      this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+      return;
+    }
+
+    this.activeConversation.messageIndex = nextMessageIndex;
+  }
+
+  createActiveConversationSnapshot() {
+    if (!this.activeConversation) {
+      return null;
+    }
+
+    const { student, messages, messageIndex } = this.activeConversation;
+    return {
+      student,
+      speakerName: student.name,
+      messages,
+      messageIndex,
+      message: messages[messageIndex],
+      isLastMessage: messageIndex === messages.length - 1,
+    };
   }
 
   createEventRandom(context) {
@@ -191,7 +292,7 @@ function getTargetValue(targetId, prefix) {
   }
 
   const value = targetId.slice(expectedPrefix.length);
-  if (prefix === TARGET_PREFIXES.EVENT) {
+  if (prefix === TARGET_PREFIXES.EVENT || prefix === TARGET_PREFIXES.STUDENT) {
     return Number(value);
   }
 

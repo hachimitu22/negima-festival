@@ -129,6 +129,28 @@ class GameSystem {
     return true;
   }
 
+  findStudentByClassAndNumber(classAndNumber) {
+    return this.students.find(student => student.classAndNumber === classAndNumber) ?? null;
+  }
+
+  canTalkToStudent(classAndNumber) {
+    const student = this.findStudentByClassAndNumber(classAndNumber);
+    return Boolean(student && student.locationId === this.character.locationId);
+  }
+
+  createStudentSnapshot(student) {
+    return {
+      classAndNumber: student.classAndNumber,
+      name: student.name,
+      location: findLocation(student.locationId),
+    };
+  }
+
+  createStudentSnapshotByClassAndNumber(classAndNumber) {
+    const student = this.findStudentByClassAndNumber(classAndNumber);
+    return student ? this.createStudentSnapshot(student) : null;
+  }
+
   createSnapshot() {
     return {
       gameTime: {
@@ -149,11 +171,7 @@ class GameSystem {
           recoveryPerGameHour: this.character.magicPower.recoveryPerGameHour,
         },
       },
-      students: this.students.map(student => ({
-        classAndNumber: student.classAndNumber,
-        name: student.name,
-        location: findLocation(student.locationId),
-      })),
+      students: this.students.map(student => this.createStudentSnapshot(student)),
       knownEvents: Array.from(this.knownEvents),
     };
   }

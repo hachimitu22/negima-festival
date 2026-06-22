@@ -21,6 +21,7 @@ function createMainGameSceneView(rootElement, options) {
       menu: createRegion(createList('menu')),
       back: createRegion(createDiv('back')),
       mapList: createRegion(createDiv('map-list')),
+      conversation: createRegion(createDiv('conversation')),
       eventList: createRegion(createList('event-list')),
       succeededEventList: createRegion(createList('succeeded-event-list')),
       failedEventList: createRegion(createList('failed-event-list')),
@@ -37,12 +38,14 @@ function createMainGameSceneView(rootElement, options) {
   function init(snapshot) {
     statusView.init(snapshot);
     knownEventsView.init(snapshot.knownEvents);
+    knownEventsView.setHidden(snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION);
     updateSceneContent(snapshot);
   }
 
   function update(snapshot) {
     statusView.update(snapshot);
     knownEventsView.update(snapshot.knownEvents);
+    knownEventsView.setHidden(snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION);
     updateSceneContent(snapshot);
   }
 
@@ -54,6 +57,8 @@ function createMainGameSceneView(rootElement, options) {
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
       updateBackButton();
       updateMap(snapshot.mapLocations, snapshot.character.location, snapshot.students);
+    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
+      updateConversation(snapshot.activeConversation);
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       updateBackButton();
       updateExecutingEvents(snapshot.executingEvents);
@@ -120,6 +125,10 @@ function createMainGameSceneView(rootElement, options) {
 
     if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
       return [elements.back, elements.mapList];
+    }
+
+    if (layerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
+      return [elements.conversation];
     }
 
     if (layerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
@@ -358,7 +367,57 @@ function createMainGameSceneView(rootElement, options) {
       locationButton.disabled = disabled;
     }
 
-    updateLocationStudents(studentList, students, isCurrentLocation);
+    updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput);
+  }
+
+  function updateConversation(conversation) {
+    if (!conversation) {
+      elements.conversation.element.replaceChildren();
+      return;
+    }
+
+    const conversationView = getOrCreateConversationView();
+    conversationView.speaker.textContent = conversation.speakerName;
+    conversationView.message.textContent = conversation.message;
+    conversationView.progress.textContent = `${conversation.messageIndex + 1} / ${conversation.messages.length}`;
+    conversationView.next.textContent = conversation.isLastMessage ? '会話を終える' : '次へ';
+  }
+
+  function getOrCreateConversationView() {
+    let speaker = elements.conversation.element.querySelector('[data-conversation-speaker]');
+    if (speaker) {
+      return {
+        speaker,
+        message: elements.conversation.element.querySelector('[data-conversation-message]'),
+        progress: elements.conversation.element.querySelector('[data-conversation-progress]'),
+        next: elements.conversation.element.querySelector('[data-conversation-next]'),
+      };
+    }
+
+    speaker = document.createElement('h2');
+    const message = document.createElement('p');
+    const progress = document.createElement('p');
+    const next = document.createElement('button');
+
+    speaker.dataset.conversationSpeaker = '';
+    message.dataset.conversationMessage = '';
+    progress.dataset.conversationProgress = '';
+    next.dataset.conversationNext = '';
+    next.type = 'button';
+    next.addEventListener('click', () => {
+      enqueueInput({
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, 'next'),
+      });
+    });
+
+    elements.conversation.element.append(speaker, message, progress, next);
+    return {
+      speaker,
+      message,
+      progress,
+      next,
+    };
   }
 
   function updateExecutingEvents(events) {
@@ -516,7 +575,7 @@ function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
 }
 
-function updateLocationStudents(studentList, students, isCurrentLocation) {
+function updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput) {
   const studentIds = new Set(students.map(student => String(student.classAndNumber)));
 
   Array.from(studentList.children).forEach(studentItem => {
@@ -526,7 +585,7 @@ function updateLocationStudents(studentList, students, isCurrentLocation) {
   });
 
   students.forEach(student => {
-    const studentItem = getOrCreateStudentItem(studentList, student);
+    const studentItem = getOrCreateStudentItem(studentList, student, enqueueInput);
     const studentButton = studentItem.querySelector('[data-student-button]');
     const disabled = !isCurrentLocation;
 
@@ -544,7 +603,7 @@ function updateLocationStudents(studentList, students, isCurrentLocation) {
   });
 }
 
-function getOrCreateStudentItem(studentList, student) {
+function getOrCreateStudentItem(studentList, student, enqueueInput) {
   const studentId = String(student.classAndNumber);
   const existingItem = studentList.querySelector(`[data-student-class-and-number="${studentId}"]`);
   if (existingItem) {
@@ -557,6 +616,12 @@ function getOrCreateStudentItem(studentList, student) {
   studentButton.textContent = student.name;
   studentButton.dataset.studentButton = '';
   studentButton.setAttribute('compact', '');
+  studentButton.addEventListener('click', () => {
+    enqueueInput({
+      type: INPUT_TYPES.TARGET_ACTIVATE,
+      targetId: createTargetId(TARGET_PREFIXES.STUDENT, student.classAndNumber),
+    });
+  });
   studentItem.dataset.studentClassAndNumber = studentId;
   studentItem.appendChild(studentButton);
   return studentItem;

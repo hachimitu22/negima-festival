@@ -12,12 +12,15 @@ const INPUT_TYPES = {
 
 const TARGET_PREFIXES = {
   CASSIOPEIA: 'cassiopeia',
+  CONVERSATION: 'conversation',
   EVENT: 'event',
   LAYER: 'layer',
   LOCATION: 'location',
+  STUDENT: 'student',
 };
 
 const MAIN_GAME_LAYER_IDS = {
+  CONVERSATION: 'conversation',
   MENU: 'menu',
   MAP: 'map',
   EXECUTING_EVENTS: 'executing-events',

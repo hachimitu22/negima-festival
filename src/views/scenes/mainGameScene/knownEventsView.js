@@ -23,6 +23,12 @@ function createKnownEventsView() {
     renderKnownEvents(knownEvents);
   }
 
+  function setHidden(hidden) {
+    if (root) {
+      root.hidden = hidden;
+    }
+  }
+
   function renderKnownEvents(knownEvents) {
     element.replaceChildren();
 
@@ -55,6 +61,7 @@ function createKnownEventsView() {
     destroy,
     init,
     mount,
+    setHidden,
     update,
   };
 }
