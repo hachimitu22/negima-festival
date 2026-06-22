@@ -18,10 +18,54 @@ const LAYER_ITEMS = [
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
-const DEFAULT_CONVERSATION_MESSAGES = [
-  '麻帆良祭、にぎやかですね。',
-  '何かあったらまた声をかけてください。',
-];
+const CONVERSATION_SPEAKERS = {
+  NEGI: 'negi',
+  STUDENT: 'student',
+};
+const COMMON_CONVERSATION_IDS = {
+  GREETING: 'greeting',
+};
+const COMMON_CONVERSATIONS = {
+  [COMMON_CONVERSATION_IDS.GREETING]: [
+    { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '{$生徒名}です。' },
+    { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '先生こんにちは。' },
+    { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'こんにちは。' },
+  ],
+};
+const STUDENT_CONVERSATIONS = {
+  1: COMMON_CONVERSATION_IDS.GREETING,
+  2: COMMON_CONVERSATION_IDS.GREETING,
+  3: COMMON_CONVERSATION_IDS.GREETING,
+  4: COMMON_CONVERSATION_IDS.GREETING,
+  5: COMMON_CONVERSATION_IDS.GREETING,
+  6: COMMON_CONVERSATION_IDS.GREETING,
+  7: COMMON_CONVERSATION_IDS.GREETING,
+  8: COMMON_CONVERSATION_IDS.GREETING,
+  9: COMMON_CONVERSATION_IDS.GREETING,
+  10: COMMON_CONVERSATION_IDS.GREETING,
+  11: COMMON_CONVERSATION_IDS.GREETING,
+  12: COMMON_CONVERSATION_IDS.GREETING,
+  13: COMMON_CONVERSATION_IDS.GREETING,
+  14: COMMON_CONVERSATION_IDS.GREETING,
+  15: COMMON_CONVERSATION_IDS.GREETING,
+  16: COMMON_CONVERSATION_IDS.GREETING,
+  17: COMMON_CONVERSATION_IDS.GREETING,
+  18: COMMON_CONVERSATION_IDS.GREETING,
+  19: COMMON_CONVERSATION_IDS.GREETING,
+  20: COMMON_CONVERSATION_IDS.GREETING,
+  21: COMMON_CONVERSATION_IDS.GREETING,
+  22: COMMON_CONVERSATION_IDS.GREETING,
+  23: COMMON_CONVERSATION_IDS.GREETING,
+  24: COMMON_CONVERSATION_IDS.GREETING,
+  25: COMMON_CONVERSATION_IDS.GREETING,
+  26: COMMON_CONVERSATION_IDS.GREETING,
+  27: COMMON_CONVERSATION_IDS.GREETING,
+  28: COMMON_CONVERSATION_IDS.GREETING,
+  29: COMMON_CONVERSATION_IDS.GREETING,
+  30: COMMON_CONVERSATION_IDS.GREETING,
+  31: COMMON_CONVERSATION_IDS.GREETING,
+  default: COMMON_CONVERSATION_IDS.GREETING,
+};
 
 class MainGameScene {
   constructor(system = new GameSystem()) {
@@ -208,7 +252,7 @@ class MainGameScene {
 
     this.activeConversation = {
       student,
-      messages: DEFAULT_CONVERSATION_MESSAGES,
+      messages: this.getConversationMessages(classAndNumber),
       messageIndex: 0,
     };
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
@@ -245,18 +289,24 @@ class MainGameScene {
     this.activeConversation.messageIndex = nextMessageIndex;
   }
 
+  getConversationMessages(classAndNumber) {
+    const conversationId = STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default;
+    return COMMON_CONVERSATIONS[conversationId] ?? [];
+  }
+
   createActiveConversationSnapshot() {
     if (!this.activeConversation) {
       return null;
     }
 
     const { student, messages, messageIndex } = this.activeConversation;
+    const message = messages[messageIndex];
     return {
       student,
-      speakerName: student.name,
+      speakerName: resolveConversationSpeakerName(message, student),
       messages,
       messageIndex,
-      message: messages[messageIndex],
+      message: formatConversationMessage(message.text, student),
       isLastMessage: messageIndex === messages.length - 1,
     };
   }
@@ -283,6 +333,16 @@ class MainGameScene {
     }
     return new EventGameObject(event);
   }
+}
+
+function resolveConversationSpeakerName(message, student) {
+  return message.speaker === CONVERSATION_SPEAKERS.STUDENT
+    ? student.name
+    : 'ネギ';
+}
+
+function formatConversationMessage(text, student) {
+  return text.replaceAll('{$生徒名}', student.name);
 }
 
 function getTargetValue(targetId, prefix) {
