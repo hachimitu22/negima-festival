@@ -252,7 +252,7 @@ class MainGameScene {
 
     this.activeConversation = {
       student,
-      messages: this.getConversationMessages(classAndNumber),
+      messages: this.createConversationMessages(classAndNumber, student),
       messageIndex: 0,
     };
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
@@ -289,9 +289,13 @@ class MainGameScene {
     this.activeConversation.messageIndex = nextMessageIndex;
   }
 
-  getConversationMessages(classAndNumber) {
+  createConversationMessages(classAndNumber, student) {
     const conversationId = STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default;
-    return COMMON_CONVERSATIONS[conversationId] ?? [];
+    const messages = COMMON_CONVERSATIONS[conversationId] ?? [];
+    return messages.map(message => ({
+      speakerName: resolveConversationSpeakerName(message, student),
+      message: formatConversationMessage(message.text, student),
+    }));
   }
 
   createActiveConversationSnapshot() {
@@ -303,10 +307,10 @@ class MainGameScene {
     const message = messages[messageIndex];
     return {
       student,
-      speakerName: resolveConversationSpeakerName(message, student),
+      speakerName: message.speakerName,
       messages,
       messageIndex,
-      message: formatConversationMessage(message.text, student),
+      message: message.message,
       isLastMessage: messageIndex === messages.length - 1,
     };
   }
