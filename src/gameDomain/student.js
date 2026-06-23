@@ -7,6 +7,7 @@ class Student extends GameObject {
     this.classAndNumber = classAndNumber;
     this.locationId = locationId;
   }
+
   update(context) {
   }
 }

@@ -1,3 +1,4 @@
+import { Character } from './character.js';
 import { LOCATION_IDS, findLocation } from './locations.js';
 import { Student } from './student.js';
 
@@ -21,14 +22,13 @@ class GameSystem {
       timeTravelHours: TIME_TRAVEL_HOURS,
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
     };
-    this.character = {
-      locationId: LOCATION_IDS.GYM_FRONT_PARKING,
+    this.character = new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
-    };
+    });
     this.students = [
       new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
       new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
@@ -67,7 +67,16 @@ class GameSystem {
 
   update(frame) {
     const elapsedGameHours = this.updateGameTime(frame);
-    this.recoverMagicPower(elapsedGameHours);
+    const context = {
+      ...this.createUpdateContext(frame),
+      elapsedGameHours,
+    };
+
+    this.character.update(context);
+    this.students.forEach(student => {
+      student.update(context);
+    });
+
     return {
       elapsedGameHours,
     };
@@ -87,18 +96,6 @@ class GameSystem {
     );
     this.gameTime.isEnded = this.gameTime.currentHours >= this.gameTime.durationHours;
     return this.gameTime.currentHours - beforeHours;
-  }
-
-  recoverMagicPower(elapsedGameHours) {
-    if (elapsedGameHours <= 0) {
-      return;
-    }
-
-    const magicPower = this.character.magicPower;
-    magicPower.current = Math.min(
-      magicPower.max,
-      magicPower.current + (elapsedGameHours * magicPower.recoveryPerGameHour),
-    );
   }
 
   useCassiopeia() {
@@ -125,7 +122,7 @@ class GameSystem {
       return false;
     }
 
-    this.character.locationId = location.id;
+    this.character.moveToLocation(location.id);
     return true;
   }
 

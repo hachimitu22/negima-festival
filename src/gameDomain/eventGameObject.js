@@ -1,8 +1,10 @@
 import { ACTION_TYPES } from './actions.js';
 import { GAME_EVENT_STATE } from './gameEvent.js';
+import { GameObject } from '../gameEngine/gameObject.js';
 
-class EventGameObject {
+class EventGameObject extends GameObject {
   constructor(event) {
+    super();
     this.event = event;
     this.inputValue = '';
   }
