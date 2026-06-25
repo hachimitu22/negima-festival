@@ -1,62 +1,65 @@
+import { getRandomInt } from './random.js';
+
 const CONVERSATION_SPEAKERS = {
   NEGI: 'negi',
   STUDENT: 'student',
 };
 
 const COMMON_CONVERSATION_IDS = {
+  FAREWELL: 'farewell',
   GREETING: 'greeting',
+  QUESTION: 'question',
 };
 
 const COMMON_CONVERSATIONS = {
+  [COMMON_CONVERSATION_IDS.FAREWELL]: [
+    { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '先生さようなら。' },
+    { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'さようなら。' },
+  ],
   [COMMON_CONVERSATION_IDS.GREETING]: [
     { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '{$生徒名}です。' },
     { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '先生こんにちは。' },
     { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'こんにちは。' },
   ],
+  [COMMON_CONVERSATION_IDS.QUESTION]: [
+    { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '授業での質問です。' },
+    { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'ここはこうすれば良いですよ。' },
+    { speaker: CONVERSATION_SPEAKERS.STUDENT, text: 'ありがとうございます。' },
+    { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'いえいえ、どういたしまして。' },
+  ],
 };
 
+const DEFAULT_STUDENT_CONVERSATIONS = [
+  COMMON_CONVERSATION_IDS.GREETING,
+  COMMON_CONVERSATION_IDS.FAREWELL,
+  COMMON_CONVERSATION_IDS.QUESTION,
+];
+
 const STUDENT_CONVERSATIONS = {
-  1: COMMON_CONVERSATION_IDS.GREETING,
-  2: COMMON_CONVERSATION_IDS.GREETING,
-  3: COMMON_CONVERSATION_IDS.GREETING,
-  4: COMMON_CONVERSATION_IDS.GREETING,
-  5: COMMON_CONVERSATION_IDS.GREETING,
-  6: COMMON_CONVERSATION_IDS.GREETING,
-  7: COMMON_CONVERSATION_IDS.GREETING,
-  8: COMMON_CONVERSATION_IDS.GREETING,
-  9: COMMON_CONVERSATION_IDS.GREETING,
-  10: COMMON_CONVERSATION_IDS.GREETING,
-  11: COMMON_CONVERSATION_IDS.GREETING,
-  12: COMMON_CONVERSATION_IDS.GREETING,
-  13: COMMON_CONVERSATION_IDS.GREETING,
-  14: COMMON_CONVERSATION_IDS.GREETING,
-  15: COMMON_CONVERSATION_IDS.GREETING,
-  16: COMMON_CONVERSATION_IDS.GREETING,
-  17: COMMON_CONVERSATION_IDS.GREETING,
-  18: COMMON_CONVERSATION_IDS.GREETING,
-  19: COMMON_CONVERSATION_IDS.GREETING,
-  20: COMMON_CONVERSATION_IDS.GREETING,
-  21: COMMON_CONVERSATION_IDS.GREETING,
-  22: COMMON_CONVERSATION_IDS.GREETING,
-  23: COMMON_CONVERSATION_IDS.GREETING,
-  24: COMMON_CONVERSATION_IDS.GREETING,
-  25: COMMON_CONVERSATION_IDS.GREETING,
-  26: COMMON_CONVERSATION_IDS.GREETING,
-  27: COMMON_CONVERSATION_IDS.GREETING,
-  28: COMMON_CONVERSATION_IDS.GREETING,
-  29: COMMON_CONVERSATION_IDS.GREETING,
-  30: COMMON_CONVERSATION_IDS.GREETING,
-  31: COMMON_CONVERSATION_IDS.GREETING,
-  default: COMMON_CONVERSATION_IDS.GREETING,
+  default: DEFAULT_STUDENT_CONVERSATIONS,
 };
 
 function createConversationMessages(classAndNumber, student) {
-  const conversationId = STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default;
+  const conversationId = selectConversationId(
+    STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default,
+  );
   const messages = COMMON_CONVERSATIONS[conversationId] ?? [];
   return messages.map(message => ({
     speakerName: resolveConversationSpeakerName(message, student),
     message: formatConversationMessage(message.text, student),
   }));
+}
+
+function selectConversationId(conversationIds) {
+  if (!Array.isArray(conversationIds)) {
+    return conversationIds;
+  }
+
+  if (conversationIds.length === 0) {
+    return null;
+  }
+
+  return conversationIds[getRandomInt(0, conversationIds.length - 1)];
 }
 
 function resolveConversationSpeakerName(message, student) {
