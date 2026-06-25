@@ -111,6 +111,9 @@ class GameSystem {
     );
     this.gameTime.isEnded = false;
     this.loop.count += 1;
+    this.students.forEach(student => {
+      student.resetNextMoveTime(this.gameTime.currentHours);
+    });
     return {
       currentHours: this.gameTime.currentHours,
     };

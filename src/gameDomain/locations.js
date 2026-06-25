@@ -60,9 +60,14 @@ function findLocation(locationId) {
   return LOCATIONS.find(location => location.id === locationId) ?? null;
 }
 
+function findLocationByName(locationName) {
+  return LOCATIONS.find(location => location.name === locationName) ?? null;
+}
+
 export {
   LOCATION_IDS,
   LOCATION_GROUPS,
   LOCATIONS,
   findLocation,
+  findLocationByName,
 };
