@@ -34,7 +34,7 @@ class GameSystem {
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
     });
-    this.students = [
+    this.persons = [
       new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
       new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
       new Student('朝倉和美'                              ,  3, LOCATION_IDS.CLASSROOM_3A),
@@ -66,8 +66,6 @@ class GameSystem {
       new Student('雪広あやか'                            , 29, LOCATION_IDS.FOOD_STREET),
       new Student('四葉五月'                              , 30, LOCATION_IDS.FOOD_STREET),
       new Student('ザジ・レイニーデイ'                    , 31, LOCATION_IDS.ROOF),
-    ];
-    this.teachers = [
       new Teacher(
         TEACHER_IDS.TAKAHATA,
         '高畑・T・タカミチ',
@@ -96,11 +94,8 @@ class GameSystem {
     };
 
     this.character.update(context);
-    this.students.forEach(student => {
-      student.update(context);
-    });
-    this.teachers.forEach(teacher => {
-      teacher.update(context);
+    this.persons.forEach(person => {
+      person.update(context);
     });
 
     return {
@@ -137,11 +132,8 @@ class GameSystem {
     );
     this.gameTime.isEnded = false;
     this.loop.count += 1;
-    this.students.forEach(student => {
-      student.resetNextMoveTime(this.gameTime.currentHours);
-    });
-    this.teachers.forEach(teacher => {
-      teacher.resetNextMoveTime(this.gameTime.currentHours);
+    this.persons.forEach(person => {
+      person.resetNextMoveTime(this.gameTime.currentHours);
     });
     return {
       currentHours: this.gameTime.currentHours,
@@ -159,7 +151,10 @@ class GameSystem {
   }
 
   findStudentByClassAndNumber(classAndNumber) {
-    return this.students.find(student => student.classAndNumber === classAndNumber) ?? null;
+    return this.persons.find(person => (
+      person instanceof Student
+      && person.classAndNumber === classAndNumber
+    )) ?? null;
   }
 
   increaseStudentAffection(classAndNumber, amount) {
@@ -173,8 +168,7 @@ class GameSystem {
   }
 
   findMapPersonById(mapPersonId) {
-    return [...this.students, ...this.teachers]
-      .find(mapPerson => mapPerson.id === mapPersonId) ?? null;
+    return this.persons.find(mapPerson => mapPerson.id === mapPersonId) ?? null;
   }
 
   canTalkToMapPerson(mapPersonId) {
@@ -200,14 +194,21 @@ class GameSystem {
     };
   }
 
-  createMapPersonSnapshotById(mapPersonId) {
-    const student = this.students.find(mapPerson => mapPerson.id === mapPersonId);
-    if (student) {
-      return this.createStudentSnapshot(student);
+  createMapPersonSnapshot(mapPerson) {
+    if (mapPerson instanceof Student) {
+      return this.createStudentSnapshot(mapPerson);
     }
 
-    const teacher = this.teachers.find(mapPerson => mapPerson.id === mapPersonId);
-    return teacher ? this.createTeacherSnapshot(teacher) : null;
+    if (mapPerson instanceof Teacher) {
+      return this.createTeacherSnapshot(mapPerson);
+    }
+
+    return null;
+  }
+
+  createMapPersonSnapshotById(mapPersonId) {
+    const mapPerson = this.findMapPersonById(mapPersonId);
+    return mapPerson ? this.createMapPersonSnapshot(mapPerson) : null;
   }
 
   createSnapshot() {
@@ -230,8 +231,9 @@ class GameSystem {
           recoveryPerGameHour: this.character.magicPower.recoveryPerGameHour,
         },
       },
-      students: this.students.map(student => this.createStudentSnapshot(student)),
-      teachers: this.teachers.map(teacher => this.createTeacherSnapshot(teacher)),
+      persons: this.persons
+        .map(person => this.createMapPersonSnapshot(person))
+        .filter(snapShot => snapShot !== null),
       knownEvents: Array.from(this.knownEvents),
     };
   }

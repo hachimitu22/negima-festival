@@ -122,15 +122,9 @@ class MainGameScene {
       return;
     }
 
-    const studentId = getTargetValue(targetId, TARGET_PREFIXES.STUDENT);
-    if (studentId !== null) {
-      this.startConversation(studentId);
-      return;
-    }
-
-    const teacherId = getTargetValue(targetId, TARGET_PREFIXES.TEACHER);
-    if (teacherId !== null) {
-      this.startConversation(teacherId);
+    const personId = getTargetValue(targetId, TARGET_PREFIXES.PERSON);
+    if (personId !== null) {
+      this.startConversation(personId);
       return;
     }
 

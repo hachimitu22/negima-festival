@@ -59,8 +59,7 @@ function createMainGameSceneView(rootElement, options) {
       updateMap(
         snapshot.mapLocations,
         snapshot.character.location,
-        snapshot.students,
-        snapshot.teachers,
+        snapshot.persons,
       );
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
       updateConversation(snapshot.activeConversation);
@@ -210,11 +209,10 @@ function createMainGameSceneView(rootElement, options) {
     elements.back.element.prepend(backButton);
   }
 
-  function updateMap(locations, currentLocation, students = [], teachers = []) {
+  function updateMap(locations, currentLocation, persons = []) {
     const groups = groupLocations(locations);
     const groupNames = new Set(groups.map(group => group.name));
-    const studentsByLocationId = groupPeopleByLocationId(students);
-    const teachersByLocationId = groupPeopleByLocationId(teachers);
+    const personsByLocationId = groupPeopleByLocationId(persons);
 
     Array.from(elements.mapList.element.children).forEach(groupElement => {
       if (!groupNames.has(groupElement.dataset.mapGroup)) {
@@ -230,8 +228,7 @@ function createMainGameSceneView(rootElement, options) {
         locationList,
         group.locations,
         currentLocation,
-        studentsByLocationId,
-        teachersByLocationId,
+        personsByLocationId,
       );
 
       if (!groupElement.isConnected) {
@@ -308,8 +305,7 @@ function createMainGameSceneView(rootElement, options) {
     locationList,
     locations,
     currentLocation,
-    studentsByLocationId,
-    teachersByLocationId,
+    personsByLocationId,
   ) {
     const locationIds = new Set(locations.map(location => location.id));
 
@@ -325,8 +321,7 @@ function createMainGameSceneView(rootElement, options) {
         locationItem,
         location,
         currentLocation,
-        studentsByLocationId.get(location.id) ?? [],
-        teachersByLocationId.get(location.id) ?? [],
+        personsByLocationId.get(location.id) ?? [],
       );
 
       if (!locationItem.isConnected) {
@@ -348,8 +343,7 @@ function createMainGameSceneView(rootElement, options) {
   function createLocationItem(location) {
     const locationItem = document.createElement('div');
     const locationButton = document.createElement('button');
-    const studentList = document.createElement('menu');
-    const teacherList = document.createElement('menu');
+    const personList = document.createElement('menu');
 
     locationItem.dataset.locationId = location.id;
     locationButton.type = 'button';
@@ -361,17 +355,15 @@ function createMainGameSceneView(rootElement, options) {
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
-    studentList.dataset.locationStudents = '';
-    teacherList.dataset.locationTeachers = '';
+    personList.dataset.locationPersons = '';
 
-    locationItem.append(locationButton, studentList, teacherList);
+    locationItem.append(locationButton, personList);
     return locationItem;
   }
 
-  function updateLocationItem(locationItem, location, currentLocation, students, teachers) {
+  function updateLocationItem(locationItem, location, currentLocation, persons) {
     const locationButton = locationItem.querySelector('[data-location-button]');
-    const studentList = locationItem.querySelector('[data-location-students]');
-    const teacherList = locationItem.querySelector('[data-location-teachers]');
+    const personList = locationItem.querySelector('[data-location-persons]');
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
     const locationName = isCurrentLocation ? `${location.name} (現在地)` : location.name;
@@ -389,8 +381,7 @@ function createMainGameSceneView(rootElement, options) {
       locationButton.disabled = disabled;
     }
 
-    updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput);
-    updateLocationTeachers(teacherList, teachers, isCurrentLocation, enqueueInput);
+    updateLocationPersons(personList, persons, isCurrentLocation, enqueueInput);
   }
 
   function updateConversation(conversation) {
@@ -646,114 +637,68 @@ function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
 }
 
-function updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput) {
-  const studentIds = new Set(students.map(student => student.id));
+function updateLocationPersons(personList, persons, isCurrentLocation, enqueueInput) {
+  const personIds = new Set(persons.map(person => person.id));
 
-  Array.from(studentList.children).forEach(studentItem => {
-    if (!studentIds.has(studentItem.dataset.studentId)) {
-      studentItem.remove();
+  Array.from(personList.children).forEach(personItem => {
+    if (!personIds.has(personItem.dataset.personId)) {
+      personItem.remove();
     }
   });
 
-  students.forEach(student => {
-    const studentItem = getOrCreateStudentItem(studentList, student, enqueueInput);
-    const studentButton = studentItem.querySelector('[data-student-button]');
-    const studentAffection = studentItem.querySelector('[data-student-affection]');
-    const affectionText = `${student.affection}`;
+  persons.forEach(person => {
+    const personItem = getOrCreatePersonItem(personList, person, enqueueInput);
+    const personButton = personItem.querySelector('[data-person-button]');
+    const personAffection = personItem.querySelector('[data-person-affection]');
+    const hasAffection = typeof person.affection === 'number';
+    const affectionText = hasAffection ? `${person.affection}` : '';
     const disabled = !isCurrentLocation;
 
-    if (studentButton.textContent !== student.name) {
-      studentButton.textContent = student.name;
+    if (personButton.textContent !== person.name) {
+      personButton.textContent = person.name;
     }
 
-    if (studentAffection.textContent !== affectionText) {
-      studentAffection.textContent = affectionText;
+    if (personButton.disabled !== disabled) {
+      personButton.disabled = disabled;
     }
 
-    if (studentButton.disabled !== disabled) {
-      studentButton.disabled = disabled;
+    if (personAffection.textContent !== affectionText) {
+      personAffection.textContent = affectionText;
     }
 
-    if (!studentItem.isConnected) {
-      studentList.appendChild(studentItem);
+    if (personAffection.hidden !== !hasAffection) {
+      personAffection.hidden = !hasAffection;
+    }
+
+    if (!personItem.isConnected) {
+      personList.appendChild(personItem);
     }
   });
 }
 
-function getOrCreateStudentItem(studentList, student, enqueueInput) {
-  const existingItem = studentList.querySelector(`[data-student-id="${student.id}"]`);
+function getOrCreatePersonItem(personList, person, enqueueInput) {
+  const existingItem = personList.querySelector(`[data-person-id="${person.id}"]`);
   if (existingItem) {
     return existingItem;
   }
 
-  const studentItem = document.createElement('li');
-  const studentButton = document.createElement('button');
-  const studentAffection = document.createElement('span');
-  studentButton.type = 'button';
-  studentButton.textContent = student.name;
-  studentButton.dataset.studentButton = '';
-  studentButton.setAttribute('compact', '');
-  studentButton.addEventListener('click', () => {
+  const personItem = document.createElement('li');
+  const personButton = document.createElement('button');
+  const personAffection = document.createElement('span');
+  personButton.type = 'button';
+  personButton.textContent = person.name;
+  personButton.dataset.personButton = '';
+  personButton.setAttribute('compact', '');
+  personButton.addEventListener('click', () => {
     enqueueInput({
       type: INPUT_TYPES.TARGET_ACTIVATE,
-      targetId: createTargetId(TARGET_PREFIXES.STUDENT, student.id),
+      targetId: createTargetId(TARGET_PREFIXES.PERSON, person.id),
     });
   });
-  studentAffection.textContent = `好感度: ${student.affection}`;
-  studentAffection.dataset.studentAffection = '';
-  studentItem.dataset.studentId = student.id;
-  studentItem.append(studentButton, studentAffection);
-  return studentItem;
-}
-
-function updateLocationTeachers(teacherList, teachers, isCurrentLocation, enqueueInput) {
-  const teacherIds = new Set(teachers.map(teacher => teacher.id));
-
-  Array.from(teacherList.children).forEach(teacherItem => {
-    if (!teacherIds.has(teacherItem.dataset.teacherId)) {
-      teacherItem.remove();
-    }
-  });
-
-  teachers.forEach(teacher => {
-    const teacherItem = getOrCreateTeacherItem(teacherList, teacher, enqueueInput);
-    const teacherButton = teacherItem.querySelector('[data-teacher-button]');
-
-    if (teacherButton.textContent !== teacher.name) {
-      teacherButton.textContent = teacher.name;
-    }
-
-    if (teacherButton.disabled !== !isCurrentLocation) {
-      teacherButton.disabled = !isCurrentLocation;
-    }
-
-    if (!teacherItem.isConnected) {
-      teacherList.appendChild(teacherItem);
-    }
-  });
-}
-
-function getOrCreateTeacherItem(teacherList, teacher, enqueueInput) {
-  const existingItem = teacherList.querySelector(`[data-teacher-id="${teacher.id}"]`);
-  if (existingItem) {
-    return existingItem;
-  }
-
-  const teacherItem = document.createElement('li');
-  const teacherButton = document.createElement('button');
-  teacherButton.type = 'button';
-  teacherButton.textContent = teacher.name;
-  teacherButton.dataset.teacherButton = '';
-  teacherButton.setAttribute('compact', '');
-  teacherButton.addEventListener('click', () => {
-    enqueueInput({
-      type: INPUT_TYPES.TARGET_ACTIVATE,
-      targetId: createTargetId(TARGET_PREFIXES.TEACHER, teacher.id),
-    });
-  });
-  teacherItem.dataset.teacherId = teacher.id;
-  teacherItem.appendChild(teacherButton);
-  return teacherItem;
+  personAffection.dataset.personAffection = '';
+  personItem.dataset.personId = person.id;
+  personItem.append(personButton, personAffection);
+  return personItem;
 }
 
 function createTargetId(prefix, id) {
