@@ -1,9 +1,8 @@
 import { getRandomInt } from './random.js';
 
 const CONVERSATION_SPEAKERS = {
+  MAP_PERSON: 'mapPerson',
   NEGI: 'negi',
-  STUDENT: 'student',
-  TEACHER: 'teacher',
 };
 
 const COMMON_CONVERSATION_IDS = {
@@ -18,21 +17,21 @@ const COMMON_CONVERSATION_IDS = {
 const COMMON_CONVERSATIONS = {
   [COMMON_CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU]: {
     messages: [
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: 'ネギ！あんたどこ行ってたのよ！' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: 'ネギ！あんたどこ行ってたのよ！' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: '明日菜さん。職員会議でした。' },
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: 'そうだったの、それなら良かったわ。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: 'そうだったの、それなら良かったわ。' },
     ],
   },
   [COMMON_CONVERSATION_IDS.FAREWELL]: {
     messages: [
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '先生さようなら。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: '先生さようなら。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'さようなら。' },
     ],
   },
   [COMMON_CONVERSATION_IDS.FESTIVAL_PLANS]: {
     messages: [
       {
-        speaker: CONVERSATION_SPEAKERS.STUDENT,
+        speaker: CONVERSATION_SPEAKERS.MAP_PERSON,
         text: '先生、麻帆良祭ではどこを見て回るんですか？',
       },
     ],
@@ -44,7 +43,7 @@ const COMMON_CONVERSATIONS = {
           text: '武道会を見に行きます。',
           messages: [
             {
-              speaker: CONVERSATION_SPEAKERS.STUDENT,
+              speaker: CONVERSATION_SPEAKERS.MAP_PERSON,
               text: '武道会ですか。私も応援に行きます！',
             },
             {
@@ -58,7 +57,7 @@ const COMMON_CONVERSATIONS = {
           text: 'クラスの出し物を見に行きます。',
           messages: [
             {
-              speaker: CONVERSATION_SPEAKERS.STUDENT,
+              speaker: CONVERSATION_SPEAKERS.MAP_PERSON,
               text: 'それなら、ぜひ私たちのクラスにも来てください！',
             },
             {
@@ -72,23 +71,23 @@ const COMMON_CONVERSATIONS = {
   },
   [COMMON_CONVERSATION_IDS.GREETING]: {
     messages: [
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '{$生徒名}です。' },
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '先生こんにちは。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: '{$名前}です。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: '先生こんにちは。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'こんにちは。' },
     ],
   },
   [COMMON_CONVERSATION_IDS.QUESTION]: {
     messages: [
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: '授業での質問です。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: '授業での質問です。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'ここはこうすれば良いですよ。' },
-      { speaker: CONVERSATION_SPEAKERS.STUDENT, text: 'ありがとうございます。' },
+      { speaker: CONVERSATION_SPEAKERS.MAP_PERSON, text: 'ありがとうございます。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'いえいえ、どういたしまして。' },
     ],
   },
   [COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN]: {
     messages: [
       {
-        speaker: CONVERSATION_SPEAKERS.TEACHER,
+        speaker: CONVERSATION_SPEAKERS.MAP_PERSON,
         text: 'ネギ先生こんにちは、調子はどう？',
       },
       {
@@ -106,24 +105,24 @@ const DEFAULT_STUDENT_CONVERSATIONS = [
   COMMON_CONVERSATION_IDS.FESTIVAL_PLANS,
 ];
 
-const STUDENT_CONVERSATIONS = {
-  8: [
-    ...DEFAULT_STUDENT_CONVERSATIONS,
-    COMMON_CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU,
-  ],
-  default: DEFAULT_STUDENT_CONVERSATIONS,
+const MAP_PERSON_CONVERSATIONS = {
+  student: {
+    'student-08': [
+      ...DEFAULT_STUDENT_CONVERSATIONS,
+      COMMON_CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU,
+    ],
+    default: DEFAULT_STUDENT_CONVERSATIONS,
+  },
+  teacher: {
+    default: [
+      COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN,
+    ],
+  },
 };
 
-const TEACHER_CONVERSATIONS = {
-  default: [
-    COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN,
-  ],
-};
-
-function createConversation(classAndNumber, student) {
-  const conversationId = selectConversationId(
-    STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default,
-  );
+function createConversation(mapPerson) {
+  const conversationIds = findMapPersonConversationIds(mapPerson?.id);
+  const conversationId = selectConversationId(conversationIds);
   const conversation = COMMON_CONVERSATIONS[conversationId];
   if (!conversation) {
     return {
@@ -133,37 +132,34 @@ function createConversation(classAndNumber, student) {
   }
 
   return {
-    choice: createConversationChoice(conversation.choice, student),
-    messages: createConversationMessages(conversation.messages, student),
+    choice: createConversationChoice(conversation.choice, mapPerson),
+    messages: createConversationMessages(conversation.messages, mapPerson),
   };
 }
 
-function createTeacherConversation(teacherId, teacher) {
-  const conversationId = selectConversationId(
-    TEACHER_CONVERSATIONS[teacherId] ?? TEACHER_CONVERSATIONS.default,
-  );
-  const conversation = COMMON_CONVERSATIONS[conversationId];
-  if (!conversation) {
-    return {
-      choice: null,
-      messages: [],
-    };
+function findMapPersonConversationIds(mapPersonId) {
+  if (typeof mapPersonId !== 'string') {
+    return null;
   }
 
-  return {
-    choice: createConversationChoice(conversation.choice, teacher),
-    messages: createConversationMessages(conversation.messages, teacher),
-  };
+  const separatorIndex = mapPersonId.indexOf('-');
+  if (separatorIndex < 1) {
+    return null;
+  }
+
+  const mapPersonType = mapPersonId.slice(0, separatorIndex);
+  const conversations = MAP_PERSON_CONVERSATIONS[mapPersonType];
+  return conversations?.[mapPersonId] ?? conversations?.default ?? null;
 }
 
-function createConversationMessages(messages = [], student) {
+function createConversationMessages(messages = [], mapPerson) {
   return messages.map(message => ({
-    speakerName: resolveConversationSpeakerName(message, student),
-    message: formatConversationMessage(message.text, student),
+    speakerName: resolveConversationSpeakerName(message, mapPerson),
+    message: formatConversationMessage(message.text, mapPerson),
   }));
 }
 
-function createConversationChoice(choice, student) {
+function createConversationChoice(choice, mapPerson) {
   if (!choice) {
     return null;
   }
@@ -172,13 +168,13 @@ function createConversationChoice(choice, student) {
     messageIndex: choice.messageIndex,
     options: choice.options.map(option => ({
       id: option.id,
-      label: formatConversationMessage(option.text, student),
+      label: formatConversationMessage(option.text, mapPerson),
       messages: [
         {
           speakerName: 'ネギ',
-          message: formatConversationMessage(option.text, student),
+          message: formatConversationMessage(option.text, mapPerson),
         },
-        ...createConversationMessages(option.messages, student),
+        ...createConversationMessages(option.messages, mapPerson),
       ],
     })),
   };
@@ -196,17 +192,16 @@ function selectConversationId(conversationIds) {
   return conversationIds[getRandomInt(0, conversationIds.length - 1)];
 }
 
-function resolveConversationSpeakerName(message, student) {
+function resolveConversationSpeakerName(message, mapPerson) {
   return message.speaker === CONVERSATION_SPEAKERS.NEGI
     ? 'ネギ'
-    : student.name;
+    : mapPerson.name;
 }
 
-function formatConversationMessage(text, student) {
-  return text.replaceAll('{$生徒名}', student.name);
+function formatConversationMessage(text, mapPerson) {
+  return text.replaceAll('{$名前}', mapPerson.name);
 }
 
 export {
   createConversation,
-  createTeacherConversation,
 };

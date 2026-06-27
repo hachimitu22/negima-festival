@@ -6,8 +6,9 @@ const MIN_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_MOVEMENT_INTERVAL_HOURS = 10;
 
 class MapPerson extends GameObject {
-  constructor(name, locationId, { excludedLocationIds = [] } = {}) {
+  constructor(id, name, locationId, { excludedLocationIds = [] } = {}) {
     super();
+    this.id = id;
     this.name = name;
     this.locationId = locationId;
     this.excludedLocationIds = new Set(excludedLocationIds);

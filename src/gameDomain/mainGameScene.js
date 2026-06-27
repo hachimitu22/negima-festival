@@ -3,7 +3,7 @@ import {
   CONVERSATION_SESSION_RESULTS,
   ConversationSession,
 } from './conversationSession.js';
-import { createConversation, createTeacherConversation } from './conversations.js';
+import { createConversation } from './conversations.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
 import { GameSystem } from './gameSystem.js';
@@ -122,15 +122,15 @@ class MainGameScene {
       return;
     }
 
-    const studentClassAndNumber = getTargetValue(targetId, TARGET_PREFIXES.STUDENT);
-    if (studentClassAndNumber !== null) {
-      this.startConversation(studentClassAndNumber);
+    const studentId = getTargetValue(targetId, TARGET_PREFIXES.STUDENT);
+    if (studentId !== null) {
+      this.startConversation(studentId);
       return;
     }
 
     const teacherId = getTargetValue(targetId, TARGET_PREFIXES.TEACHER);
     if (teacherId !== null) {
-      this.startTeacherConversation(teacherId);
+      this.startConversation(teacherId);
       return;
     }
 
@@ -205,44 +205,23 @@ class MainGameScene {
     this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
   }
 
-  startConversation(classAndNumber) {
-    if (!this.system.canTalkToStudent(classAndNumber)) {
+  startConversation(mapPersonId) {
+    if (!this.system.canTalkToMapPerson(mapPersonId)) {
       return false;
     }
 
-    const student = this.system.createStudentSnapshotByClassAndNumber(classAndNumber);
-    if (!student) {
+    const mapPerson = this.system.createMapPersonSnapshotById(mapPersonId);
+    if (!mapPerson) {
       return false;
     }
 
-    const conversation = createConversation(classAndNumber, student);
+    const conversation = createConversation(mapPerson);
     if (conversation.messages.length === 0) {
       return false;
     }
 
     this.activeConversation = new ConversationSession(conversation);
-    this.activeConversationStudentClassAndNumber = classAndNumber;
-    this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
-    return true;
-  }
-
-  startTeacherConversation(teacherId) {
-    if (!this.system.canTalkToTeacher(teacherId)) {
-      return false;
-    }
-
-    const teacher = this.system.createTeacherSnapshotById(teacherId);
-    if (!teacher) {
-      return false;
-    }
-
-    const conversation = createTeacherConversation(teacherId, teacher);
-    if (conversation.messages.length === 0) {
-      return false;
-    }
-
-    this.activeConversation = new ConversationSession(conversation);
-    this.activeConversationStudentClassAndNumber = null;
+    this.activeConversationStudentClassAndNumber = mapPerson.classAndNumber ?? null;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }
@@ -334,7 +313,7 @@ function getTargetValue(targetId, prefix) {
   }
 
   const value = targetId.slice(expectedPrefix.length);
-  if (prefix === TARGET_PREFIXES.EVENT || prefix === TARGET_PREFIXES.STUDENT) {
+  if (prefix === TARGET_PREFIXES.EVENT) {
     return Number(value);
   }
 

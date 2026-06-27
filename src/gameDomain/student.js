@@ -5,7 +5,7 @@ const MAX_AFFECTION = 100;
 
 class Student extends MapPerson {
   constructor(name, classAndNumber, locationId, affection = 0) {
-    super(name, locationId);
+    super(createStudentId(classAndNumber), name, locationId);
     this.classAndNumber = classAndNumber;
     this.affection = affection;
   }
@@ -18,6 +18,10 @@ class Student extends MapPerson {
     this._affection = Math.min(MAX_AFFECTION, Math.max(MIN_AFFECTION, value));
   }
 
+}
+
+function createStudentId(classAndNumber) {
+  return `student-${String(classAndNumber).padStart(2, '0')}`;
 }
 
 export {

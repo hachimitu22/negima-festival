@@ -10,8 +10,8 @@ const MAX_MAGIC_POWER = 100;
 const CASSIOPEIA_MAGIC_POWER_COST = 30;
 const MAGIC_POWER_RECOVERY_PER_GAME_HOUR = 5;
 const TEACHER_IDS = {
-  TAKAHATA: 'takahata',
-  SHIZUNA: 'shizuna',
+  TAKAHATA: 'teacher-takahata',
+  SHIZUNA: 'teacher-shizuna',
 };
 
 class GameSystem {
@@ -172,32 +172,24 @@ class GameSystem {
     return true;
   }
 
-  canTalkToStudent(classAndNumber) {
-    const student = this.findStudentByClassAndNumber(classAndNumber);
-    return Boolean(student && student.locationId === this.character.locationId);
+  findMapPersonById(mapPersonId) {
+    return [...this.students, ...this.teachers]
+      .find(mapPerson => mapPerson.id === mapPersonId) ?? null;
   }
 
-  findTeacherById(teacherId) {
-    return this.teachers.find(teacher => teacher.id === teacherId) ?? null;
-  }
-
-  canTalkToTeacher(teacherId) {
-    const teacher = this.findTeacherById(teacherId);
-    return Boolean(teacher && teacher.locationId === this.character.locationId);
+  canTalkToMapPerson(mapPersonId) {
+    const mapPerson = this.findMapPersonById(mapPersonId);
+    return Boolean(mapPerson && mapPerson.locationId === this.character.locationId);
   }
 
   createStudentSnapshot(student) {
     return {
+      id: student.id,
       classAndNumber: student.classAndNumber,
       name: student.name,
       affection: student.affection,
       location: findLocation(student.locationId),
     };
-  }
-
-  createStudentSnapshotByClassAndNumber(classAndNumber) {
-    const student = this.findStudentByClassAndNumber(classAndNumber);
-    return student ? this.createStudentSnapshot(student) : null;
   }
 
   createTeacherSnapshot(teacher) {
@@ -208,8 +200,13 @@ class GameSystem {
     };
   }
 
-  createTeacherSnapshotById(teacherId) {
-    const teacher = this.findTeacherById(teacherId);
+  createMapPersonSnapshotById(mapPersonId) {
+    const student = this.students.find(mapPerson => mapPerson.id === mapPersonId);
+    if (student) {
+      return this.createStudentSnapshot(student);
+    }
+
+    const teacher = this.teachers.find(mapPerson => mapPerson.id === mapPersonId);
     return teacher ? this.createTeacherSnapshot(teacher) : null;
   }
 

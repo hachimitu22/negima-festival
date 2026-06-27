@@ -647,10 +647,10 @@ function formatCompletedEvent(event, statusText) {
 }
 
 function updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput) {
-  const studentIds = new Set(students.map(student => String(student.classAndNumber)));
+  const studentIds = new Set(students.map(student => student.id));
 
   Array.from(studentList.children).forEach(studentItem => {
-    if (!studentIds.has(studentItem.dataset.studentClassAndNumber)) {
+    if (!studentIds.has(studentItem.dataset.studentId)) {
       studentItem.remove();
     }
   });
@@ -681,8 +681,7 @@ function updateLocationStudents(studentList, students, isCurrentLocation, enqueu
 }
 
 function getOrCreateStudentItem(studentList, student, enqueueInput) {
-  const studentId = String(student.classAndNumber);
-  const existingItem = studentList.querySelector(`[data-student-class-and-number="${studentId}"]`);
+  const existingItem = studentList.querySelector(`[data-student-id="${student.id}"]`);
   if (existingItem) {
     return existingItem;
   }
@@ -697,12 +696,12 @@ function getOrCreateStudentItem(studentList, student, enqueueInput) {
   studentButton.addEventListener('click', () => {
     enqueueInput({
       type: INPUT_TYPES.TARGET_ACTIVATE,
-      targetId: createTargetId(TARGET_PREFIXES.STUDENT, student.classAndNumber),
+      targetId: createTargetId(TARGET_PREFIXES.STUDENT, student.id),
     });
   });
   studentAffection.textContent = `好感度: ${student.affection}`;
   studentAffection.dataset.studentAffection = '';
-  studentItem.dataset.studentClassAndNumber = studentId;
+  studentItem.dataset.studentId = student.id;
   studentItem.append(studentButton, studentAffection);
   return studentItem;
 }
