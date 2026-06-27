@@ -1,6 +1,7 @@
 import { Character } from './character.js';
 import { LOCATION_IDS, findLocation } from './locations.js';
 import { Student } from './student.js';
+import { Teacher } from './teacher.js';
 
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
@@ -8,6 +9,10 @@ const GAME_HOURS_PER_REAL_SECOND = 1;
 const MAX_MAGIC_POWER = 100;
 const CASSIOPEIA_MAGIC_POWER_COST = 30;
 const MAGIC_POWER_RECOVERY_PER_GAME_HOUR = 5;
+const TEACHER_IDS = {
+  TAKAHATA: 'takahata',
+  SHIZUNA: 'shizuna',
+};
 
 class GameSystem {
   constructor() {
@@ -62,6 +67,24 @@ class GameSystem {
       new Student('四葉五月'                              , 30, LOCATION_IDS.FOOD_STREET),
       new Student('ザジ・レイニーデイ'                    , 31, LOCATION_IDS.ROOF),
     ];
+    this.teachers = [
+      new Teacher(
+        TEACHER_IDS.TAKAHATA,
+        '高畑・T・タカミチ',
+        LOCATION_IDS.STAFF_ROOM,
+        {
+          excludedLocationIds: [
+            LOCATION_IDS.GIRLS_BATHROOM,
+            LOCATION_IDS.GYM_CHANGING_ROOM,
+          ],
+        },
+      ),
+      new Teacher(
+        TEACHER_IDS.SHIZUNA,
+        '源しずな',
+        LOCATION_IDS.STAFF_ROOM,
+      ),
+    ];
     this.knownEvents = new Set();
   }
 
@@ -75,6 +98,9 @@ class GameSystem {
     this.character.update(context);
     this.students.forEach(student => {
       student.update(context);
+    });
+    this.teachers.forEach(teacher => {
+      teacher.update(context);
     });
 
     return {
@@ -113,6 +139,9 @@ class GameSystem {
     this.loop.count += 1;
     this.students.forEach(student => {
       student.resetNextMoveTime(this.gameTime.currentHours);
+    });
+    this.teachers.forEach(teacher => {
+      teacher.resetNextMoveTime(this.gameTime.currentHours);
     });
     return {
       currentHours: this.gameTime.currentHours,
@@ -162,6 +191,14 @@ class GameSystem {
     return student ? this.createStudentSnapshot(student) : null;
   }
 
+  createTeacherSnapshot(teacher) {
+    return {
+      id: teacher.id,
+      name: teacher.name,
+      location: findLocation(teacher.locationId),
+    };
+  }
+
   createSnapshot() {
     return {
       gameTime: {
@@ -183,6 +220,7 @@ class GameSystem {
         },
       },
       students: this.students.map(student => this.createStudentSnapshot(student)),
+      teachers: this.teachers.map(teacher => this.createTeacherSnapshot(teacher)),
       knownEvents: Array.from(this.knownEvents),
     };
   }
@@ -220,5 +258,6 @@ export {
   MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
   MAX_MAGIC_POWER,
   TIME_TRAVEL_HOURS,
+  TEACHER_IDS,
   GameSystem,
 };

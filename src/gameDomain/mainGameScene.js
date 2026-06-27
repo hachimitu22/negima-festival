@@ -128,6 +128,11 @@ class MainGameScene {
       return;
     }
 
+    const teacherId = getTargetValue(targetId, TARGET_PREFIXES.TEACHER);
+    if (teacherId !== null) {
+      return;
+    }
+
     const eventId = getTargetValue(targetId, TARGET_PREFIXES.EVENT);
     if (eventId !== null) {
       this.handleEventAction({

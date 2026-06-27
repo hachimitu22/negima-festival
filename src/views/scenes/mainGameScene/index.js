@@ -56,7 +56,12 @@ function createMainGameSceneView(rootElement, options) {
       updateLayerMenu(snapshot);
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
       updateBackButton();
-      updateMap(snapshot.mapLocations, snapshot.character.location, snapshot.students);
+      updateMap(
+        snapshot.mapLocations,
+        snapshot.character.location,
+        snapshot.students,
+        snapshot.teachers,
+      );
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
       updateConversation(snapshot.activeConversation);
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
@@ -205,10 +210,11 @@ function createMainGameSceneView(rootElement, options) {
     elements.back.element.prepend(backButton);
   }
 
-  function updateMap(locations, currentLocation, students = []) {
+  function updateMap(locations, currentLocation, students = [], teachers = []) {
     const groups = groupLocations(locations);
     const groupNames = new Set(groups.map(group => group.name));
-    const studentsByLocationId = groupStudentsByLocationId(students);
+    const studentsByLocationId = groupPeopleByLocationId(students);
+    const teachersByLocationId = groupPeopleByLocationId(teachers);
 
     Array.from(elements.mapList.element.children).forEach(groupElement => {
       if (!groupNames.has(groupElement.dataset.mapGroup)) {
@@ -220,7 +226,13 @@ function createMainGameSceneView(rootElement, options) {
       const groupElement = getOrCreateMapGroup(group.name);
       const locationList = groupElement.querySelector('[data-map-group-locations]');
 
-      updateMapGroupLocations(locationList, group.locations, currentLocation, studentsByLocationId);
+      updateMapGroupLocations(
+        locationList,
+        group.locations,
+        currentLocation,
+        studentsByLocationId,
+        teachersByLocationId,
+      );
 
       if (!groupElement.isConnected) {
         elements.mapList.element.appendChild(groupElement);
@@ -228,21 +240,21 @@ function createMainGameSceneView(rootElement, options) {
     });
   }
 
-  function groupStudentsByLocationId(students) {
-    const studentsByLocationId = new Map();
+  function groupPeopleByLocationId(people) {
+    const peopleByLocationId = new Map();
 
-    students.forEach(student => {
-      const locationId = student.location?.id;
+    people.forEach(person => {
+      const locationId = person.location?.id;
       if (!locationId) {
         return;
       }
 
-      const locationStudents = studentsByLocationId.get(locationId) ?? [];
-      locationStudents.push(student);
-      studentsByLocationId.set(locationId, locationStudents);
+      const locationPeople = peopleByLocationId.get(locationId) ?? [];
+      locationPeople.push(person);
+      peopleByLocationId.set(locationId, locationPeople);
     });
 
-    return studentsByLocationId;
+    return peopleByLocationId;
   }
 
   function groupLocations(locations) {
@@ -292,7 +304,13 @@ function createMainGameSceneView(rootElement, options) {
     return groupElement;
   }
 
-  function updateMapGroupLocations(locationList, locations, currentLocation, studentsByLocationId) {
+  function updateMapGroupLocations(
+    locationList,
+    locations,
+    currentLocation,
+    studentsByLocationId,
+    teachersByLocationId,
+  ) {
     const locationIds = new Set(locations.map(location => location.id));
 
     Array.from(locationList.children).forEach(locationItem => {
@@ -308,6 +326,7 @@ function createMainGameSceneView(rootElement, options) {
         location,
         currentLocation,
         studentsByLocationId.get(location.id) ?? [],
+        teachersByLocationId.get(location.id) ?? [],
       );
 
       if (!locationItem.isConnected) {
@@ -330,6 +349,7 @@ function createMainGameSceneView(rootElement, options) {
     const locationItem = document.createElement('div');
     const locationButton = document.createElement('button');
     const studentList = document.createElement('menu');
+    const teacherList = document.createElement('menu');
 
     locationItem.dataset.locationId = location.id;
     locationButton.type = 'button';
@@ -342,14 +362,16 @@ function createMainGameSceneView(rootElement, options) {
       });
     });
     studentList.dataset.locationStudents = '';
+    teacherList.dataset.locationTeachers = '';
 
-    locationItem.append(locationButton, studentList);
+    locationItem.append(locationButton, studentList, teacherList);
     return locationItem;
   }
 
-  function updateLocationItem(locationItem, location, currentLocation, students) {
+  function updateLocationItem(locationItem, location, currentLocation, students, teachers) {
     const locationButton = locationItem.querySelector('[data-location-button]');
     const studentList = locationItem.querySelector('[data-location-students]');
+    const teacherList = locationItem.querySelector('[data-location-teachers]');
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
     const locationName = isCurrentLocation ? `${location.name} (現在地)` : location.name;
@@ -368,6 +390,7 @@ function createMainGameSceneView(rootElement, options) {
     }
 
     updateLocationStudents(studentList, students, isCurrentLocation, enqueueInput);
+    updateLocationTeachers(teacherList, teachers, isCurrentLocation, enqueueInput);
   }
 
   function updateConversation(conversation) {
@@ -682,6 +705,56 @@ function getOrCreateStudentItem(studentList, student, enqueueInput) {
   studentItem.dataset.studentClassAndNumber = studentId;
   studentItem.append(studentButton, studentAffection);
   return studentItem;
+}
+
+function updateLocationTeachers(teacherList, teachers, isCurrentLocation, enqueueInput) {
+  const teacherIds = new Set(teachers.map(teacher => teacher.id));
+
+  Array.from(teacherList.children).forEach(teacherItem => {
+    if (!teacherIds.has(teacherItem.dataset.teacherId)) {
+      teacherItem.remove();
+    }
+  });
+
+  teachers.forEach(teacher => {
+    const teacherItem = getOrCreateTeacherItem(teacherList, teacher, enqueueInput);
+    const teacherButton = teacherItem.querySelector('[data-teacher-button]');
+
+    if (teacherButton.textContent !== teacher.name) {
+      teacherButton.textContent = teacher.name;
+    }
+
+    if (teacherButton.disabled !== !isCurrentLocation) {
+      teacherButton.disabled = !isCurrentLocation;
+    }
+
+    if (!teacherItem.isConnected) {
+      teacherList.appendChild(teacherItem);
+    }
+  });
+}
+
+function getOrCreateTeacherItem(teacherList, teacher, enqueueInput) {
+  const existingItem = teacherList.querySelector(`[data-teacher-id="${teacher.id}"]`);
+  if (existingItem) {
+    return existingItem;
+  }
+
+  const teacherItem = document.createElement('li');
+  const teacherButton = document.createElement('button');
+  teacherButton.type = 'button';
+  teacherButton.textContent = teacher.name;
+  teacherButton.dataset.teacherButton = '';
+  teacherButton.setAttribute('compact', '');
+  teacherButton.addEventListener('click', () => {
+    enqueueInput({
+      type: INPUT_TYPES.TARGET_ACTIVATE,
+      targetId: createTargetId(TARGET_PREFIXES.TEACHER, teacher.id),
+    });
+  });
+  teacherItem.dataset.teacherId = teacher.id;
+  teacherItem.appendChild(teacherButton);
+  return teacherItem;
 }
 
 function createTargetId(prefix, id) {

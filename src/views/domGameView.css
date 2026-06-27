@@ -5,13 +5,15 @@
   align-items: flex-start;
 }
 
-[data-location-students] {
+[data-location-students],
+[data-location-teachers] {
   list-style: none;
   margin: 4px 0 0;
   padding: 0;
 }
 
-[data-location-students] > li {
+[data-location-students] > li,
+[data-location-teachers] > li {
   display: flex;
   gap: 4px;
   align-items: center;

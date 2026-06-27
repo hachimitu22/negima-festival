@@ -17,6 +17,7 @@ const TARGET_PREFIXES = {
   LAYER: 'layer',
   LOCATION: 'location',
   STUDENT: 'student',
+  TEACHER: 'teacher',
 };
 
 const MAIN_GAME_LAYER_IDS = {
