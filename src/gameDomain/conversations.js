@@ -3,6 +3,7 @@ import { getRandomInt } from './random.js';
 const CONVERSATION_SPEAKERS = {
   NEGI: 'negi',
   STUDENT: 'student',
+  TEACHER: 'teacher',
 };
 
 const COMMON_CONVERSATION_IDS = {
@@ -11,6 +12,7 @@ const COMMON_CONVERSATION_IDS = {
   FESTIVAL_PLANS: 'festivalPlans',
   GREETING: 'greeting',
   QUESTION: 'question',
+  TEACHER_CHECK_IN: 'teacherCheckIn',
 };
 
 const COMMON_CONVERSATIONS = {
@@ -83,6 +85,18 @@ const COMMON_CONVERSATIONS = {
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'いえいえ、どういたしまして。' },
     ],
   },
+  [COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN]: {
+    messages: [
+      {
+        speaker: CONVERSATION_SPEAKERS.TEACHER,
+        text: 'ネギ先生こんにちは、調子はどう？',
+      },
+      {
+        speaker: CONVERSATION_SPEAKERS.NEGI,
+        text: '元気一杯です！',
+      },
+    ],
+  },
 };
 
 const DEFAULT_STUDENT_CONVERSATIONS = [
@@ -100,6 +114,12 @@ const STUDENT_CONVERSATIONS = {
   default: DEFAULT_STUDENT_CONVERSATIONS,
 };
 
+const TEACHER_CONVERSATIONS = {
+  default: [
+    COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN,
+  ],
+};
+
 function createConversation(classAndNumber, student) {
   const conversationId = selectConversationId(
     STUDENT_CONVERSATIONS[classAndNumber] ?? STUDENT_CONVERSATIONS.default,
@@ -115,6 +135,24 @@ function createConversation(classAndNumber, student) {
   return {
     choice: createConversationChoice(conversation.choice, student),
     messages: createConversationMessages(conversation.messages, student),
+  };
+}
+
+function createTeacherConversation(teacherId, teacher) {
+  const conversationId = selectConversationId(
+    TEACHER_CONVERSATIONS[teacherId] ?? TEACHER_CONVERSATIONS.default,
+  );
+  const conversation = COMMON_CONVERSATIONS[conversationId];
+  if (!conversation) {
+    return {
+      choice: null,
+      messages: [],
+    };
+  }
+
+  return {
+    choice: createConversationChoice(conversation.choice, teacher),
+    messages: createConversationMessages(conversation.messages, teacher),
   };
 }
 
@@ -159,9 +197,9 @@ function selectConversationId(conversationIds) {
 }
 
 function resolveConversationSpeakerName(message, student) {
-  return message.speaker === CONVERSATION_SPEAKERS.STUDENT
-    ? student.name
-    : 'ネギ';
+  return message.speaker === CONVERSATION_SPEAKERS.NEGI
+    ? 'ネギ'
+    : student.name;
 }
 
 function formatConversationMessage(text, student) {
@@ -170,4 +208,5 @@ function formatConversationMessage(text, student) {
 
 export {
   createConversation,
+  createTeacherConversation,
 };

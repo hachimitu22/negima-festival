@@ -3,7 +3,7 @@ import {
   CONVERSATION_SESSION_RESULTS,
   ConversationSession,
 } from './conversationSession.js';
-import { createConversation } from './conversations.js';
+import { createConversation, createTeacherConversation } from './conversations.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
 import { GameSystem } from './gameSystem.js';
@@ -130,6 +130,7 @@ class MainGameScene {
 
     const teacherId = getTargetValue(targetId, TARGET_PREFIXES.TEACHER);
     if (teacherId !== null) {
+      this.startTeacherConversation(teacherId);
       return;
     }
 
@@ -225,6 +226,27 @@ class MainGameScene {
     return true;
   }
 
+  startTeacherConversation(teacherId) {
+    if (!this.system.canTalkToTeacher(teacherId)) {
+      return false;
+    }
+
+    const teacher = this.system.createTeacherSnapshotById(teacherId);
+    if (!teacher) {
+      return false;
+    }
+
+    const conversation = createTeacherConversation(teacherId, teacher);
+    if (conversation.messages.length === 0) {
+      return false;
+    }
+
+    this.activeConversation = new ConversationSession(conversation);
+    this.activeConversationStudentClassAndNumber = null;
+    this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
+    return true;
+  }
+
   isConversationActive() {
     return Boolean(this.activeConversation);
   }
@@ -257,10 +279,12 @@ class MainGameScene {
 
     const result = this.activeConversation.next();
     if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
-      this.system.increaseStudentAffection(
-        this.activeConversationStudentClassAndNumber,
-        CONVERSATION_AFFECTION_GAIN,
-      );
+      if (this.activeConversationStudentClassAndNumber !== null) {
+        this.system.increaseStudentAffection(
+          this.activeConversationStudentClassAndNumber,
+          CONVERSATION_AFFECTION_GAIN,
+        );
+      }
       this.activeConversation = null;
       this.activeConversationStudentClassAndNumber = null;
       this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;

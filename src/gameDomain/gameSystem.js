@@ -177,6 +177,15 @@ class GameSystem {
     return Boolean(student && student.locationId === this.character.locationId);
   }
 
+  findTeacherById(teacherId) {
+    return this.teachers.find(teacher => teacher.id === teacherId) ?? null;
+  }
+
+  canTalkToTeacher(teacherId) {
+    const teacher = this.findTeacherById(teacherId);
+    return Boolean(teacher && teacher.locationId === this.character.locationId);
+  }
+
   createStudentSnapshot(student) {
     return {
       classAndNumber: student.classAndNumber,
@@ -197,6 +206,11 @@ class GameSystem {
       name: teacher.name,
       location: findLocation(teacher.locationId),
     };
+  }
+
+  createTeacherSnapshotById(teacherId) {
+    const teacher = this.findTeacherById(teacherId);
+    return teacher ? this.createTeacherSnapshot(teacher) : null;
   }
 
   createSnapshot() {
