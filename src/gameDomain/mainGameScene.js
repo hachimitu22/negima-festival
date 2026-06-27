@@ -1,5 +1,5 @@
 import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
-import { createConversationMessages } from './conversations.js';
+import { createConversation } from './conversations.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
 import { GameSystem } from './gameSystem.js';
@@ -203,9 +203,14 @@ class MainGameScene {
       return false;
     }
 
+    const conversation = createConversation(classAndNumber, student);
+    if (conversation.messages.length === 0) {
+      return false;
+    }
+
     this.activeConversation = {
       student,
-      messages: createConversationMessages(classAndNumber, student),
+      ...conversation,
       messageIndex: 0,
     };
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
@@ -228,7 +233,17 @@ class MainGameScene {
   }
 
   handleConversationAction(action) {
-    if (action !== 'next' || !this.activeConversation) {
+    if (!this.activeConversation) {
+      return;
+    }
+
+    const choiceId = getTargetValue(action, 'choice');
+    if (choiceId) {
+      this.selectConversationChoice(choiceId);
+      return;
+    }
+
+    if (action !== 'next' || this.getActiveConversationChoices().length > 0) {
       return;
     }
 
@@ -242,6 +257,42 @@ class MainGameScene {
     this.activeConversation.messageIndex = nextMessageIndex;
   }
 
+  selectConversationChoice(choiceId) {
+    const { choice, messageIndex, messages } = this.activeConversation;
+    if (!choice || choice.messageIndex !== messageIndex) {
+      return;
+    }
+
+    const selectedOption = choice.options.find(option => option.id === choiceId);
+    if (!selectedOption) {
+      return;
+    }
+
+    this.activeConversation.messages = [
+      ...messages.slice(0, messageIndex + 1),
+      ...selectedOption.messages,
+      ...messages.slice(messageIndex + 1),
+    ];
+    this.activeConversation.choice = null;
+    this.activeConversation.messageIndex = messageIndex + 1;
+  }
+
+  getActiveConversationChoices() {
+    if (!this.activeConversation) {
+      return [];
+    }
+
+    const { choice, messageIndex } = this.activeConversation;
+    if (!choice || choice.messageIndex !== messageIndex) {
+      return [];
+    }
+
+    return choice.options.map(option => ({
+      id: option.id,
+      label: option.label,
+    }));
+  }
+
   createActiveConversationSnapshot() {
     if (!this.activeConversation) {
       return null;
@@ -249,13 +300,15 @@ class MainGameScene {
 
     const { student, messages, messageIndex } = this.activeConversation;
     const message = messages[messageIndex];
+    const choices = this.getActiveConversationChoices();
     return {
       student,
       speakerName: message.speakerName,
       messages,
       messageIndex,
       message: message.message,
-      isLastMessage: messageIndex === messages.length - 1,
+      choices,
+      isLastMessage: choices.length === 0 && messageIndex === messages.length - 1,
     };
   }
 

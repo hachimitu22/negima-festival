@@ -377,10 +377,14 @@ function createMainGameSceneView(rootElement, options) {
     }
 
     const conversationView = getOrCreateConversationView();
+    const choices = conversation.choices ?? [];
     conversationView.speaker.textContent = conversation.speakerName;
     conversationView.message.textContent = conversation.message;
     conversationView.progress.textContent = `${conversation.messageIndex + 1} / ${conversation.messages.length}`;
     conversationView.next.textContent = conversation.isLastMessage ? '会話を終える' : '次へ';
+    conversationView.progress.hidden = choices.length > 0;
+    conversationView.next.hidden = choices.length > 0;
+    updateConversationChoices(conversationView.choices, choices);
   }
 
   function getOrCreateConversationView() {
@@ -390,6 +394,7 @@ function createMainGameSceneView(rootElement, options) {
         speaker,
         message: elements.conversation.element.querySelector('[data-conversation-message]'),
         progress: elements.conversation.element.querySelector('[data-conversation-progress]'),
+        choices: elements.conversation.element.querySelector('[data-conversation-choices]'),
         next: elements.conversation.element.querySelector('[data-conversation-next]'),
       };
     }
@@ -397,11 +402,13 @@ function createMainGameSceneView(rootElement, options) {
     speaker = document.createElement('h2');
     const message = document.createElement('p');
     const progress = document.createElement('p');
+    const choices = document.createElement('div');
     const next = document.createElement('button');
 
     speaker.dataset.conversationSpeaker = '';
     message.dataset.conversationMessage = '';
     progress.dataset.conversationProgress = '';
+    choices.dataset.conversationChoices = '';
     next.dataset.conversationNext = '';
     next.type = 'button';
     next.addEventListener('click', () => {
@@ -411,13 +418,54 @@ function createMainGameSceneView(rootElement, options) {
       });
     });
 
-    elements.conversation.element.append(speaker, message, progress, next);
+    elements.conversation.element.append(speaker, message, progress, choices, next);
     return {
       speaker,
       message,
       progress,
+      choices,
       next,
     };
+  }
+
+  function updateConversationChoices(choiceList, choices) {
+    const choiceIds = new Set(choices.map(choice => choice.id));
+
+    Array.from(choiceList.children).forEach(choiceButton => {
+      if (!choiceIds.has(choiceButton.dataset.conversationChoiceId)) {
+        choiceButton.remove();
+      }
+    });
+
+    choices.forEach(choice => {
+      const choiceButton = getOrCreateConversationChoice(choiceList, choice);
+      choiceButton.textContent = choice.label;
+
+      if (!choiceButton.isConnected) {
+        choiceList.appendChild(choiceButton);
+      }
+    });
+
+    choiceList.hidden = choices.length === 0;
+  }
+
+  function getOrCreateConversationChoice(choiceList, choice) {
+    const existingChoice = Array.from(choiceList.children)
+      .find(choiceButton => choiceButton.dataset.conversationChoiceId === choice.id);
+    if (existingChoice) {
+      return existingChoice;
+    }
+
+    const choiceButton = document.createElement('button');
+    choiceButton.type = 'button';
+    choiceButton.dataset.conversationChoiceId = choice.id;
+    choiceButton.addEventListener('click', () => {
+      enqueueInput({
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, `choice:${choice.id}`),
+      });
+    });
+    return choiceButton;
   }
 
   function updateExecutingEvents(events) {

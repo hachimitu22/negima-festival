@@ -14,3 +14,16 @@
 [data-location-students] > li {
   margin-left: 16px;
 }
+
+[data-conversation-choices] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 16px 0;
+  padding: 0;
+}
+
+[data-conversation-choices][hidden] {
+  display: none;
+}
