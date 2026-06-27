@@ -4,14 +4,25 @@ import { getRandomInt } from './random.js';
 
 const MIN_STUDENT_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_STUDENT_MOVEMENT_INTERVAL_HOURS = 10;
+const MIN_AFFECTION = -100;
+const MAX_AFFECTION = 100;
 
 class Student extends GameObject {
-  constructor(name, classAndNumber, locationId) {
+  constructor(name, classAndNumber, locationId, affection = 0) {
     super();
     this.name = name;
     this.classAndNumber = classAndNumber;
     this.locationId = locationId;
+    this.affection = affection;
     this.nextMoveTimeHours = this.createNextMoveTime(0);
+  }
+
+  get affection() {
+    return this._affection;
+  }
+
+  set affection(value) {
+    this._affection = Math.min(MAX_AFFECTION, Math.max(MIN_AFFECTION, value));
   }
 
   update(context) {

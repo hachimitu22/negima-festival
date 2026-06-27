@@ -635,10 +635,16 @@ function updateLocationStudents(studentList, students, isCurrentLocation, enqueu
   students.forEach(student => {
     const studentItem = getOrCreateStudentItem(studentList, student, enqueueInput);
     const studentButton = studentItem.querySelector('[data-student-button]');
+    const studentAffection = studentItem.querySelector('[data-student-affection]');
+    const affectionText = `${student.affection}`;
     const disabled = !isCurrentLocation;
 
     if (studentButton.textContent !== student.name) {
       studentButton.textContent = student.name;
+    }
+
+    if (studentAffection.textContent !== affectionText) {
+      studentAffection.textContent = affectionText;
     }
 
     if (studentButton.disabled !== disabled) {
@@ -660,6 +666,7 @@ function getOrCreateStudentItem(studentList, student, enqueueInput) {
 
   const studentItem = document.createElement('li');
   const studentButton = document.createElement('button');
+  const studentAffection = document.createElement('span');
   studentButton.type = 'button';
   studentButton.textContent = student.name;
   studentButton.dataset.studentButton = '';
@@ -670,8 +677,10 @@ function getOrCreateStudentItem(studentList, student, enqueueInput) {
       targetId: createTargetId(TARGET_PREFIXES.STUDENT, student.classAndNumber),
     });
   });
+  studentAffection.textContent = `好感度: ${student.affection}`;
+  studentAffection.dataset.studentAffection = '';
   studentItem.dataset.studentClassAndNumber = studentId;
-  studentItem.appendChild(studentButton);
+  studentItem.append(studentButton, studentAffection);
   return studentItem;
 }
 

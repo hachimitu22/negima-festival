@@ -133,6 +133,16 @@ class GameSystem {
     return this.students.find(student => student.classAndNumber === classAndNumber) ?? null;
   }
 
+  increaseStudentAffection(classAndNumber, amount) {
+    const student = this.findStudentByClassAndNumber(classAndNumber);
+    if (!student) {
+      return false;
+    }
+
+    student.affection += amount;
+    return true;
+  }
+
   canTalkToStudent(classAndNumber) {
     const student = this.findStudentByClassAndNumber(classAndNumber);
     return Boolean(student && student.locationId === this.character.locationId);
@@ -142,6 +152,7 @@ class GameSystem {
     return {
       classAndNumber: student.classAndNumber,
       name: student.name,
+      affection: student.affection,
       location: findLocation(student.locationId),
     };
   }

@@ -23,6 +23,7 @@ const LAYER_ITEMS = [
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
+const CONVERSATION_AFFECTION_GAIN = 5;
 
 class MainGameScene {
   constructor(system = new GameSystem()) {
@@ -34,6 +35,7 @@ class MainGameScene {
     this.lastEventId = 0;
     this.nextEventTimeHours = 1;
     this.activeConversation = null;
+    this.activeConversationStudentClassAndNumber = null;
   }
 
   update(context) {
@@ -213,6 +215,7 @@ class MainGameScene {
     }
 
     this.activeConversation = new ConversationSession(conversation);
+    this.activeConversationStudentClassAndNumber = classAndNumber;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }
@@ -249,7 +252,12 @@ class MainGameScene {
 
     const result = this.activeConversation.next();
     if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
+      this.system.increaseStudentAffection(
+        this.activeConversationStudentClassAndNumber,
+        CONVERSATION_AFFECTION_GAIN,
+      );
       this.activeConversation = null;
+      this.activeConversationStudentClassAndNumber = null;
       this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
     }
   }

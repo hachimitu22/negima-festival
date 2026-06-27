@@ -12,6 +12,9 @@
 }
 
 [data-location-students] > li {
+  display: flex;
+  gap: 4px;
+  align-items: center;
   margin-left: 16px;
 }
 
