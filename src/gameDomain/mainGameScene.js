@@ -1,4 +1,8 @@
 import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
+import {
+  CONVERSATION_SESSION_RESULTS,
+  ConversationSession,
+} from './conversationSession.js';
 import { createConversation } from './conversations.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
@@ -208,11 +212,7 @@ class MainGameScene {
       return false;
     }
 
-    this.activeConversation = {
-      student,
-      ...conversation,
-      messageIndex: 0,
-    };
+    this.activeConversation = new ConversationSession(conversation);
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }
@@ -243,54 +243,19 @@ class MainGameScene {
       return;
     }
 
-    if (action !== 'next' || this.getActiveConversationChoices().length > 0) {
+    if (action !== 'next') {
       return;
     }
 
-    const nextMessageIndex = this.activeConversation.messageIndex + 1;
-    if (nextMessageIndex >= this.activeConversation.messages.length) {
+    const result = this.activeConversation.next();
+    if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
       this.activeConversation = null;
       this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-      return;
     }
-
-    this.activeConversation.messageIndex = nextMessageIndex;
   }
 
   selectConversationChoice(choiceId) {
-    const { choice, messageIndex, messages } = this.activeConversation;
-    if (!choice || choice.messageIndex !== messageIndex) {
-      return;
-    }
-
-    const selectedOption = choice.options.find(option => option.id === choiceId);
-    if (!selectedOption) {
-      return;
-    }
-
-    this.activeConversation.messages = [
-      ...messages.slice(0, messageIndex + 1),
-      ...selectedOption.messages,
-      ...messages.slice(messageIndex + 1),
-    ];
-    this.activeConversation.choice = null;
-    this.activeConversation.messageIndex = messageIndex + 1;
-  }
-
-  getActiveConversationChoices() {
-    if (!this.activeConversation) {
-      return [];
-    }
-
-    const { choice, messageIndex } = this.activeConversation;
-    if (!choice || choice.messageIndex !== messageIndex) {
-      return [];
-    }
-
-    return choice.options.map(option => ({
-      id: option.id,
-      label: option.label,
-    }));
+    this.activeConversation.selectChoice(choiceId);
   }
 
   createActiveConversationSnapshot() {
@@ -298,18 +263,7 @@ class MainGameScene {
       return null;
     }
 
-    const { student, messages, messageIndex } = this.activeConversation;
-    const message = messages[messageIndex];
-    const choices = this.getActiveConversationChoices();
-    return {
-      student,
-      speakerName: message.speakerName,
-      messages,
-      messageIndex,
-      message: message.message,
-      choices,
-      isLastMessage: choices.length === 0 && messageIndex === messages.length - 1,
-    };
+    return this.activeConversation.getSnapshot();
   }
 
   createEventRandom(context) {

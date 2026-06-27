@@ -380,7 +380,7 @@ function createMainGameSceneView(rootElement, options) {
     const choices = conversation.choices ?? [];
     conversationView.speaker.textContent = conversation.speakerName;
     conversationView.message.textContent = conversation.message;
-    conversationView.progress.textContent = `${conversation.messageIndex + 1} / ${conversation.messages.length}`;
+    conversationView.progress.textContent = `${conversation.messageIndex + 1} / ${conversation.messageCount}`;
     conversationView.next.textContent = conversation.isLastMessage ? '会話を終える' : '次へ';
     conversationView.progress.hidden = choices.length > 0;
     conversationView.next.hidden = choices.length > 0;
