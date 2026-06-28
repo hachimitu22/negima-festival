@@ -18,6 +18,13 @@ class Student extends MapPerson {
     this._affection = Math.min(MAX_AFFECTION, Math.max(MIN_AFFECTION, value));
   }
 
+  getSnapshot() {
+    return {
+      ...super.getSnapshot(),
+      classAndNumber: this.classAndNumber,
+      affection: this.affection,
+    };
+  }
 }
 
 function createStudentId(classAndNumber) {

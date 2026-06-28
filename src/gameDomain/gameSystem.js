@@ -167,48 +167,12 @@ class GameSystem {
     return true;
   }
 
-  findMapPersonById(mapPersonId) {
-    return this.persons.find(mapPerson => mapPerson.id === mapPersonId) ?? null;
-  }
-
-  canTalkToMapPerson(mapPersonId) {
-    const mapPerson = this.findMapPersonById(mapPersonId);
-    return Boolean(mapPerson && mapPerson.locationId === this.character.locationId);
-  }
-
-  createStudentSnapshot(student) {
-    return {
-      id: student.id,
-      classAndNumber: student.classAndNumber,
-      name: student.name,
-      affection: student.affection,
-      location: findLocation(student.locationId),
-    };
-  }
-
-  createTeacherSnapshot(teacher) {
-    return {
-      id: teacher.id,
-      name: teacher.name,
-      location: findLocation(teacher.locationId),
-    };
-  }
-
-  createMapPersonSnapshot(mapPerson) {
-    if (mapPerson instanceof Student) {
-      return this.createStudentSnapshot(mapPerson);
-    }
-
-    if (mapPerson instanceof Teacher) {
-      return this.createTeacherSnapshot(mapPerson);
-    }
-
-    return null;
-  }
-
-  createMapPersonSnapshotById(mapPersonId) {
-    const mapPerson = this.findMapPersonById(mapPersonId);
-    return mapPerson ? this.createMapPersonSnapshot(mapPerson) : null;
+  getTalkableMapPersonSnapshot(mapPersonId) {
+    const mapPerson = this.persons.find(person => (
+      person.id === mapPersonId
+      && person.locationId === this.character.locationId
+    ));
+    return mapPerson?.getSnapshot() ?? null;
   }
 
   createSnapshot() {
@@ -223,17 +187,8 @@ class GameSystem {
         timeTravelHours: this.loop.timeTravelHours,
         cassiopeiaMagicPowerCost: this.loop.cassiopeiaMagicPowerCost,
       },
-      character: {
-        location: findLocation(this.character.locationId),
-        magicPower: {
-          current: this.character.magicPower.current,
-          max: this.character.magicPower.max,
-          recoveryPerGameHour: this.character.magicPower.recoveryPerGameHour,
-        },
-      },
-      persons: this.persons
-        .map(person => this.createMapPersonSnapshot(person))
-        .filter(snapShot => snapShot !== null),
+      character: this.character.getSnapshot(),
+      persons: this.persons.map(person => person.getSnapshot()),
       knownEvents: Array.from(this.knownEvents),
     };
   }

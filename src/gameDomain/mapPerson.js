@@ -63,6 +63,14 @@ class MapPerson extends GameObject {
     this.locationId = destinationLocations[randomIndex].id;
     return true;
   }
+
+  getSnapshot() {
+    return {
+      id: this.id,
+      name: this.name,
+      location: findLocation(this.locationId),
+    };
+  }
 }
 
 export {

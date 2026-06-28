@@ -200,11 +200,7 @@ class MainGameScene {
   }
 
   startConversation(mapPersonId) {
-    if (!this.system.canTalkToMapPerson(mapPersonId)) {
-      return false;
-    }
-
-    const mapPerson = this.system.createMapPersonSnapshotById(mapPersonId);
+    const mapPerson = this.system.getTalkableMapPersonSnapshot(mapPersonId);
     if (!mapPerson) {
       return false;
     }
