@@ -23,7 +23,6 @@ const LAYER_ITEMS = [
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
-const CONVERSATION_AFFECTION_GAIN = 5;
 
 class MainGameScene {
   constructor(system = new GameSystem()) {
@@ -36,6 +35,7 @@ class MainGameScene {
     this.nextEventTimeHours = 1;
     this.activeConversation = null;
     this.activeConversationActorId = null;
+    this.activeConversationResult = null;
   }
 
   update(context) {
@@ -212,6 +212,10 @@ class MainGameScene {
 
     this.activeConversation = new ConversationSession(conversation);
     this.activeConversationActorId = actor.id;
+    this.activeConversationResult = {
+      conversationId: conversation.id,
+      choiceId: null,
+    };
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }
@@ -249,19 +253,23 @@ class MainGameScene {
     const result = this.activeConversation.next();
     if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
       if (this.activeConversationActorId !== null) {
-        this.system.increaseStudentAffectionByActorId(
+        this.system.applyStudentConversationResult(
           this.activeConversationActorId,
-          CONVERSATION_AFFECTION_GAIN,
+          this.activeConversationResult,
         );
       }
       this.activeConversation = null;
       this.activeConversationActorId = null;
+      this.activeConversationResult = null;
       this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
     }
   }
 
   selectConversationChoice(choiceId) {
-    this.activeConversation.selectChoice(choiceId);
+    const result = this.activeConversation.selectChoice(choiceId);
+    if (result) {
+      this.activeConversationResult = result;
+    }
   }
 
   createActiveConversationSnapshot() {

@@ -1,3 +1,4 @@
+import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
 import { LOCATION_IDS, findLocation } from './locations.js';
 import { Student } from './student.js';
@@ -150,7 +151,7 @@ class GameSystem {
     return true;
   }
 
-  increaseStudentAffectionByActorId(actorId, amount) {
+  applyStudentConversationResult(actorId, conversationResult) {
     const student = this.actors.find(actor => (
       actor instanceof Student
       && actor.id === actorId
@@ -159,7 +160,9 @@ class GameSystem {
       return false;
     }
 
-    student.affection += amount;
+    const baseChange = student.getBaseAffectionChange(conversationResult);
+    const affectionChange = calculateAffectionChange({ baseChange });
+    student.changeAffection(affectionChange);
     return true;
   }
 

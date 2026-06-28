@@ -1,3 +1,7 @@
+import {
+  CONVERSATION_CHOICE_IDS,
+  CONVERSATION_IDS,
+} from './conversationIds.js';
 import { getRandomInt } from './random.js';
 
 const CONVERSATION_SPEAKERS = {
@@ -5,30 +9,64 @@ const CONVERSATION_SPEAKERS = {
   NEGI: 'negi',
 };
 
-const COMMON_CONVERSATION_IDS = {
-  ASUNA_WHERE_WERE_YOU: 'asunaWhereWereYou',
-  FAREWELL: 'farewell',
-  FESTIVAL_PLANS: 'festivalPlans',
-  GREETING: 'greeting',
-  QUESTION: 'question',
-  TEACHER_CHECK_IN: 'teacherCheckIn',
-};
-
 const COMMON_CONVERSATIONS = {
-  [COMMON_CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU]: {
+  [CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU]: {
     messages: [
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: 'ネギ！あんたどこ行ってたのよ！' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: '明日菜さん。職員会議でした。' },
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: 'そうだったの、それなら良かったわ。' },
     ],
   },
-  [COMMON_CONVERSATION_IDS.FAREWELL]: {
+  [CONVERSATION_IDS.EFFORT_FEEDBACK]: {
+    messages: [
+      {
+        speaker: CONVERSATION_SPEAKERS.ACTOR,
+        text: '先生、今日の私の頑張り、どうでしたか？',
+      },
+    ],
+    choice: {
+      messageIndex: 0,
+      options: [
+        {
+          id: CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.WORKED_VERY_HARD,
+          text: 'とてもよく頑張っていました。',
+          messages: [
+            {
+              speaker: CONVERSATION_SPEAKERS.ACTOR,
+              text: '本当ですか？ ありがとうございます、先生！',
+            },
+          ],
+        },
+        {
+          id: CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.AS_USUAL,
+          text: 'いつも通りでした。',
+          messages: [
+            {
+              speaker: CONVERSATION_SPEAKERS.ACTOR,
+              text: 'そうですか……次はもっと頑張ります。',
+            },
+          ],
+        },
+        {
+          id: CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.NEEDS_MORE_EFFORT,
+          text: 'もう少し頑張りましょう。',
+          messages: [
+            {
+              speaker: CONVERSATION_SPEAKERS.ACTOR,
+              text: 'うっ……次は認めてもらえるように頑張ります。',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  [CONVERSATION_IDS.FAREWELL]: {
     messages: [
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: '先生さようなら。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'さようなら。' },
     ],
   },
-  [COMMON_CONVERSATION_IDS.FESTIVAL_PLANS]: {
+  [CONVERSATION_IDS.FESTIVAL_PLANS]: {
     messages: [
       {
         speaker: CONVERSATION_SPEAKERS.ACTOR,
@@ -69,14 +107,14 @@ const COMMON_CONVERSATIONS = {
       ],
     },
   },
-  [COMMON_CONVERSATION_IDS.GREETING]: {
+  [CONVERSATION_IDS.GREETING]: {
     messages: [
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: '{$名前}です。' },
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: '先生こんにちは。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'こんにちは。' },
     ],
   },
-  [COMMON_CONVERSATION_IDS.QUESTION]: {
+  [CONVERSATION_IDS.QUESTION]: {
     messages: [
       { speaker: CONVERSATION_SPEAKERS.ACTOR, text: '授業での質問です。' },
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'ここはこうすれば良いですよ。' },
@@ -84,7 +122,7 @@ const COMMON_CONVERSATIONS = {
       { speaker: CONVERSATION_SPEAKERS.NEGI, text: 'いえいえ、どういたしまして。' },
     ],
   },
-  [COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN]: {
+  [CONVERSATION_IDS.TEACHER_CHECK_IN]: {
     messages: [
       {
         speaker: CONVERSATION_SPEAKERS.ACTOR,
@@ -99,23 +137,24 @@ const COMMON_CONVERSATIONS = {
 };
 
 const DEFAULT_STUDENT_CONVERSATIONS = [
-  COMMON_CONVERSATION_IDS.GREETING,
-  COMMON_CONVERSATION_IDS.FAREWELL,
-  COMMON_CONVERSATION_IDS.QUESTION,
-  COMMON_CONVERSATION_IDS.FESTIVAL_PLANS,
+  CONVERSATION_IDS.GREETING,
+  CONVERSATION_IDS.FAREWELL,
+  CONVERSATION_IDS.QUESTION,
+  CONVERSATION_IDS.FESTIVAL_PLANS,
+  CONVERSATION_IDS.EFFORT_FEEDBACK,
 ];
 
 const ACTOR_CONVERSATIONS = {
   student: {
     'student-08': [
       ...DEFAULT_STUDENT_CONVERSATIONS,
-      COMMON_CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU,
+      CONVERSATION_IDS.ASUNA_WHERE_WERE_YOU,
     ],
     default: DEFAULT_STUDENT_CONVERSATIONS,
   },
   teacher: {
     default: [
-      COMMON_CONVERSATION_IDS.TEACHER_CHECK_IN,
+      CONVERSATION_IDS.TEACHER_CHECK_IN,
     ],
   },
 };
@@ -126,12 +165,14 @@ function createConversation(actor) {
   const conversation = COMMON_CONVERSATIONS[conversationId];
   if (!conversation) {
     return {
+      id: null,
       choice: null,
       messages: [],
     };
   }
 
   return {
+    id: conversationId,
     choice: createConversationChoice(conversation.choice, actor),
     messages: createConversationMessages(conversation.messages, actor),
   };

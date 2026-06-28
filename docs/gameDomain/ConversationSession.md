@@ -42,6 +42,7 @@ new ConversationSession(conversation)
 
 ```js
 {
+  id,
   messages: [
     {
       speakerName,
@@ -84,8 +85,17 @@ new ConversationSession(conversation)
 
 現在位置で`choiceId`に一致する選択肢を適用する。
 
-選択肢が有効な場合は、選択結果のメッセージを現在のメッセージ直後へ挿入し、その先頭へ進んで`true`を返す。
-現在位置に選択肢がない場合やIDが一致しない場合は、状態を変更せず`false`を返す。
+選択肢が有効な場合は、選択結果のメッセージを現在のメッセージ直後へ挿入し、その先頭へ進んで次の結果を返す。
+
+```js
+{
+  conversationId,
+  choiceId,
+}
+```
+
+`conversationId`と`choiceId`は選択結果を呼び出し側へ伝えるための識別子とする。
+現在位置に選択肢がない場合やIDが一致しない場合は、状態を変更せず`null`を返す。
 1回適用した選択肢は再選択できない。
 
 ### `getSnapshot()`
@@ -123,6 +133,8 @@ snapshotは状態参照用であり、呼び出し側からsessionの状態を�
 ## MainGameSceneとの境界
 
 `MainGameScene`は会話開始条件を確認して会話内容を生成し、`ConversationSession`を保持する。
-入力を`next()`または`selectChoice(choiceId)`へ変換し、`COMPLETED`を受け取った場合はsessionを破棄してmap layerへ戻す。
+入力を`next()`または`selectChoice(choiceId)`へ変換する。
+`COMPLETED`を受け取った場合は会話IDと選択肢IDから成る会話結果を`GameSystem`へ渡し、sessionを破棄してmap layerへ戻す。
+生徒の基礎好感度変化量の決定と最終変化量の計算は、`ConversationSession`の責務に含めない。
 
 scene snapshotを作る際は、`ConversationSession.getSnapshot()`の結果を`activeConversation`として格納する。

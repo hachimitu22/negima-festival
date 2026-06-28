@@ -6,6 +6,7 @@ const CONVERSATION_SESSION_RESULTS = Object.freeze({
 
 class ConversationSession {
   constructor(conversation) {
+    this.conversationId = conversation.id;
     this.choice = conversation.choice;
     this.messages = conversation.messages;
     this.messageIndex = 0;
@@ -27,12 +28,12 @@ class ConversationSession {
 
   selectChoice(choiceId) {
     if (!this.choice || this.choice.messageIndex !== this.messageIndex) {
-      return false;
+      return null;
     }
 
     const selectedOption = this.choice.options.find(option => option.id === choiceId);
     if (!selectedOption) {
-      return false;
+      return null;
     }
 
     this.messages = [
@@ -42,7 +43,10 @@ class ConversationSession {
     ];
     this.choice = null;
     this.messageIndex += 1;
-    return true;
+    return {
+      conversationId: this.conversationId,
+      choiceId: selectedOption.id,
+    };
   }
 
   getSnapshot() {
