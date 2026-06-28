@@ -18,16 +18,17 @@
 - 会話内容の選択と生成
 - 生徒と会話可能かどうかの判定
 - `targetId` などrenderer由来の入力解析
-- conversation layerへの切り替えと会話終了後のlayer復帰
+- `ConversationScene`のpushとpop
 - ゲーム時間やイベント進行の停止
 - DOMを含むrenderer固有の表示処理
 
-これらは会話データの生成処理、`MainGameScene`、rendererがそれぞれ担当する。
+これらは会話データの生成処理、`MainGameScene`、`ConversationScene`、rendererがそれぞれ担当する。
 
 ## GameObjectとの関係
 
 `ConversationSession` は現在の実装では`GameObject`ではない。
-会話はユーザー操作によってのみ進行し、毎フレーム`update(context)`する対象ではないためである。
+会話はユーザー操作によってのみ進行し、毎フレーム`update()`する対象ではないためである。
+`ConversationScene`はgameEngineから毎frame更新されるが、`ConversationSession`はsceneが会話入力を受け取った場合だけ操作される。
 
 時間制限、自動進行、演出待ちなど、フレーム更新で変化するゲームロジックを持たせる場合はGameObject化を再検討する。
 `getSnapshot()`を持つこと自体はGameObject化の条件ではない。
@@ -79,7 +80,7 @@ new ConversationSession(conversation)
 | `BLOCKED` (`blocked`) | 現在位置に未選択の選択肢がある | 変更しない |
 | `COMPLETED` (`completed`) | 現在位置が最後のメッセージである | 変更しない |
 
-`COMPLETED`を受け取った呼び出し側がsessionを破棄し、必要なlayer遷移を行う。
+`COMPLETED`を受け取った`ConversationScene`が完了callbackへ結果を通知し、自身をscene stackからpopする。
 
 ### `selectChoice(choiceId)`
 
@@ -130,11 +131,15 @@ renderer固有の要素や内部のメッセージ配列は公開しない。
 
 snapshotは状態参照用であり、呼び出し側からsessionの状態を変更するためには使用しない。
 
-## MainGameSceneとの境界
+## Sceneとの境界
 
-`MainGameScene`は会話開始条件を確認して会話内容を生成し、`ConversationSession`を保持する。
-入力を`next()`または`selectChoice(choiceId)`へ変換する。
-`COMPLETED`を受け取った場合は会話IDと選択肢IDから成る会話結果を`GameSystem`へ渡し、sessionを破棄してmap layerへ戻す。
+`MainGameScene`は会話開始条件を確認して会話内容を生成する。
+生成した会話内容、停止時点のstatus snapshot、会話結果を受け取る完了callbackを`ConversationScene`へ渡し、scene stackへpushする。
+
+`ConversationScene`は`ConversationSession`を保持し、renderer由来の入力を`next()`または`selectChoice(choiceId)`へ変換する。
+選択結果を保持し、`COMPLETED`を受け取った場合は会話IDと選択肢IDから成る結果を完了callbackへ一度だけ渡す。
+通知後に`ConversationScene`自身をpopし、stackに保持されている同じ`MainGameScene`インスタンスへ戻る。
+完了callbackは`MainGameScene`が生成し、会話結果を`GameSystem`へ反映する。
 生徒の基礎好感度変化量の決定と最終変化量の計算は、`ConversationSession`の責務に含めない。
 
-scene snapshotを作る際は、`ConversationSession.getSnapshot()`の結果を`activeConversation`として格納する。
+`ConversationScene`のsnapshotには`SCENE_IDS.CONVERSATION`、停止時点のゲーム時間とMP、`ConversationSession.getSnapshot()`の結果を格納する。

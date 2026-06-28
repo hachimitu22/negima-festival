@@ -1,4 +1,4 @@
-import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
+import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from '../gameDomain/actions.js';
 
 function createStatusView() {
   let root = null;
@@ -40,7 +40,7 @@ function createStatusView() {
   }
 
   function renderStatus(snapshot) {
-    const isConversationActive = Boolean(snapshot.activeConversation);
+    const isConversationActive = snapshot.sceneId === SCENE_IDS.CONVERSATION;
 
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;

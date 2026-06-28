@@ -1,4 +1,5 @@
 import { SCENE_IDS } from '../gameDomain/actions.js';
+import { createConversationSceneView } from './scenes/conversationScene/index.js';
 import { createMainGameSceneView } from './scenes/mainGameScene/index.js';
 
 class DomGameView {
@@ -19,8 +20,13 @@ class DomGameView {
   }
 
   render(snapshot) {
+    const didSceneChange = this.sceneId !== snapshot?.sceneId;
     const view = this.getSceneView(snapshot);
-    view.update(snapshot);
+    if (didSceneChange) {
+      view.init(snapshot);
+    } else {
+      view.update(snapshot);
+    }
   }
 
   destroy() {
@@ -38,19 +44,25 @@ class DomGameView {
       throw new Error('Scene snapshot must include sceneId.');
     }
 
+    if (this.sceneView && this.sceneId !== snapshot.sceneId) {
+      this.sceneView.destroy();
+      this.sceneView = null;
+      this.sceneId = null;
+    }
+
     if (!this.sceneView) {
       this.sceneView = this.createSceneView(snapshot.sceneId);
       this.sceneId = snapshot.sceneId;
-    }
-
-    if (this.sceneId !== snapshot.sceneId) {
-      throw new Error(`Scene view switching is not supported: ${this.sceneId} -> ${snapshot.sceneId}`);
     }
 
     return this.sceneView;
   }
 
   createSceneView(nextSceneId) {
+    if (nextSceneId === SCENE_IDS.CONVERSATION) {
+      return createConversationSceneView(this.rootElement, this.context);
+    }
+
     if (nextSceneId === SCENE_IDS.MAIN_GAME) {
       return createMainGameSceneView(this.rootElement, this.context);
     }

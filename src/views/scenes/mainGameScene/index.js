@@ -1,12 +1,11 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
-import { createStatusView } from './statusView.js';
+import { createStatusView } from '../../statusView.js';
 
 function createMainGameSceneView(rootElement, options) {
   const statusView = createStatusView();
   let root = null;
   let elements = null;
   let enqueueInput = null;
-  let activeLayerId = null;
   let activePanelLayerId = null;
 
   mount(rootElement, options);
@@ -21,7 +20,6 @@ function createMainGameSceneView(rootElement, options) {
       menu: createRegion(createList('menu')),
       back: createRegion(createDiv('back')),
       mapList: createRegion(createDiv('map-list')),
-      conversation: createRegion(createDiv('conversation')),
       eventList: createRegion(createList('event-list')),
       succeededEventList: createRegion(createList('succeeded-event-list')),
       failedEventList: createRegion(createList('failed-event-list')),
@@ -40,7 +38,6 @@ function createMainGameSceneView(rootElement, options) {
     [
       elements.eventPanel,
       elements.mapList,
-      elements.conversation,
     ].forEach(region => {
       root.append(region.anchor, region.element);
     });
@@ -58,30 +55,24 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function updateSceneContent(snapshot) {
-    updateActiveLayer(snapshot.activeLayerId);
+    updateActivePanelLayer(snapshot.activePanelLayerId);
+    updateMap(
+      snapshot.mapLocations,
+      snapshot.character.location,
+      snapshot.actors,
+    );
 
-    if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
-      updateActivePanelLayer(snapshot.activePanelLayerId);
-      updateMap(
-        snapshot.mapLocations,
-        snapshot.character.location,
-        snapshot.actors,
-      );
-
-      if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.MENU) {
-        updateLayerMenu(snapshot);
-      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
-        updateBackButton();
-        updateExecutingEvents(snapshot.executingEvents);
-      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
-        updateBackButton();
-        updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
-      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
-        updateBackButton();
-        updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
-      }
-    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
-      updateConversation(snapshot.activeConversation);
+    if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.MENU) {
+      updateLayerMenu(snapshot);
+    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
+      updateBackButton();
+      updateExecutingEvents(snapshot.executingEvents);
+    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
+      updateBackButton();
+      updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
+    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
+      updateBackButton();
+      updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
     }
   }
 
@@ -100,52 +91,7 @@ function createMainGameSceneView(rootElement, options) {
     root = null;
     elements = null;
     enqueueInput = null;
-    activeLayerId = null;
     activePanelLayerId = null;
-  }
-
-  function updateActiveLayer(nextLayerId) {
-    if (activeLayerId === nextLayerId) {
-      return;
-    }
-
-    detachInactiveRegions(nextLayerId);
-    attachActiveRegions(nextLayerId);
-    activeLayerId = nextLayerId;
-  }
-
-  function detachInactiveRegions(layerId) {
-    getInactiveRegions(getActiveRegions(layerId), getMainRegions()).forEach(region => {
-      region.element.remove();
-    });
-  }
-
-  function attachActiveRegions(layerId) {
-    getActiveRegions(layerId).forEach(region => {
-      if (!region.element.isConnected) {
-        region.anchor.after(region.element);
-      }
-    });
-  }
-
-  function getActiveRegions(layerId) {
-    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
-      return [elements.eventPanel, elements.mapList];
-    }
-
-    if (layerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
-      return [elements.conversation];
-    }
-
-    return [];
-  }
-
-  function getMainRegions() {
-    return [
-      elements.eventPanel,
-      elements.mapList,
-      elements.conversation,
-    ];
   }
 
   function updateActivePanelLayer(nextLayerId) {
@@ -431,104 +377,6 @@ function createMainGameSceneView(rootElement, options) {
     }
 
     updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput);
-  }
-
-  function updateConversation(conversation) {
-    if (!conversation) {
-      elements.conversation.element.replaceChildren();
-      return;
-    }
-
-    const conversationView = getOrCreateConversationView();
-    const choices = conversation.choices ?? [];
-    conversationView.speaker.textContent = conversation.speakerName;
-    conversationView.message.textContent = conversation.message;
-    conversationView.progress.textContent = `${conversation.messageIndex + 1} / ${conversation.messageCount}`;
-    conversationView.next.textContent = conversation.isLastMessage ? '会話を終える' : '次へ';
-    conversationView.progress.hidden = choices.length > 0;
-    conversationView.next.hidden = choices.length > 0;
-    updateConversationChoices(conversationView.choices, choices);
-  }
-
-  function getOrCreateConversationView() {
-    let speaker = elements.conversation.element.querySelector('[data-conversation-speaker]');
-    if (speaker) {
-      return {
-        speaker,
-        message: elements.conversation.element.querySelector('[data-conversation-message]'),
-        progress: elements.conversation.element.querySelector('[data-conversation-progress]'),
-        choices: elements.conversation.element.querySelector('[data-conversation-choices]'),
-        next: elements.conversation.element.querySelector('[data-conversation-next]'),
-      };
-    }
-
-    speaker = document.createElement('h2');
-    const message = document.createElement('p');
-    const progress = document.createElement('p');
-    const choices = document.createElement('div');
-    const next = document.createElement('button');
-
-    speaker.dataset.conversationSpeaker = '';
-    message.dataset.conversationMessage = '';
-    progress.dataset.conversationProgress = '';
-    choices.dataset.conversationChoices = '';
-    next.dataset.conversationNext = '';
-    next.type = 'button';
-    next.addEventListener('click', () => {
-      enqueueInput({
-        type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, 'next'),
-      });
-    });
-
-    elements.conversation.element.append(speaker, message, progress, choices, next);
-    return {
-      speaker,
-      message,
-      progress,
-      choices,
-      next,
-    };
-  }
-
-  function updateConversationChoices(choiceList, choices) {
-    const choiceIds = new Set(choices.map(choice => choice.id));
-
-    Array.from(choiceList.children).forEach(choiceButton => {
-      if (!choiceIds.has(choiceButton.dataset.conversationChoiceId)) {
-        choiceButton.remove();
-      }
-    });
-
-    choices.forEach(choice => {
-      const choiceButton = getOrCreateConversationChoice(choiceList, choice);
-      choiceButton.textContent = choice.label;
-
-      if (!choiceButton.isConnected) {
-        choiceList.appendChild(choiceButton);
-      }
-    });
-
-    choiceList.hidden = choices.length === 0;
-  }
-
-  function getOrCreateConversationChoice(choiceList, choice) {
-    const existingChoice = Array.from(choiceList.children)
-      .find(choiceButton => choiceButton.dataset.conversationChoiceId === choice.id);
-    if (existingChoice) {
-      return existingChoice;
-    }
-
-    const choiceButton = document.createElement('button');
-    choiceButton.type = 'button';
-    choiceButton.dataset.conversationChoiceId = choice.id;
-    choiceButton.addEventListener('click', () => {
-      enqueueInput({
-        type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, `choice:${choice.id}`),
-      });
-    });
-    return choiceButton;
   }
 
   function updateExecutingEvents(events) {

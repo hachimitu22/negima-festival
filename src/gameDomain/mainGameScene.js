@@ -1,8 +1,5 @@
 import { ACTION_TYPES, INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
-import {
-  CONVERSATION_SESSION_RESULTS,
-  ConversationSession,
-} from './conversationSession.js';
+import { ConversationScene } from './conversationScene.js';
 import { createConversation } from './conversations.js';
 import { EventGameObject } from './eventGameObject.js';
 import { ClickEvent, InputEvent } from './gameEvent.js';
@@ -40,28 +37,24 @@ class MainGameScene {
     this.failedEvents = [];
     this.lastEventId = 0;
     this.nextEventTimeHours = 1;
-    this.activeConversation = null;
-    this.activeConversationActorId = null;
-    this.activeConversationResult = null;
   }
 
-  update(context) {
-    const inputContext = {
-      ...this.system.createUpdateContext(context),
-      inputs: context.inputs,
-    };
-    const wasConversationActive = this.isConversationActive();
-
-    this.handleInputs(inputContext.inputs, inputContext);
-
-    if (wasConversationActive || this.isConversationActive()) {
+  update({
+    context,
+    sceneControl: { pushScene },
+  }) {
+    const inputs = context.inputs ?? [];
+    const conversationScene = this.createConversationSceneFromInputs(inputs);
+    if (conversationScene) {
+      pushScene(conversationScene);
       return;
     }
 
+    this.handleInputs(inputs);
     this.system.update(context);
     const sceneContext = {
       ...this.system.createUpdateContext(context),
-      inputs: inputContext.inputs,
+      inputs,
     };
 
     this.events.forEach(eventObject => {
@@ -76,20 +69,15 @@ class MainGameScene {
     }
   }
 
-  handleInputs(inputs = [], context = {}) {
+  handleInputs(inputs = []) {
     inputs.forEach(input => {
-      this.processInput(input, context);
+      this.processInput(input);
     });
   }
 
-  processInput(input, context = {}) {
-    if (this.isConversationActive()) {
-      this.handleConversationInput(input);
-      return;
-    }
-
+  processInput(input) {
     if (input.type === INPUT_TYPES.TARGET_ACTIVATE) {
-      this.handleTargetActivate(input.targetId, context);
+      this.handleTargetActivate(input.targetId);
       return;
     }
 
@@ -110,13 +98,7 @@ class MainGameScene {
     }
   }
 
-  handleTargetActivate(targetId, context) {
-    const conversationAction = getTargetValue(targetId, TARGET_PREFIXES.CONVERSATION);
-    if (conversationAction) {
-      this.handleConversationAction(conversationAction);
-      return;
-    }
-
+  handleTargetActivate(targetId) {
     const layerId = getTargetValue(targetId, TARGET_PREFIXES.LAYER);
     if (layerId) {
       this.selectLayer(layerId);
@@ -131,7 +113,6 @@ class MainGameScene {
 
     const actorId = getTargetValue(targetId, TARGET_PREFIXES.ACTOR);
     if (actorId !== null) {
-      this.startConversation(actorId);
       return;
     }
 
@@ -170,7 +151,6 @@ class MainGameScene {
       activePanelLayerId: this.activePanelLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
-      activeConversation: this.createActiveConversationSnapshot(),
       executingEvents: this.events.map(eventObject => eventObject.getSnapshot()),
       succeededEvents: this.succeededEvents.map(eventObject => eventObject.getSnapshot()),
       failedEvents: this.failedEvents.map(eventObject => eventObject.getSnapshot()),
@@ -209,85 +189,45 @@ class MainGameScene {
     this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
   }
 
-  startConversation(actorId) {
+  createConversationSceneFromInputs(inputs = []) {
+    for (const input of inputs) {
+      if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
+        continue;
+      }
+
+      const actorId = getTargetValue(input.targetId, TARGET_PREFIXES.ACTOR);
+      if (actorId === null) {
+        continue;
+      }
+
+      const conversationScene = this.createConversationScene(actorId);
+      if (conversationScene) {
+        return conversationScene;
+      }
+    }
+
+    return null;
+  }
+
+  createConversationScene(actorId) {
     const actor = this.system.findTalkableActor(actorId);
     if (!actor) {
-      return false;
+      return null;
     }
 
     const conversation = createConversation(actor);
     if (conversation.messages.length === 0) {
-      return false;
-    }
-
-    this.activeConversation = new ConversationSession(conversation);
-    this.activeConversationActorId = actor.id;
-    this.activeConversationResult = {
-      conversationId: conversation.id,
-      choiceId: null,
-    };
-    this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
-    return true;
-  }
-
-  isConversationActive() {
-    return Boolean(this.activeConversation);
-  }
-
-  handleConversationInput(input) {
-    if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
-      return;
-    }
-
-    const conversationAction = getTargetValue(input.targetId, TARGET_PREFIXES.CONVERSATION);
-    if (conversationAction) {
-      this.handleConversationAction(conversationAction);
-    }
-  }
-
-  handleConversationAction(action) {
-    if (!this.activeConversation) {
-      return;
-    }
-
-    const choiceId = getTargetValue(action, 'choice');
-    if (choiceId) {
-      this.selectConversationChoice(choiceId);
-      return;
-    }
-
-    if (action !== 'next') {
-      return;
-    }
-
-    const result = this.activeConversation.next();
-    if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
-      if (this.activeConversationActorId !== null) {
-        this.system.applyStudentConversationResult(
-          this.activeConversationActorId,
-          this.activeConversationResult,
-        );
-      }
-      this.activeConversation = null;
-      this.activeConversationActorId = null;
-      this.activeConversationResult = null;
-      this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    }
-  }
-
-  selectConversationChoice(choiceId) {
-    const result = this.activeConversation.selectChoice(choiceId);
-    if (result) {
-      this.activeConversationResult = result;
-    }
-  }
-
-  createActiveConversationSnapshot() {
-    if (!this.activeConversation) {
       return null;
     }
 
-    return this.activeConversation.getSnapshot();
+    const conversationScene = new ConversationScene({
+      conversation,
+      statusSnapshot: this.system.createSnapshot(),
+      onComplete: conversationResult => {
+        this.system.applyStudentConversationResult(actor.id, conversationResult);
+      },
+    });
+    return conversationScene;
   }
 
   createEventRandom(context) {

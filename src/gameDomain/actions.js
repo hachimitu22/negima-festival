@@ -20,7 +20,6 @@ const TARGET_PREFIXES = {
 };
 
 const MAIN_GAME_LAYER_IDS = {
-  CONVERSATION: 'conversation',
   MENU: 'menu',
   MAP: 'map',
   EXECUTING_EVENTS: 'executing-events',
@@ -29,6 +28,7 @@ const MAIN_GAME_LAYER_IDS = {
 };
 
 const SCENE_IDS = {
+  CONVERSATION: 'conversation',
   MAIN_GAME: 'main-game',
 };
 

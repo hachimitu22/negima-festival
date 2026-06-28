@@ -9,11 +9,18 @@ function createInitialFrame() {
 
 class GameEngine {
   constructor({ initialScene, view }) {
-    this.currentScene = initialScene;
+    this.sceneStack = [];
+    this.currentScene = null;
     this.frame = createInitialFrame();
     this.inputQueue = [];
     this.isRunning = false;
     this.view = view;
+    this.sceneControl = Object.freeze({
+      pushScene: scene => this.pushScene(scene),
+      popScene: () => this.popScene(),
+    });
+
+    this.pushScene(initialScene);
 
     if (this.view && typeof this.view.configure === 'function') {
       this.view.configure({
@@ -41,6 +48,26 @@ class GameEngine {
     this.inputQueue.push(input);
   }
 
+  pushScene(scene) {
+    if (!scene) {
+      throw new TypeError('Scene is required.');
+    }
+
+    this.sceneStack.push(scene);
+    this.currentScene = scene;
+    return scene;
+  }
+
+  popScene() {
+    if (this.sceneStack.length <= 1) {
+      return null;
+    }
+
+    const poppedScene = this.sceneStack.pop();
+    this.currentScene = this.sceneStack[this.sceneStack.length - 1];
+    return poppedScene;
+  }
+
   update(now) {
     if (!this.isRunning) {
       return;
@@ -60,7 +87,10 @@ class GameEngine {
 
     const context = this.createUpdateContext();
     context.inputs = inputs;
-    this.currentScene.update(context);
+    this.currentScene.update({
+      context,
+      sceneControl: this.sceneControl,
+    });
   }
 
   renderView() {
