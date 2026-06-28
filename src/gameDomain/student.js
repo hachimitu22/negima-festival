@@ -1,9 +1,9 @@
-import { MapPerson } from './mapPerson.js';
+import { Actor } from './actor.js';
 
 const MIN_AFFECTION = -100;
 const MAX_AFFECTION = 100;
 
-class Student extends MapPerson {
+class Student extends Actor {
   constructor(name, classAndNumber, locationId, affection = 0) {
     super(createStudentId(classAndNumber), name, locationId);
     this.classAndNumber = classAndNumber;

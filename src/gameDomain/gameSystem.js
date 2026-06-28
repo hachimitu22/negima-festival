@@ -167,12 +167,12 @@ class GameSystem {
     return true;
   }
 
-  getTalkableMapPersonSnapshot(mapPersonId) {
-    const mapPerson = this.persons.find(person => (
-      person.id === mapPersonId
+  getTalkableActorSnapshot(actorId) {
+    const actor = this.persons.find(person => (
+      person.id === actorId
       && person.locationId === this.character.locationId
     ));
-    return mapPerson?.getSnapshot() ?? null;
+    return actor?.getSnapshot() ?? null;
   }
 
   createSnapshot() {

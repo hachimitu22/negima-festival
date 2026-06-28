@@ -199,19 +199,19 @@ class MainGameScene {
     this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
   }
 
-  startConversation(mapPersonId) {
-    const mapPerson = this.system.getTalkableMapPersonSnapshot(mapPersonId);
-    if (!mapPerson) {
+  startConversation(actorId) {
+    const actor = this.system.getTalkableActorSnapshot(actorId);
+    if (!actor) {
       return false;
     }
 
-    const conversation = createConversation(mapPerson);
+    const conversation = createConversation(actor);
     if (conversation.messages.length === 0) {
       return false;
     }
 
     this.activeConversation = new ConversationSession(conversation);
-    this.activeConversationStudentClassAndNumber = mapPerson.classAndNumber ?? null;
+    this.activeConversationStudentClassAndNumber = actor.classAndNumber ?? null;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }

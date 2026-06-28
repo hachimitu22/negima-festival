@@ -5,7 +5,7 @@ import { getRandomInt } from './random.js';
 const MIN_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_MOVEMENT_INTERVAL_HOURS = 10;
 
-class MapPerson extends GameObject {
+class Actor extends GameObject {
   constructor(id, name, locationId, { excludedLocationIds = [] } = {}) {
     super();
     this.id = id;
@@ -74,5 +74,5 @@ class MapPerson extends GameObject {
 }
 
 export {
-  MapPerson,
+  Actor,
 };
