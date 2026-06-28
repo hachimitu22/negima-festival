@@ -122,9 +122,9 @@ class MainGameScene {
       return;
     }
 
-    const personId = getTargetValue(targetId, TARGET_PREFIXES.PERSON);
-    if (personId !== null) {
-      this.startConversation(personId);
+    const actorId = getTargetValue(targetId, TARGET_PREFIXES.ACTOR);
+    if (actorId !== null) {
+      this.startConversation(actorId);
       return;
     }
 

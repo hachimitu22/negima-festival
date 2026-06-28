@@ -34,7 +34,7 @@ class GameSystem {
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
     });
-    this.persons = [
+    this.actors = [
       new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
       new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
       new Student('朝倉和美'                              ,  3, LOCATION_IDS.CLASSROOM_3A),
@@ -94,8 +94,8 @@ class GameSystem {
     };
 
     this.character.update(context);
-    this.persons.forEach(person => {
-      person.update(context);
+    this.actors.forEach(actor => {
+      actor.update(context);
     });
 
     return {
@@ -132,8 +132,8 @@ class GameSystem {
     );
     this.gameTime.isEnded = false;
     this.loop.count += 1;
-    this.persons.forEach(person => {
-      person.resetNextMoveTime(this.gameTime.currentHours);
+    this.actors.forEach(actor => {
+      actor.resetNextMoveTime(this.gameTime.currentHours);
     });
     return {
       currentHours: this.gameTime.currentHours,
@@ -151,9 +151,9 @@ class GameSystem {
   }
 
   findStudentByClassAndNumber(classAndNumber) {
-    return this.persons.find(person => (
-      person instanceof Student
-      && person.classAndNumber === classAndNumber
+    return this.actors.find(actor => (
+      actor instanceof Student
+      && actor.classAndNumber === classAndNumber
     )) ?? null;
   }
 
@@ -168,9 +168,9 @@ class GameSystem {
   }
 
   getTalkableActorSnapshot(actorId) {
-    const actor = this.persons.find(person => (
-      person.id === actorId
-      && person.locationId === this.character.locationId
+    const actor = this.actors.find(candidate => (
+      candidate.id === actorId
+      && candidate.locationId === this.character.locationId
     ));
     return actor?.getSnapshot() ?? null;
   }
@@ -188,7 +188,7 @@ class GameSystem {
         cassiopeiaMagicPowerCost: this.loop.cassiopeiaMagicPowerCost,
       },
       character: this.character.getSnapshot(),
-      persons: this.persons.map(person => person.getSnapshot()),
+      actors: this.actors.map(actor => actor.getSnapshot()),
       knownEvents: Array.from(this.knownEvents),
     };
   }

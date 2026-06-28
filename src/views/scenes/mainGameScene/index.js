@@ -59,7 +59,7 @@ function createMainGameSceneView(rootElement, options) {
       updateMap(
         snapshot.mapLocations,
         snapshot.character.location,
-        snapshot.persons,
+        snapshot.actors,
       );
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
       updateConversation(snapshot.activeConversation);
@@ -209,10 +209,10 @@ function createMainGameSceneView(rootElement, options) {
     elements.back.element.prepend(backButton);
   }
 
-  function updateMap(locations, currentLocation, persons = []) {
+  function updateMap(locations, currentLocation, actors = []) {
     const groups = groupLocations(locations);
     const groupNames = new Set(groups.map(group => group.name));
-    const personsByLocationId = groupPeopleByLocationId(persons);
+    const actorsByLocationId = groupActorsByLocationId(actors);
 
     Array.from(elements.mapList.element.children).forEach(groupElement => {
       if (!groupNames.has(groupElement.dataset.mapGroup)) {
@@ -228,7 +228,7 @@ function createMainGameSceneView(rootElement, options) {
         locationList,
         group.locations,
         currentLocation,
-        personsByLocationId,
+        actorsByLocationId,
       );
 
       if (!groupElement.isConnected) {
@@ -237,21 +237,21 @@ function createMainGameSceneView(rootElement, options) {
     });
   }
 
-  function groupPeopleByLocationId(people) {
-    const peopleByLocationId = new Map();
+  function groupActorsByLocationId(actors) {
+    const actorsByLocationId = new Map();
 
-    people.forEach(person => {
-      const locationId = person.location?.id;
+    actors.forEach(actor => {
+      const locationId = actor.location?.id;
       if (!locationId) {
         return;
       }
 
-      const locationPeople = peopleByLocationId.get(locationId) ?? [];
-      locationPeople.push(person);
-      peopleByLocationId.set(locationId, locationPeople);
+      const locationActors = actorsByLocationId.get(locationId) ?? [];
+      locationActors.push(actor);
+      actorsByLocationId.set(locationId, locationActors);
     });
 
-    return peopleByLocationId;
+    return actorsByLocationId;
   }
 
   function groupLocations(locations) {
@@ -305,7 +305,7 @@ function createMainGameSceneView(rootElement, options) {
     locationList,
     locations,
     currentLocation,
-    personsByLocationId,
+    actorsByLocationId,
   ) {
     const locationIds = new Set(locations.map(location => location.id));
 
@@ -321,7 +321,7 @@ function createMainGameSceneView(rootElement, options) {
         locationItem,
         location,
         currentLocation,
-        personsByLocationId.get(location.id) ?? [],
+        actorsByLocationId.get(location.id) ?? [],
       );
 
       if (!locationItem.isConnected) {
@@ -343,7 +343,7 @@ function createMainGameSceneView(rootElement, options) {
   function createLocationItem(location) {
     const locationItem = document.createElement('div');
     const locationButton = document.createElement('button');
-    const personList = document.createElement('menu');
+    const actorList = document.createElement('menu');
 
     locationItem.dataset.locationId = location.id;
     locationButton.type = 'button';
@@ -355,15 +355,15 @@ function createMainGameSceneView(rootElement, options) {
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
-    personList.dataset.locationPersons = '';
+    actorList.dataset.locationActors = '';
 
-    locationItem.append(locationButton, personList);
+    locationItem.append(locationButton, actorList);
     return locationItem;
   }
 
-  function updateLocationItem(locationItem, location, currentLocation, persons) {
+  function updateLocationItem(locationItem, location, currentLocation, actors) {
     const locationButton = locationItem.querySelector('[data-location-button]');
-    const personList = locationItem.querySelector('[data-location-persons]');
+    const actorList = locationItem.querySelector('[data-location-actors]');
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
     const locationName = isCurrentLocation ? `${location.name} (現在地)` : location.name;
@@ -381,7 +381,7 @@ function createMainGameSceneView(rootElement, options) {
       locationButton.disabled = disabled;
     }
 
-    updateLocationPersons(personList, persons, isCurrentLocation, enqueueInput);
+    updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput);
   }
 
   function updateConversation(conversation) {
@@ -637,68 +637,68 @@ function formatCompletedEvent(event, statusText) {
   return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
 }
 
-function updateLocationPersons(personList, persons, isCurrentLocation, enqueueInput) {
-  const personIds = new Set(persons.map(person => person.id));
+function updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput) {
+  const actorIds = new Set(actors.map(actor => actor.id));
 
-  Array.from(personList.children).forEach(personItem => {
-    if (!personIds.has(personItem.dataset.personId)) {
-      personItem.remove();
+  Array.from(actorList.children).forEach(actorItem => {
+    if (!actorIds.has(actorItem.dataset.actorId)) {
+      actorItem.remove();
     }
   });
 
-  persons.forEach(person => {
-    const personItem = getOrCreatePersonItem(personList, person, enqueueInput);
-    const personButton = personItem.querySelector('[data-person-button]');
-    const personAffection = personItem.querySelector('[data-person-affection]');
-    const hasAffection = typeof person.affection === 'number';
-    const affectionText = hasAffection ? `${person.affection}` : '';
+  actors.forEach(actor => {
+    const actorItem = getOrCreateActorItem(actorList, actor, enqueueInput);
+    const actorButton = actorItem.querySelector('[data-actor-button]');
+    const actorAffection = actorItem.querySelector('[data-actor-affection]');
+    const hasAffection = typeof actor.affection === 'number';
+    const affectionText = hasAffection ? `${actor.affection}` : '';
     const disabled = !isCurrentLocation;
 
-    if (personButton.textContent !== person.name) {
-      personButton.textContent = person.name;
+    if (actorButton.textContent !== actor.name) {
+      actorButton.textContent = actor.name;
     }
 
-    if (personButton.disabled !== disabled) {
-      personButton.disabled = disabled;
+    if (actorButton.disabled !== disabled) {
+      actorButton.disabled = disabled;
     }
 
-    if (personAffection.textContent !== affectionText) {
-      personAffection.textContent = affectionText;
+    if (actorAffection.textContent !== affectionText) {
+      actorAffection.textContent = affectionText;
     }
 
-    if (personAffection.hidden !== !hasAffection) {
-      personAffection.hidden = !hasAffection;
+    if (actorAffection.hidden !== !hasAffection) {
+      actorAffection.hidden = !hasAffection;
     }
 
-    if (!personItem.isConnected) {
-      personList.appendChild(personItem);
+    if (!actorItem.isConnected) {
+      actorList.appendChild(actorItem);
     }
   });
 }
 
-function getOrCreatePersonItem(personList, person, enqueueInput) {
-  const existingItem = personList.querySelector(`[data-person-id="${person.id}"]`);
+function getOrCreateActorItem(actorList, actor, enqueueInput) {
+  const existingItem = actorList.querySelector(`[data-actor-id="${actor.id}"]`);
   if (existingItem) {
     return existingItem;
   }
 
-  const personItem = document.createElement('li');
-  const personButton = document.createElement('button');
-  const personAffection = document.createElement('span');
-  personButton.type = 'button';
-  personButton.textContent = person.name;
-  personButton.dataset.personButton = '';
-  personButton.setAttribute('compact', '');
-  personButton.addEventListener('click', () => {
+  const actorItem = document.createElement('li');
+  const actorButton = document.createElement('button');
+  const actorAffection = document.createElement('span');
+  actorButton.type = 'button';
+  actorButton.textContent = actor.name;
+  actorButton.dataset.actorButton = '';
+  actorButton.setAttribute('compact', '');
+  actorButton.addEventListener('click', () => {
     enqueueInput({
       type: INPUT_TYPES.TARGET_ACTIVATE,
-      targetId: createTargetId(TARGET_PREFIXES.PERSON, person.id),
+      targetId: createTargetId(TARGET_PREFIXES.ACTOR, actor.id),
     });
   });
-  personAffection.dataset.personAffection = '';
-  personItem.dataset.personId = person.id;
-  personItem.append(personButton, personAffection);
-  return personItem;
+  actorAffection.dataset.actorAffection = '';
+  actorItem.dataset.actorId = actor.id;
+  actorItem.append(actorButton, actorAffection);
+  return actorItem;
 }
 
 function createTargetId(prefix, id) {

@@ -5,13 +5,13 @@
   align-items: flex-start;
 }
 
-[data-location-persons] {
+[data-location-actors] {
   list-style: none;
   margin: 4px 0 0;
   padding: 0;
 }
 
-[data-location-persons] > li {
+[data-location-actors] > li {
   display: flex;
   gap: 4px;
   align-items: center;

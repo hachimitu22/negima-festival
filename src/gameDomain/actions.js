@@ -16,7 +16,7 @@ const TARGET_PREFIXES = {
   EVENT: 'event',
   LAYER: 'layer',
   LOCATION: 'location',
-  PERSON: 'person',
+  ACTOR: 'actor',
 };
 
 const MAIN_GAME_LAYER_IDS = {
