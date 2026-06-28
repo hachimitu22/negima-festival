@@ -44,13 +44,13 @@ class MainGameScene {
     sceneControl: { pushScene },
   }) {
     const inputs = context.inputs ?? [];
-    const conversationScene = this.createConversationSceneFromInputs(inputs);
+    const conversationScene = this.#createConversationSceneFromInputs(inputs);
     if (conversationScene) {
       pushScene(conversationScene);
       return;
     }
 
-    this.handleInputs(inputs);
+    this.#handleInputs(inputs);
     this.system.update(context);
     const sceneContext = {
       ...this.system.createUpdateContext(context),
@@ -61,28 +61,28 @@ class MainGameScene {
       eventObject.update(sceneContext);
     });
 
-    this.moveFinishedEvents();
+    this.#moveFinishedEvents();
 
-    const eventObject = this.createEventRandom(sceneContext);
+    const eventObject = this.#createEventRandom(sceneContext);
     if (eventObject) {
       this.events.push(eventObject);
     }
   }
 
-  handleInputs(inputs = []) {
+  #handleInputs(inputs = []) {
     inputs.forEach(input => {
-      this.processInput(input);
+      this.#processInput(input);
     });
   }
 
-  processInput(input) {
+  #processInput(input) {
     if (input.type === INPUT_TYPES.TARGET_ACTIVATE) {
-      this.handleTargetActivate(input.targetId);
+      this.#handleTargetActivate(input.targetId);
       return;
     }
 
     if (input.type === INPUT_TYPES.TARGET_INPUT_CHANGE) {
-      this.handleEventAction({
+      this.#handleEventAction({
         type: ACTION_TYPES.EVENT_INPUT_CHANGE,
         eventId: getTargetValue(input.targetId, TARGET_PREFIXES.EVENT),
         value: input.value,
@@ -91,17 +91,17 @@ class MainGameScene {
     }
 
     if (input.type === INPUT_TYPES.TARGET_SUBMIT) {
-      this.handleEventAction({
+      this.#handleEventAction({
         type: ACTION_TYPES.EVENT_INPUT_SUBMIT,
         eventId: getTargetValue(input.targetId, TARGET_PREFIXES.EVENT),
       });
     }
   }
 
-  handleTargetActivate(targetId) {
+  #handleTargetActivate(targetId) {
     const layerId = getTargetValue(targetId, TARGET_PREFIXES.LAYER);
     if (layerId) {
-      this.selectLayer(layerId);
+      this.#selectLayer(layerId);
       return;
     }
 
@@ -118,7 +118,7 @@ class MainGameScene {
 
     const eventId = getTargetValue(targetId, TARGET_PREFIXES.EVENT);
     if (eventId !== null) {
-      this.handleEventAction({
+      this.#handleEventAction({
         type: ACTION_TYPES.EVENT_CLICK,
         eventId,
       });
@@ -128,12 +128,12 @@ class MainGameScene {
     if (targetId === TARGET_PREFIXES.CASSIOPEIA) {
       const result = this.system.useCassiopeia();
       if (result) {
-        this.rewindTo(result.currentHours);
+        this.#rewindTo(result.currentHours);
       }
     }
   }
 
-  handleEventAction(action) {
+  #handleEventAction(action) {
     if (action.eventId === null) {
       return;
     }
@@ -157,7 +157,7 @@ class MainGameScene {
     };
   }
 
-  selectLayer(layerId) {
+  #selectLayer(layerId) {
     if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
       this.activeLayerId = layerId;
       return;
@@ -168,7 +168,7 @@ class MainGameScene {
     }
   }
 
-  moveFinishedEvents() {
+  #moveFinishedEvents() {
     const executingEvents = [];
 
     this.events.forEach(eventObject => {
@@ -184,12 +184,12 @@ class MainGameScene {
     this.events = executingEvents;
   }
 
-  rewindTo(currentHours) {
+  #rewindTo(currentHours) {
     this.events = [];
     this.nextEventTimeHours = currentHours + EVENT_SPAWN_INTERVAL_HOURS;
   }
 
-  createConversationSceneFromInputs(inputs = []) {
+  #createConversationSceneFromInputs(inputs = []) {
     for (const input of inputs) {
       if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
         continue;
@@ -200,7 +200,7 @@ class MainGameScene {
         continue;
       }
 
-      const conversationScene = this.createConversationScene(actorId);
+      const conversationScene = this.#createConversationScene(actorId);
       if (conversationScene) {
         return conversationScene;
       }
@@ -209,7 +209,7 @@ class MainGameScene {
     return null;
   }
 
-  createConversationScene(actorId) {
+  #createConversationScene(actorId) {
     const actor = this.system.findTalkableActor(actorId);
     if (!actor) {
       return null;
@@ -230,7 +230,7 @@ class MainGameScene {
     return conversationScene;
   }
 
-  createEventRandom(context) {
+  #createEventRandom(context) {
     if (
       context.isFestivalEnded
       || typeof context.gameTimeHours !== 'number'

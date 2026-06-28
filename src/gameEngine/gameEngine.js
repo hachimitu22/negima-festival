@@ -16,21 +16,21 @@ class GameEngine {
     this.isRunning = false;
     this.view = view;
     this.sceneControl = Object.freeze({
-      pushScene: scene => this.pushScene(scene),
-      popScene: () => this.popScene(),
+      pushScene: scene => this.#pushScene(scene),
+      popScene: () => this.#popScene(),
     });
 
-    this.pushScene(initialScene);
+    this.#pushScene(initialScene);
 
     if (this.view && typeof this.view.configure === 'function') {
       this.view.configure({
-        enqueueInput: input => this.enqueueInput(input),
+        enqueueInput: input => this.#enqueueInput(input),
       });
     }
   }
 
   start() {
-    this.view.init(this.createSnapshot());
+    this.view.init(this.#createSnapshot());
     this.isRunning = true;
   }
 
@@ -44,11 +44,11 @@ class GameEngine {
     this.view = null;
   }
 
-  enqueueInput(input) {
+  #enqueueInput(input) {
     this.inputQueue.push(input);
   }
 
-  pushScene(scene) {
+  #pushScene(scene) {
     if (!scene) {
       throw new TypeError('Scene is required.');
     }
@@ -58,7 +58,7 @@ class GameEngine {
     return scene;
   }
 
-  popScene() {
+  #popScene() {
     if (this.sceneStack.length <= 1) {
       return null;
     }
@@ -73,19 +73,19 @@ class GameEngine {
       return;
     }
 
-    this.updateScene(now);
-    this.renderView();
+    this.#updateScene(now);
+    this.#renderView();
   }
 
-  updateScene(now) {
-    this.updateFrame(now);
-    const inputs = this.drainInputQueue();
+  #updateScene(now) {
+    this.#updateFrame(now);
+    const inputs = this.#drainInputQueue();
 
     if (!this.currentScene || typeof this.currentScene.update !== 'function') {
       return;
     }
 
-    const context = this.createUpdateContext();
+    const context = this.#createUpdateContext();
     context.inputs = inputs;
     this.currentScene.update({
       context,
@@ -93,13 +93,13 @@ class GameEngine {
     });
   }
 
-  renderView() {
+  #renderView() {
     if (this.view && typeof this.view.render === 'function') {
-      this.view.render(this.createSnapshot());
+      this.view.render(this.#createSnapshot());
     }
   }
 
-  createUpdateContext() {
+  #createUpdateContext() {
     return {
       deltaFrames: this.frame.deltaTime / this.frame.targetFrameTimeMs,
       deltaTimeMs: this.frame.deltaTime,
@@ -109,13 +109,13 @@ class GameEngine {
     };
   }
 
-  drainInputQueue() {
+  #drainInputQueue() {
     const inputs = this.inputQueue;
     this.inputQueue = [];
     return inputs;
   }
 
-  updateFrame(now) {
+  #updateFrame(now) {
     if (this.frame.beforeTime === null) {
       this.frame.beforeTime = now;
     }
@@ -125,7 +125,7 @@ class GameEngine {
     this.frame.count += 1;
   }
 
-  createSnapshot() {
+  #createSnapshot() {
     if (!this.currentScene || typeof this.currentScene.createSnapshot !== 'function') {
       return {};
     }

@@ -15,13 +15,13 @@ class DomGameView {
   }
 
   init(snapshot) {
-    const view = this.getSceneView(snapshot);
+    const view = this.#getSceneView(snapshot);
     view.init(snapshot);
   }
 
   render(snapshot) {
     const didSceneChange = this.sceneId !== snapshot?.sceneId;
-    const view = this.getSceneView(snapshot);
+    const view = this.#getSceneView(snapshot);
     if (didSceneChange) {
       view.init(snapshot);
     } else {
@@ -39,7 +39,7 @@ class DomGameView {
     this.sceneId = null;
   }
 
-  getSceneView(snapshot) {
+  #getSceneView(snapshot) {
     if (!snapshot || typeof snapshot.sceneId !== 'string') {
       throw new Error('Scene snapshot must include sceneId.');
     }
@@ -51,14 +51,14 @@ class DomGameView {
     }
 
     if (!this.sceneView) {
-      this.sceneView = this.createSceneView(snapshot.sceneId);
+      this.sceneView = this.#createSceneView(snapshot.sceneId);
       this.sceneId = snapshot.sceneId;
     }
 
     return this.sceneView;
   }
 
-  createSceneView(nextSceneId) {
+  #createSceneView(nextSceneId) {
     if (nextSceneId === SCENE_IDS.CONVERSATION) {
       return createConversationSceneView(this.rootElement, this.context);
     }

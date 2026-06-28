@@ -23,13 +23,13 @@ class ConversationScene {
     const inputs = context.inputs ?? [];
 
     for (const input of inputs) {
-      if (this.processInput(input, popScene)) {
+      if (this.#processInput(input, popScene)) {
         break;
       }
     }
   }
 
-  processInput(input, popScene) {
+  #processInput(input, popScene) {
     if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
       return false;
     }
@@ -39,10 +39,10 @@ class ConversationScene {
       return false;
     }
 
-    return this.handleConversationAction(action, popScene);
+    return this.#handleConversationAction(action, popScene);
   }
 
-  handleConversationAction(action, popScene) {
+  #handleConversationAction(action, popScene) {
     const choiceId = getTargetValue(action, 'choice');
     if (choiceId) {
       const result = this.session.selectChoice(choiceId);

@@ -87,7 +87,7 @@ class GameSystem {
   }
 
   update(frame) {
-    const elapsedGameHours = this.updateGameTime(frame);
+    const elapsedGameHours = this.#updateGameTime(frame);
     const context = {
       ...this.createUpdateContext(frame),
       elapsedGameHours,
@@ -103,7 +103,7 @@ class GameSystem {
     };
   }
 
-  updateGameTime(frame) {
+  #updateGameTime(frame) {
     if (this.gameTime.isEnded) {
       return 0;
     }

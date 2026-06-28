@@ -12,7 +12,7 @@ class Actor extends GameObject {
     this.name = name;
     this.locationId = locationId;
     this.excludedLocationIds = new Set(excludedLocationIds);
-    this.nextMoveTimeHours = this.createNextMoveTime(0);
+    this.nextMoveTimeHours = this.#createNextMoveTime(0);
   }
 
   update(context) {
@@ -25,26 +25,26 @@ class Actor extends GameObject {
       return;
     }
 
-    this.moveToRandomDestination();
-    this.advanceNextMoveTime(gameTimeHours);
+    this.#moveToRandomDestination();
+    this.#advanceNextMoveTime(gameTimeHours);
   }
 
   resetNextMoveTime(currentGameTimeHours) {
-    this.nextMoveTimeHours = this.createNextMoveTime(currentGameTimeHours);
+    this.nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
   }
 
-  advanceNextMoveTime(currentGameTimeHours) {
-    this.nextMoveTimeHours = this.createNextMoveTime(currentGameTimeHours);
+  #advanceNextMoveTime(currentGameTimeHours) {
+    this.nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
   }
 
-  createNextMoveTime(baseGameTimeHours) {
+  #createNextMoveTime(baseGameTimeHours) {
     return baseGameTimeHours + getRandomInt(
       MIN_MOVEMENT_INTERVAL_HOURS,
       MAX_MOVEMENT_INTERVAL_HOURS,
     );
   }
 
-  moveToRandomDestination() {
+  #moveToRandomDestination() {
     const currentLocation = findLocation(this.locationId);
     if (!currentLocation) {
       return false;

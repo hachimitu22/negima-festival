@@ -9,10 +9,10 @@ class Character extends GameObject {
   }
 
   update(context) {
-    this.recoverMagicPower(context.elapsedGameHours);
+    this.#recoverMagicPower(context.elapsedGameHours);
   }
 
-  recoverMagicPower(elapsedGameHours) {
+  #recoverMagicPower(elapsedGameHours) {
     if (elapsedGameHours <= 0) {
       return;
     }
