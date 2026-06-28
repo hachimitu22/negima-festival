@@ -84,7 +84,6 @@ class GameSystem {
         LOCATION_IDS.STAFF_ROOM,
       ),
     ];
-    this.knownEvents = new Set();
   }
 
   update(frame) {
@@ -188,7 +187,6 @@ class GameSystem {
       },
       character: this.character.getSnapshot(),
       actors: this.actors.map(actor => actor.getSnapshot()),
-      knownEvents: Array.from(this.knownEvents),
     };
   }
 
@@ -202,12 +200,7 @@ class GameSystem {
       deltaFrames: deltaTimeMs / targetFrameTimeMs,
       gameTimeHours: this.gameTime.currentHours,
       isFestivalEnded: this.gameTime.isEnded,
-      rememberEvent: eventName => this.rememberEvent(eventName),
     };
-  }
-
-  rememberEvent(eventName) {
-    this.knownEvents.add(eventName);
   }
 }
 

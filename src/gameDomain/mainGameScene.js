@@ -297,9 +297,6 @@ class MainGameScene {
 
     const randomIndex = getRandomInt(0, GAME_EVENTS.length - 1);
     const event = new GAME_EVENTS[randomIndex](this.lastEventId++);
-    if (typeof context.rememberEvent === 'function') {
-      context.rememberEvent(event.name);
-    }
     return new EventGameObject(event);
   }
 }

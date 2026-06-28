@@ -1,10 +1,8 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
-import { createKnownEventsView } from './knownEventsView.js';
 import { createStatusView } from './statusView.js';
 
 function createMainGameSceneView(rootElement, options) {
   const statusView = createStatusView();
-  const knownEventsView = createKnownEventsView();
   let root = null;
   let elements = null;
   let enqueueInput = null;
@@ -28,7 +26,6 @@ function createMainGameSceneView(rootElement, options) {
     };
 
     statusView.mount(root, options);
-    knownEventsView.mount(root);
     Object.values(elements).forEach(region => {
       root.append(region.anchor, region.element);
     });
@@ -37,15 +34,11 @@ function createMainGameSceneView(rootElement, options) {
 
   function init(snapshot) {
     statusView.init(snapshot);
-    knownEventsView.init(snapshot.knownEvents);
-    knownEventsView.setHidden(snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION);
     updateSceneContent(snapshot);
   }
 
   function update(snapshot) {
     statusView.update(snapshot);
-    knownEventsView.update(snapshot.knownEvents);
-    knownEventsView.setHidden(snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION);
     updateSceneContent(snapshot);
   }
 
@@ -86,7 +79,6 @@ function createMainGameSceneView(rootElement, options) {
       region.anchor.remove();
     });
     statusView.destroy();
-    knownEventsView.destroy();
     root.remove();
     root = null;
     elements = null;
