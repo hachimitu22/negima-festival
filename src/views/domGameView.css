@@ -1,3 +1,23 @@
+#main-game-scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+#status {
+  grid-column: 1;
+}
+
+#event-panel {
+  grid-column: 2;
+}
+
+#map-list,
+#conversation {
+  grid-column: 1 / -1;
+}
+
 [data-map-group-locations] {
   display: flex;
   flex-wrap: wrap;

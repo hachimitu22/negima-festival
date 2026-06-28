@@ -7,6 +7,7 @@ function createMainGameSceneView(rootElement, options) {
   let elements = null;
   let enqueueInput = null;
   let activeLayerId = null;
+  let activePanelLayerId = null;
 
   mount(rootElement, options);
 
@@ -16,6 +17,7 @@ function createMainGameSceneView(rootElement, options) {
     root.id = 'main-game-scene';
 
     elements = {
+      eventPanel: createRegion(createDiv('event-panel')),
       menu: createRegion(createList('menu')),
       back: createRegion(createDiv('back')),
       mapList: createRegion(createDiv('map-list')),
@@ -26,7 +28,20 @@ function createMainGameSceneView(rootElement, options) {
     };
 
     statusView.mount(root, options);
-    Object.values(elements).forEach(region => {
+    [
+      elements.menu,
+      elements.back,
+      elements.eventList,
+      elements.succeededEventList,
+      elements.failedEventList,
+    ].forEach(region => {
+      elements.eventPanel.element.append(region.anchor, region.element);
+    });
+    [
+      elements.eventPanel,
+      elements.mapList,
+      elements.conversation,
+    ].forEach(region => {
       root.append(region.anchor, region.element);
     });
     rootElement.appendChild(root);
@@ -45,26 +60,28 @@ function createMainGameSceneView(rootElement, options) {
   function updateSceneContent(snapshot) {
     updateActiveLayer(snapshot.activeLayerId);
 
-    if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MENU) {
-      updateLayerMenu(snapshot);
-    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
-      updateBackButton();
+    if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.MAP) {
+      updateActivePanelLayer(snapshot.activePanelLayerId);
       updateMap(
         snapshot.mapLocations,
         snapshot.character.location,
         snapshot.actors,
       );
+
+      if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.MENU) {
+        updateLayerMenu(snapshot);
+      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
+        updateBackButton();
+        updateExecutingEvents(snapshot.executingEvents);
+      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
+        updateBackButton();
+        updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
+      } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
+        updateBackButton();
+        updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
+      }
     } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
       updateConversation(snapshot.activeConversation);
-    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
-      updateBackButton();
-      updateExecutingEvents(snapshot.executingEvents);
-    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
-      updateBackButton();
-      updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
-    } else if (snapshot.activeLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
-      updateBackButton();
-      updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
     }
   }
 
@@ -84,6 +101,7 @@ function createMainGameSceneView(rootElement, options) {
     elements = null;
     enqueueInput = null;
     activeLayerId = null;
+    activePanelLayerId = null;
   }
 
   function updateActiveLayer(nextLayerId) {
@@ -97,7 +115,7 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function detachInactiveRegions(layerId) {
-    getInactiveRegions(layerId).forEach(region => {
+    getInactiveRegions(getActiveRegions(layerId), getMainRegions()).forEach(region => {
       region.element.remove();
     });
   }
@@ -111,20 +129,49 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function getActiveRegions(layerId) {
+    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
+      return [elements.eventPanel, elements.mapList];
+    }
+
+    if (layerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
+      return [elements.conversation];
+    }
+
+    return [];
+  }
+
+  function getMainRegions() {
+    return [
+      elements.eventPanel,
+      elements.mapList,
+      elements.conversation,
+    ];
+  }
+
+  function updateActivePanelLayer(nextLayerId) {
+    if (activePanelLayerId === nextLayerId) {
+      return;
+    }
+
+    const activeRegions = getActivePanelRegions(nextLayerId);
+    getInactiveRegions(activeRegions, getPanelRegions()).forEach(region => {
+      region.element.remove();
+    });
+    activeRegions.forEach(region => {
+      if (!region.element.isConnected) {
+        region.anchor.after(region.element);
+      }
+    });
+    activePanelLayerId = nextLayerId;
+  }
+
+  function getActivePanelRegions(layerId) {
     if (layerId === MAIN_GAME_LAYER_IDS.MENU) {
       return [elements.menu];
     }
 
     if (layerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       return [elements.back, elements.eventList];
-    }
-
-    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
-      return [elements.back, elements.mapList];
-    }
-
-    if (layerId === MAIN_GAME_LAYER_IDS.CONVERSATION) {
-      return [elements.conversation];
     }
 
     if (layerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
@@ -138,9 +185,19 @@ function createMainGameSceneView(rootElement, options) {
     return [];
   }
 
-  function getInactiveRegions(layerId) {
-    const activeRegions = new Set(getActiveRegions(layerId));
-    return Object.values(elements).filter(region => !activeRegions.has(region));
+  function getPanelRegions() {
+    return [
+      elements.menu,
+      elements.back,
+      elements.eventList,
+      elements.succeededEventList,
+      elements.failedEventList,
+    ];
+  }
+
+  function getInactiveRegions(activeRegions, regions) {
+    const activeRegionSet = new Set(activeRegions);
+    return regions.filter(region => !activeRegionSet.has(region));
   }
 
   function updateLayerMenu(snapshot) {

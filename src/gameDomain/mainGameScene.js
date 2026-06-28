@@ -16,10 +16,16 @@ const GAME_EVENTS = [
 ];
 
 const LAYER_ITEMS = [
-  { id: MAIN_GAME_LAYER_IDS.MAP, label: 'マップ' },
   { id: MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS, label: '実行中イベント' },
   { id: MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS, label: '成功イベント' },
   { id: MAIN_GAME_LAYER_IDS.FAILED_EVENTS, label: '失敗イベント' },
+];
+
+const PANEL_LAYER_IDS = [
+  MAIN_GAME_LAYER_IDS.MENU,
+  MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS,
+  MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS,
+  MAIN_GAME_LAYER_IDS.FAILED_EVENTS,
 ];
 
 const EVENT_SPAWN_INTERVAL_HOURS = 2;
@@ -27,7 +33,8 @@ const EVENT_SPAWN_INTERVAL_HOURS = 2;
 class MainGameScene {
   constructor(system = new GameSystem()) {
     this.system = system;
-    this.activeLayerId = MAIN_GAME_LAYER_IDS.MENU;
+    this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+    this.activePanelLayerId = MAIN_GAME_LAYER_IDS.MENU;
     this.events = [];
     this.succeededEvents = [];
     this.failedEvents = [];
@@ -160,6 +167,7 @@ class MainGameScene {
       ...this.system.createSnapshot(),
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.activeLayerId,
+      activePanelLayerId: this.activePanelLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
       activeConversation: this.createActiveConversationSnapshot(),
@@ -170,11 +178,13 @@ class MainGameScene {
   }
 
   selectLayer(layerId) {
-    if (
-      layerId !== MAIN_GAME_LAYER_IDS.CONVERSATION
-      && Object.values(MAIN_GAME_LAYER_IDS).includes(layerId)
-    ) {
+    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
       this.activeLayerId = layerId;
+      return;
+    }
+
+    if (PANEL_LAYER_IDS.includes(layerId)) {
+      this.activePanelLayerId = layerId;
     }
   }
 
