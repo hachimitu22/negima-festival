@@ -150,15 +150,11 @@ class GameSystem {
     return true;
   }
 
-  findStudentByClassAndNumber(classAndNumber) {
-    return this.actors.find(actor => (
+  increaseStudentAffectionByActorId(actorId, amount) {
+    const student = this.actors.find(actor => (
       actor instanceof Student
-      && actor.classAndNumber === classAndNumber
-    )) ?? null;
-  }
-
-  increaseStudentAffection(classAndNumber, amount) {
-    const student = this.findStudentByClassAndNumber(classAndNumber);
+      && actor.id === actorId
+    ));
     if (!student) {
       return false;
     }
@@ -167,12 +163,12 @@ class GameSystem {
     return true;
   }
 
-  getTalkableActorSnapshot(actorId) {
+  findTalkableActor(actorId) {
     const actor = this.actors.find(candidate => (
       candidate.id === actorId
       && candidate.locationId === this.character.locationId
     ));
-    return actor?.getSnapshot() ?? null;
+    return actor ?? null;
   }
 
   createSnapshot() {

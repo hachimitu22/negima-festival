@@ -35,7 +35,7 @@ class MainGameScene {
     this.lastEventId = 0;
     this.nextEventTimeHours = 1;
     this.activeConversation = null;
-    this.activeConversationStudentClassAndNumber = null;
+    this.activeConversationActorId = null;
   }
 
   update(context) {
@@ -200,7 +200,7 @@ class MainGameScene {
   }
 
   startConversation(actorId) {
-    const actor = this.system.getTalkableActorSnapshot(actorId);
+    const actor = this.system.findTalkableActor(actorId);
     if (!actor) {
       return false;
     }
@@ -211,7 +211,7 @@ class MainGameScene {
     }
 
     this.activeConversation = new ConversationSession(conversation);
-    this.activeConversationStudentClassAndNumber = actor.classAndNumber ?? null;
+    this.activeConversationActorId = actor.id;
     this.activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
     return true;
   }
@@ -248,14 +248,14 @@ class MainGameScene {
 
     const result = this.activeConversation.next();
     if (result === CONVERSATION_SESSION_RESULTS.COMPLETED) {
-      if (this.activeConversationStudentClassAndNumber !== null) {
-        this.system.increaseStudentAffection(
-          this.activeConversationStudentClassAndNumber,
+      if (this.activeConversationActorId !== null) {
+        this.system.increaseStudentAffectionByActorId(
+          this.activeConversationActorId,
           CONVERSATION_AFFECTION_GAIN,
         );
       }
       this.activeConversation = null;
-      this.activeConversationStudentClassAndNumber = null;
+      this.activeConversationActorId = null;
       this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
     }
   }
