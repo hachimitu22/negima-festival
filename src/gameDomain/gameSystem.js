@@ -16,26 +16,31 @@ const TEACHER_IDS = {
 };
 
 class GameSystem {
+  #gameTime;
+  #loop;
+  #character;
+  #actors;
+
   constructor() {
-    this.gameTime = {
+    this.#gameTime = {
       currentHours: 0,
       durationHours: FESTIVAL_DURATION_HOURS,
       hoursPerRealSecond: GAME_HOURS_PER_REAL_SECOND,
       isEnded: false,
     };
-    this.loop = {
+    this.#loop = {
       count: 1,
       timeTravelHours: TIME_TRAVEL_HOURS,
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
     };
-    this.character = new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
+    this.#character = new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
     });
-    this.actors = [
+    this.#actors = [
       new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
       new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
       new Student('朝倉和美'                              ,  3, LOCATION_IDS.CLASSROOM_3A),
@@ -89,12 +94,12 @@ class GameSystem {
   update(frame) {
     const elapsedGameHours = this.#updateGameTime(frame);
     const context = {
-      ...this.createUpdateContext(frame),
+      ...this.#createUpdateContext(frame),
       elapsedGameHours,
     };
 
-    this.character.update(context);
-    this.actors.forEach(actor => {
+    this.#character.update(context);
+    this.#actors.forEach(actor => {
       actor.update(context);
     });
 
@@ -104,39 +109,39 @@ class GameSystem {
   }
 
   #updateGameTime(frame) {
-    if (this.gameTime.isEnded) {
+    if (this.#gameTime.isEnded) {
       return 0;
     }
 
     const deltaTimeMs = getFrameDeltaTimeMs(frame);
-    const elapsedHours = (deltaTimeMs / 1000) * this.gameTime.hoursPerRealSecond;
-    const beforeHours = this.gameTime.currentHours;
-    this.gameTime.currentHours = Math.min(
-      this.gameTime.currentHours + elapsedHours,
-      this.gameTime.durationHours,
+    const elapsedHours = (deltaTimeMs / 1000) * this.#gameTime.hoursPerRealSecond;
+    const beforeHours = this.#gameTime.currentHours;
+    this.#gameTime.currentHours = Math.min(
+      this.#gameTime.currentHours + elapsedHours,
+      this.#gameTime.durationHours,
     );
-    this.gameTime.isEnded = this.gameTime.currentHours >= this.gameTime.durationHours;
-    return this.gameTime.currentHours - beforeHours;
+    this.#gameTime.isEnded = this.#gameTime.currentHours >= this.#gameTime.durationHours;
+    return this.#gameTime.currentHours - beforeHours;
   }
 
   useCassiopeia() {
-    const magicPower = this.character.magicPower;
-    if (magicPower.current < this.loop.cassiopeiaMagicPowerCost) {
+    const magicPower = this.#character.magicPower;
+    if (magicPower.current < this.#loop.cassiopeiaMagicPowerCost) {
       return false;
     }
 
-    magicPower.current -= this.loop.cassiopeiaMagicPowerCost;
-    this.gameTime.currentHours = Math.max(
+    magicPower.current -= this.#loop.cassiopeiaMagicPowerCost;
+    this.#gameTime.currentHours = Math.max(
       0,
-      this.gameTime.currentHours - this.loop.timeTravelHours,
+      this.#gameTime.currentHours - this.#loop.timeTravelHours,
     );
-    this.gameTime.isEnded = false;
-    this.loop.count += 1;
-    this.actors.forEach(actor => {
-      actor.resetNextMoveTime(this.gameTime.currentHours);
+    this.#gameTime.isEnded = false;
+    this.#loop.count += 1;
+    this.#actors.forEach(actor => {
+      actor.resetNextMoveTime(this.#gameTime.currentHours);
     });
     return {
-      currentHours: this.gameTime.currentHours,
+      currentHours: this.#gameTime.currentHours,
     };
   }
 
@@ -146,12 +151,12 @@ class GameSystem {
       return false;
     }
 
-    this.character.moveToLocation(location.id);
+    this.#character.moveToLocation(location.id);
     return true;
   }
 
   applyStudentConversationResult(actorId, conversationResult) {
-    const student = this.actors.find(actor => (
+    const student = this.#actors.find(actor => (
       actor instanceof Student
       && actor.id === actorId
     ));
@@ -164,7 +169,7 @@ class GameSystem {
   }
 
   applyStudentAffectionChange(actorId, baseChange) {
-    const student = this.actors.find(actor => (
+    const student = this.#actors.find(actor => (
       actor instanceof Student
       && actor.id === actorId
     ));
@@ -178,13 +183,13 @@ class GameSystem {
   }
 
   getActors() {
-    return [...this.actors];
+    return [...this.#actors];
   }
 
   findTalkableActor(actorId) {
-    const actor = this.actors.find(candidate => (
+    const actor = this.#actors.find(candidate => (
       candidate.id === actorId
-      && candidate.locationId === this.character.locationId
+      && candidate.locationId === this.#character.locationId
     ));
     return actor ?? null;
   }
@@ -192,21 +197,21 @@ class GameSystem {
   createSnapshot() {
     return {
       gameTime: {
-        currentHours: this.gameTime.currentHours,
-        durationHours: this.gameTime.durationHours,
-        isEnded: this.gameTime.isEnded,
+        currentHours: this.#gameTime.currentHours,
+        durationHours: this.#gameTime.durationHours,
+        isEnded: this.#gameTime.isEnded,
       },
       loop: {
-        count: this.loop.count,
-        timeTravelHours: this.loop.timeTravelHours,
-        cassiopeiaMagicPowerCost: this.loop.cassiopeiaMagicPowerCost,
+        count: this.#loop.count,
+        timeTravelHours: this.#loop.timeTravelHours,
+        cassiopeiaMagicPowerCost: this.#loop.cassiopeiaMagicPowerCost,
       },
-      character: this.character.getSnapshot(),
-      actors: this.actors.map(actor => actor.getSnapshot()),
+      character: this.#character.getSnapshot(),
+      actors: this.#actors.map(actor => actor.getSnapshot()),
     };
   }
 
-  createUpdateContext(frame) {
+  #createUpdateContext(frame) {
     const deltaTimeMs = getFrameDeltaTimeMs(frame);
     const targetFrameTimeMs = frame.targetFrameTimeMs;
     return {
@@ -214,8 +219,8 @@ class GameSystem {
       frameCount: getFrameCount(frame),
       targetFrameTimeMs,
       deltaFrames: deltaTimeMs / targetFrameTimeMs,
-      gameTimeHours: this.gameTime.currentHours,
-      isFestivalEnded: this.gameTime.isEnded,
+      gameTimeHours: this.#gameTime.currentHours,
+      isFestivalEnded: this.#gameTime.isEnded,
     };
   }
 }

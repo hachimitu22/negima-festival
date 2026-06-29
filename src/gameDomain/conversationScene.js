@@ -5,15 +5,21 @@ import {
 } from './conversationSession.js';
 
 class ConversationScene {
+  #session;
+  #statusSnapshot;
+  #onComplete;
+  #result;
+  #isCompleted;
+
   constructor({ conversation, statusSnapshot, onComplete }) {
-    this.session = new ConversationSession(conversation);
-    this.statusSnapshot = statusSnapshot;
-    this.onComplete = onComplete;
-    this.result = {
+    this.#session = new ConversationSession(conversation);
+    this.#statusSnapshot = statusSnapshot;
+    this.#onComplete = onComplete;
+    this.#result = {
       conversationId: conversation.id,
       choiceId: null,
     };
-    this.isCompleted = false;
+    this.#isCompleted = false;
   }
 
   update({
@@ -45,9 +51,9 @@ class ConversationScene {
   #handleConversationAction(action, popScene) {
     const choiceId = getTargetValue(action, 'choice');
     if (choiceId) {
-      const result = this.session.selectChoice(choiceId);
+      const result = this.#session.selectChoice(choiceId);
       if (result) {
-        this.result = result;
+        this.#result = result;
       }
       return false;
     }
@@ -56,14 +62,14 @@ class ConversationScene {
       return false;
     }
 
-    const result = this.session.next();
-    if (result !== CONVERSATION_SESSION_RESULTS.COMPLETED || this.isCompleted) {
+    const result = this.#session.next();
+    if (result !== CONVERSATION_SESSION_RESULTS.COMPLETED || this.#isCompleted) {
       return false;
     }
 
-    this.isCompleted = true;
-    if (typeof this.onComplete === 'function') {
-      this.onComplete(this.result);
+    this.#isCompleted = true;
+    if (typeof this.#onComplete === 'function') {
+      this.#onComplete(this.#result);
     }
     if (typeof popScene === 'function') {
       popScene();
@@ -73,9 +79,9 @@ class ConversationScene {
 
   createSnapshot() {
     return {
-      ...this.statusSnapshot,
+      ...this.#statusSnapshot,
       sceneId: SCENE_IDS.CONVERSATION,
-      conversation: this.session.getSnapshot(),
+      conversation: this.#session.getSnapshot(),
     };
   }
 }

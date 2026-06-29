@@ -16,18 +16,13 @@ const CONVERSATION_AFFECTION_CHANGES = Object.freeze({
 });
 
 class Student extends Actor {
+  #classAndNumber;
+  #affection;
+
   constructor(name, classAndNumber, locationId, affection = 0) {
     super(createStudentId(classAndNumber), name, locationId);
-    this.classAndNumber = classAndNumber;
-    this.affection = affection;
-  }
-
-  get affection() {
-    return this._affection;
-  }
-
-  set affection(value) {
-    this._affection = Math.min(MAX_AFFECTION, Math.max(MIN_AFFECTION, value));
+    this.#classAndNumber = classAndNumber;
+    this.#setAffection(affection);
   }
 
   getBaseAffectionChange(conversationResult) {
@@ -36,15 +31,19 @@ class Student extends Actor {
   }
 
   changeAffection(amount) {
-    this.affection += amount;
+    this.#setAffection(this.#affection + amount);
   }
 
   getSnapshot() {
     return {
       ...super.getSnapshot(),
-      classAndNumber: this.classAndNumber,
-      affection: this.affection,
+      classAndNumber: this.#classAndNumber,
+      affection: this.#affection,
     };
+  }
+
+  #setAffection(value) {
+    this.#affection = Math.min(MAX_AFFECTION, Math.max(MIN_AFFECTION, value));
   }
 }
 

@@ -3,15 +3,20 @@ import { createConversationSceneView } from './scenes/conversationScene/index.js
 import { createMainGameSceneView } from './scenes/mainGameScene/index.js';
 
 class DomGameView {
+  #rootElement;
+  #context;
+  #sceneView;
+  #sceneId;
+
   constructor(rootElement) {
-    this.rootElement = rootElement;
-    this.context = null;
-    this.sceneView = null;
-    this.sceneId = null;
+    this.#rootElement = rootElement;
+    this.#context = null;
+    this.#sceneView = null;
+    this.#sceneId = null;
   }
 
   configure(context) {
-    this.context = context;
+    this.#context = context;
   }
 
   init(snapshot) {
@@ -20,7 +25,7 @@ class DomGameView {
   }
 
   render(snapshot) {
-    const didSceneChange = this.sceneId !== snapshot?.sceneId;
+    const didSceneChange = this.#sceneId !== snapshot?.sceneId;
     const view = this.#getSceneView(snapshot);
     if (didSceneChange) {
       view.init(snapshot);
@@ -30,13 +35,13 @@ class DomGameView {
   }
 
   destroy() {
-    if (!this.sceneView) {
+    if (!this.#sceneView) {
       return;
     }
 
-    this.sceneView.destroy();
-    this.sceneView = null;
-    this.sceneId = null;
+    this.#sceneView.destroy();
+    this.#sceneView = null;
+    this.#sceneId = null;
   }
 
   #getSceneView(snapshot) {
@@ -44,27 +49,27 @@ class DomGameView {
       throw new Error('Scene snapshot must include sceneId.');
     }
 
-    if (this.sceneView && this.sceneId !== snapshot.sceneId) {
-      this.sceneView.destroy();
-      this.sceneView = null;
-      this.sceneId = null;
+    if (this.#sceneView && this.#sceneId !== snapshot.sceneId) {
+      this.#sceneView.destroy();
+      this.#sceneView = null;
+      this.#sceneId = null;
     }
 
-    if (!this.sceneView) {
-      this.sceneView = this.#createSceneView(snapshot.sceneId);
-      this.sceneId = snapshot.sceneId;
+    if (!this.#sceneView) {
+      this.#sceneView = this.#createSceneView(snapshot.sceneId);
+      this.#sceneId = snapshot.sceneId;
     }
 
-    return this.sceneView;
+    return this.#sceneView;
   }
 
   #createSceneView(nextSceneId) {
     if (nextSceneId === SCENE_IDS.CONVERSATION) {
-      return createConversationSceneView(this.rootElement, this.context);
+      return createConversationSceneView(this.#rootElement, this.#context);
     }
 
     if (nextSceneId === SCENE_IDS.MAIN_GAME) {
-      return createMainGameSceneView(this.rootElement, this.context);
+      return createMainGameSceneView(this.#rootElement, this.#context);
     }
 
     throw new Error(`Unsupported sceneId: ${nextSceneId}`);

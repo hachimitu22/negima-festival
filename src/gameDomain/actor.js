@@ -6,13 +6,16 @@ const MIN_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_MOVEMENT_INTERVAL_HOURS = 10;
 
 class Actor extends GameObject {
+  #excludedLocationIds;
+  #nextMoveTimeHours;
+
   constructor(id, name, locationId, { excludedLocationIds = [] } = {}) {
     super();
     this.id = id;
     this.name = name;
     this.locationId = locationId;
-    this.excludedLocationIds = new Set(excludedLocationIds);
-    this.nextMoveTimeHours = this.#createNextMoveTime(0);
+    this.#excludedLocationIds = new Set(excludedLocationIds);
+    this.#nextMoveTimeHours = this.#createNextMoveTime(0);
   }
 
   update(context) {
@@ -21,7 +24,7 @@ class Actor extends GameObject {
       return;
     }
 
-    if (gameTimeHours < this.nextMoveTimeHours) {
+    if (gameTimeHours < this.#nextMoveTimeHours) {
       return;
     }
 
@@ -30,11 +33,11 @@ class Actor extends GameObject {
   }
 
   resetNextMoveTime(currentGameTimeHours) {
-    this.nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
+    this.#nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
   }
 
   #advanceNextMoveTime(currentGameTimeHours) {
-    this.nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
+    this.#nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
   }
 
   #createNextMoveTime(baseGameTimeHours) {
@@ -56,7 +59,7 @@ class Actor extends GameObject {
         .map(destinationName => findLocationByName(destinationName))
         .filter(destinationLocation => (
           destinationLocation !== null
-          && !this.excludedLocationIds.has(destinationLocation.id)
+          && !this.#excludedLocationIds.has(destinationLocation.id)
         )),
     ];
     const randomIndex = getRandomInt(0, destinationLocations.length - 1);

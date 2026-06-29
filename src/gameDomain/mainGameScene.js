@@ -19,12 +19,18 @@ const PANEL_LAYER_IDS = [
 const DELIVERY_AFFECTION_REWARD = 5;
 
 class MainGameScene {
+  #system;
+  #activeLayerId;
+  #activePanelLayerId;
+  #activeDeliveryEvent;
+  #lastEventId;
+
   constructor(system = new GameSystem()) {
-    this.system = system;
-    this.activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    this.activePanelLayerId = MAIN_GAME_LAYER_IDS.MENU;
-    this.activeDeliveryEvent = null;
-    this.lastEventId = 0;
+    this.#system = system;
+    this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+    this.#activePanelLayerId = MAIN_GAME_LAYER_IDS.MENU;
+    this.#activeDeliveryEvent = null;
+    this.#lastEventId = 0;
   }
 
   update({
@@ -39,7 +45,7 @@ class MainGameScene {
     }
 
     this.#handleInputs(inputs);
-    this.system.update(context);
+    this.#system.update(context);
   }
 
   #handleInputs(inputs = []) {
@@ -63,7 +69,7 @@ class MainGameScene {
 
     const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
     if (locationId) {
-      this.system.moveCharacterToLocation(locationId);
+      this.#system.moveCharacterToLocation(locationId);
       return;
     }
 
@@ -73,7 +79,7 @@ class MainGameScene {
     }
 
     if (targetId === TARGET_PREFIXES.CASSIOPEIA) {
-      const result = this.system.useCassiopeia();
+      const result = this.#system.useCassiopeia();
       if (result) {
         this.#rewind();
       }
@@ -82,31 +88,31 @@ class MainGameScene {
 
   createSnapshot() {
     return {
-      ...this.system.createSnapshot(),
+      ...this.#system.createSnapshot(),
       sceneId: SCENE_IDS.MAIN_GAME,
-      activeLayerId: this.activeLayerId,
-      activePanelLayerId: this.activePanelLayerId,
+      activeLayerId: this.#activeLayerId,
+      activePanelLayerId: this.#activePanelLayerId,
       layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
-      executingEvents: this.activeDeliveryEvent
-        ? [this.activeDeliveryEvent.getSnapshot()]
+      executingEvents: this.#activeDeliveryEvent
+        ? [this.#activeDeliveryEvent.getSnapshot()]
         : [],
     };
   }
 
   #selectLayer(layerId) {
     if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
-      this.activeLayerId = layerId;
+      this.#activeLayerId = layerId;
       return;
     }
 
     if (PANEL_LAYER_IDS.includes(layerId)) {
-      this.activePanelLayerId = layerId;
+      this.#activePanelLayerId = layerId;
     }
   }
 
   #rewind() {
-    this.activeDeliveryEvent = null;
+    this.#activeDeliveryEvent = null;
   }
 
   #createConversationSceneFromInputs(inputs = []) {
@@ -130,16 +136,16 @@ class MainGameScene {
   }
 
   #createConversationScene(actorId) {
-    const actor = this.system.findTalkableActor(actorId);
+    const actor = this.#system.findTalkableActor(actorId);
     if (!actor) {
       return null;
     }
 
-    if (this.activeDeliveryEvent) {
-      const interaction = this.activeDeliveryEvent.createActorInteraction(actor.id);
+    if (this.#activeDeliveryEvent) {
+      const interaction = this.#activeDeliveryEvent.createActorInteraction(actor.id);
       if (interaction) {
         return this.#createDeliveryConversationScene(
-          this.activeDeliveryEvent,
+          this.#activeDeliveryEvent,
           interaction,
         );
       }
@@ -167,7 +173,7 @@ class MainGameScene {
       && requestInteraction
       && conversation.id === DELIVERY_CONVERSATION_IDS.REQUEST
     ) {
-      this.lastEventId += 1;
+      this.#lastEventId += 1;
       return this.#createDeliveryConversationScene(deliveryEvent, requestInteraction, {
         activateOnComplete: true,
       });
@@ -183,9 +189,9 @@ class MainGameScene {
 
     return new ConversationScene({
       conversation,
-      statusSnapshot: this.system.createSnapshot(),
+      statusSnapshot: this.#system.createSnapshot(),
       onComplete: conversationResult => {
-        this.system.applyStudentConversationResult(actor.id, conversationResult);
+        this.#system.applyStudentConversationResult(actor.id, conversationResult);
       },
     });
   }
@@ -197,12 +203,12 @@ class MainGameScene {
   ) {
     return new ConversationScene({
       conversation: interaction.conversation,
-      statusSnapshot: this.system.createSnapshot(),
+      statusSnapshot: this.#system.createSnapshot(),
       onComplete: conversationResult => {
         deliveryEvent.completeInteraction(interaction.kind, conversationResult);
 
         if (activateOnComplete && deliveryEvent.isExecuting()) {
-          this.activeDeliveryEvent = deliveryEvent;
+          this.#activeDeliveryEvent = deliveryEvent;
           return;
         }
 
@@ -212,34 +218,34 @@ class MainGameScene {
   }
 
   #createDeliveryEventCandidate(sender) {
-    const recipients = this.system.getActors().filter(actor => actor.id !== sender.id);
+    const recipients = this.#system.getActors().filter(actor => actor.id !== sender.id);
     if (recipients.length === 0) {
       return null;
     }
 
     const recipient = recipients[getRandomInt(0, recipients.length - 1)];
-    return new DeliveryEvent(this.lastEventId, {
+    return new DeliveryEvent(this.#lastEventId, {
       sender,
       recipient,
     });
   }
 
   #finishDeliveryEvent(deliveryEvent) {
-    if (deliveryEvent !== this.activeDeliveryEvent) {
+    if (deliveryEvent !== this.#activeDeliveryEvent) {
       return;
     }
 
     if (deliveryEvent.isSucceeded()) {
       this.#applyDeliveryReward(deliveryEvent);
-      this.activeDeliveryEvent = null;
+      this.#activeDeliveryEvent = null;
     } else if (deliveryEvent.isFailed()) {
-      this.activeDeliveryEvent = null;
+      this.#activeDeliveryEvent = null;
     }
   }
 
   #applyDeliveryReward(deliveryEvent) {
     deliveryEvent.getParticipantActorIds().forEach(actorId => {
-      this.system.applyStudentAffectionChange(actorId, DELIVERY_AFFECTION_REWARD);
+      this.#system.applyStudentAffectionChange(actorId, DELIVERY_AFFECTION_REWARD);
     });
   }
 }

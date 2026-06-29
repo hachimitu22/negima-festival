@@ -5,60 +5,68 @@ const CONVERSATION_SESSION_RESULTS = Object.freeze({
 });
 
 class ConversationSession {
+  #conversationId;
+  #choice;
+  #messages;
+  #messageIndex;
+
   constructor(conversation) {
-    this.conversationId = conversation.id;
-    this.choice = conversation.choice;
-    this.messages = conversation.messages;
-    this.messageIndex = 0;
+    this.#conversationId = conversation.id;
+    this.#choice = conversation.choice;
+    this.#messages = conversation.messages;
+    this.#messageIndex = 0;
   }
 
   next() {
-    if (getConversationChoices(this.choice, this.messageIndex).length > 0) {
+    if (getConversationChoices(this.#choice, this.#messageIndex).length > 0) {
       return CONVERSATION_SESSION_RESULTS.BLOCKED;
     }
 
-    const nextMessageIndex = this.messageIndex + 1;
-    if (nextMessageIndex >= this.messages.length) {
+    const nextMessageIndex = this.#messageIndex + 1;
+    if (nextMessageIndex >= this.#messages.length) {
       return CONVERSATION_SESSION_RESULTS.COMPLETED;
     }
 
-    this.messageIndex = nextMessageIndex;
+    this.#messageIndex = nextMessageIndex;
     return CONVERSATION_SESSION_RESULTS.ADVANCED;
   }
 
   selectChoice(choiceId) {
-    if (!this.choice || this.choice.messageIndex !== this.messageIndex) {
+    if (!this.#choice || this.#choice.messageIndex !== this.#messageIndex) {
       return null;
     }
 
-    const selectedOption = this.choice.options.find(option => option.id === choiceId);
+    const selectedOption = this.#choice.options.find(option => option.id === choiceId);
     if (!selectedOption) {
       return null;
     }
 
-    this.messages = [
-      ...this.messages.slice(0, this.messageIndex + 1),
+    this.#messages = [
+      ...this.#messages.slice(0, this.#messageIndex + 1),
       ...selectedOption.messages,
-      ...this.messages.slice(this.messageIndex + 1),
+      ...this.#messages.slice(this.#messageIndex + 1),
     ];
-    this.choice = null;
-    this.messageIndex += 1;
+    this.#choice = null;
+    this.#messageIndex += 1;
     return {
-      conversationId: this.conversationId,
+      conversationId: this.#conversationId,
       choiceId: selectedOption.id,
     };
   }
 
   getSnapshot() {
-    const message = this.messages[this.messageIndex];
-    const choices = getConversationChoices(this.choice, this.messageIndex);
+    const message = this.#messages[this.#messageIndex];
+    const choices = getConversationChoices(this.#choice, this.#messageIndex);
     return {
       speakerName: message.speakerName,
-      messageIndex: this.messageIndex,
-      messageCount: this.messages.length,
+      messageIndex: this.#messageIndex,
+      messageCount: this.#messages.length,
       message: message.message,
       choices,
-      isLastMessage: choices.length === 0 && this.messageIndex === this.messages.length - 1,
+      isLastMessage: (
+        choices.length === 0
+        && this.#messageIndex === this.#messages.length - 1
+      ),
     };
   }
 }
