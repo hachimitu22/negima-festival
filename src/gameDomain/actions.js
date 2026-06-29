@@ -5,15 +5,12 @@ const INPUT_TYPES = {
 const TARGET_PREFIXES = {
   CASSIOPEIA: 'cassiopeia',
   CONVERSATION: 'conversation',
-  LAYER: 'layer',
   LOCATION: 'location',
   ACTOR: 'actor',
 };
 
 const MAIN_GAME_LAYER_IDS = {
-  MENU: 'menu',
   MAP: 'map',
-  EXECUTING_EVENTS: 'executing-events',
 };
 
 const SCENE_IDS = {

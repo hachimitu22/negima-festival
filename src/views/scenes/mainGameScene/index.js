@@ -1,4 +1,4 @@
-import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
+import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 import { createStatusView } from '../../statusView.js';
 
 function createMainGameSceneView(rootElement, options) {
@@ -6,7 +6,6 @@ function createMainGameSceneView(rootElement, options) {
   let root = null;
   let elements = null;
   let enqueueInput = null;
-  let activePanelLayerId = null;
 
   mount(rootElement, options);
 
@@ -17,20 +16,14 @@ function createMainGameSceneView(rootElement, options) {
 
     elements = {
       eventPanel: createRegion(createDiv('event-panel')),
-      menu: createRegion(createList('menu')),
-      back: createRegion(createDiv('back')),
+      eventTitle: createHeading('executing-events-title', '実行中イベント'),
       mapList: createRegion(createDiv('map-list')),
-      eventList: createRegion(createList('event-list')),
+      eventList: createList('event-list'),
     };
 
     statusView.mount(root, options);
-    [
-      elements.menu,
-      elements.back,
-      elements.eventList,
-    ].forEach(region => {
-      elements.eventPanel.element.append(region.anchor, region.element);
-    });
+    elements.eventPanel.element.setAttribute('aria-labelledby', elements.eventTitle.id);
+    elements.eventPanel.element.append(elements.eventTitle, elements.eventList);
     [
       elements.eventPanel,
       elements.mapList,
@@ -51,19 +44,12 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function updateSceneContent(snapshot) {
-    updateActivePanelLayer(snapshot.activePanelLayerId);
     updateMap(
       snapshot.mapLocations,
       snapshot.character.location,
       snapshot.actors,
     );
-
-    if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.MENU) {
-      updateLayerMenu(snapshot);
-    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
-      updateBackButton();
-      updateExecutingEvents(snapshot.executingEvents);
-    }
+    updateExecutingEvents(snapshot.executingEvents);
   }
 
   function destroy() {
@@ -71,7 +57,10 @@ function createMainGameSceneView(rootElement, options) {
       return;
     }
 
-    Object.values(elements).forEach(region => {
+    [
+      elements.eventPanel,
+      elements.mapList,
+    ].forEach(region => {
       region.element.replaceChildren();
       region.element.remove();
       region.anchor.remove();
@@ -81,107 +70,6 @@ function createMainGameSceneView(rootElement, options) {
     root = null;
     elements = null;
     enqueueInput = null;
-    activePanelLayerId = null;
-  }
-
-  function updateActivePanelLayer(nextLayerId) {
-    if (activePanelLayerId === nextLayerId) {
-      return;
-    }
-
-    const activeRegions = getActivePanelRegions(nextLayerId);
-    getInactiveRegions(activeRegions, getPanelRegions()).forEach(region => {
-      region.element.remove();
-    });
-    activeRegions.forEach(region => {
-      if (!region.element.isConnected) {
-        region.anchor.after(region.element);
-      }
-    });
-    activePanelLayerId = nextLayerId;
-  }
-
-  function getActivePanelRegions(layerId) {
-    if (layerId === MAIN_GAME_LAYER_IDS.MENU) {
-      return [elements.menu];
-    }
-
-    if (layerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
-      return [elements.back, elements.eventList];
-    }
-
-    return [];
-  }
-
-  function getPanelRegions() {
-    return [
-      elements.menu,
-      elements.back,
-      elements.eventList,
-    ];
-  }
-
-  function getInactiveRegions(activeRegions, regions) {
-    const activeRegionSet = new Set(activeRegions);
-    return regions.filter(region => !activeRegionSet.has(region));
-  }
-
-  function updateLayerMenu(snapshot) {
-    const layerItemIds = new Set(snapshot.layerItems.map(item => item.id));
-
-    Array.from(elements.menu.element.children).forEach(layerItem => {
-      if (!layerItemIds.has(layerItem.dataset.layerId)) {
-        layerItem.remove();
-      }
-    });
-
-    snapshot.layerItems.forEach(item => {
-      const layerItem = getOrCreateLayerItem(item);
-      layerItem.textContent = item.label;
-
-      if (!layerItem.isConnected) {
-        elements.menu.element.appendChild(layerItem);
-      }
-    });
-  }
-
-  function getOrCreateLayerItem(item) {
-    const existingItem = elements.menu.element.querySelector(`[data-layer-id="${item.id}"]`);
-    if (existingItem) {
-      return existingItem;
-    }
-
-    const layerItem = document.createElement('li');
-    layerItem.dataset.layerId = item.id;
-    layerItem.addEventListener('click', () => {
-      enqueueInput({
-        type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.LAYER, item.id),
-      });
-    });
-    return layerItem;
-  }
-
-  function updateBackButton() {
-    if (elements.back.element.querySelector('#back-button')) {
-      return;
-    }
-
-    createBackButton();
-  }
-
-  function createBackButton() {
-    const backButton = document.createElement('button');
-    backButton.id = 'back-button';
-    backButton.type = 'button';
-    backButton.textContent = 'メニューに戻る';
-    backButton.addEventListener('click', () => {
-      enqueueInput({
-        type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.LAYER, MAIN_GAME_LAYER_IDS.MENU),
-      });
-    });
-    elements.back.element.prepend(backButton);
   }
 
   function updateMap(locations, currentLocation, actors = []) {
@@ -362,7 +250,7 @@ function createMainGameSceneView(rootElement, options) {
   function updateExecutingEvents(events) {
     const eventIds = new Set(events.map(event => String(event.id)));
 
-    Array.from(elements.eventList.element.children).forEach(eventItem => {
+    Array.from(elements.eventList.children).forEach(eventItem => {
       if (!eventIds.has(eventItem.dataset.eventId)) {
         eventItem.remove();
       }
@@ -373,13 +261,13 @@ function createMainGameSceneView(rootElement, options) {
       eventItem.querySelector('[data-event-label]').textContent = formatExecutingEvent(event);
 
       if (!eventItem.isConnected) {
-        elements.eventList.element.appendChild(eventItem);
+        elements.eventList.appendChild(eventItem);
       }
     });
   }
 
   function getOrCreateExecutingEventItem(event) {
-    const existingItem = elements.eventList.element.querySelector(`[data-event-id="${event.id}"]`);
+    const existingItem = elements.eventList.querySelector(`[data-event-id="${event.id}"]`);
     if (existingItem) {
       return existingItem;
     }
@@ -420,6 +308,13 @@ function createDiv(id) {
 function createList(id) {
   const element = document.createElement('ul');
   element.id = id;
+  return element;
+}
+
+function createHeading(id, text) {
+  const element = document.createElement('h2');
+  element.id = id;
+  element.textContent = text;
   return element;
 }
 

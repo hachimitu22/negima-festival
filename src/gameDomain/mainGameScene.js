@@ -7,28 +7,17 @@ import { GameSystem } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
 import { getRandomInt } from './random.js';
 
-const LAYER_ITEMS = [
-  { id: MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS, label: '実行中イベント' },
-];
-
-const PANEL_LAYER_IDS = [
-  MAIN_GAME_LAYER_IDS.MENU,
-  MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS,
-];
-
 const DELIVERY_AFFECTION_REWARD = 5;
 
 class MainGameScene {
   #system;
   #activeLayerId;
-  #activePanelLayerId;
   #activeDeliveryEvent;
   #lastEventId;
 
   constructor(system = new GameSystem()) {
     this.#system = system;
     this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    this.#activePanelLayerId = MAIN_GAME_LAYER_IDS.MENU;
     this.#activeDeliveryEvent = null;
     this.#lastEventId = 0;
   }
@@ -61,12 +50,6 @@ class MainGameScene {
   }
 
   #handleTargetActivate(targetId) {
-    const layerId = getTargetValue(targetId, TARGET_PREFIXES.LAYER);
-    if (layerId) {
-      this.#selectLayer(layerId);
-      return;
-    }
-
     const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
     if (locationId) {
       this.#system.moveCharacterToLocation(locationId);
@@ -91,24 +74,11 @@ class MainGameScene {
       ...this.#system.createSnapshot(),
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.#activeLayerId,
-      activePanelLayerId: this.#activePanelLayerId,
-      layerItems: LAYER_ITEMS,
       mapLocations: LOCATIONS,
       executingEvents: this.#activeDeliveryEvent
         ? [this.#activeDeliveryEvent.getSnapshot()]
         : [],
     };
-  }
-
-  #selectLayer(layerId) {
-    if (layerId === MAIN_GAME_LAYER_IDS.MAP) {
-      this.#activeLayerId = layerId;
-      return;
-    }
-
-    if (PANEL_LAYER_IDS.includes(layerId)) {
-      this.#activePanelLayerId = layerId;
-    }
   }
 
   #rewind() {
