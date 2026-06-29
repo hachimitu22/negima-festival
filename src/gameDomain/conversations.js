@@ -159,16 +159,28 @@ const ACTOR_CONVERSATIONS = {
   },
 };
 
-function createConversation(actor) {
+function createConversation(actor, { additionalConversations = [] } = {}) {
   const conversationIds = findActorConversationIds(actor?.id);
-  const conversationId = selectConversationId(conversationIds);
+  const conversations = Array.isArray(conversationIds)
+    ? conversationIds
+      .map(conversationId => createCommonConversation(conversationId, actor))
+      .filter(Boolean)
+    : [createCommonConversation(conversationIds, actor)].filter(Boolean);
+  const candidates = [
+    ...conversations,
+    ...additionalConversations.filter(isConversation),
+  ];
+  if (candidates.length === 0) {
+    return createEmptyConversation();
+  }
+
+  return candidates[getRandomInt(0, candidates.length - 1)];
+}
+
+function createCommonConversation(conversationId, actor) {
   const conversation = COMMON_CONVERSATIONS[conversationId];
   if (!conversation) {
-    return {
-      id: null,
-      choice: null,
-      messages: [],
-    };
+    return null;
   }
 
   return {
@@ -176,6 +188,23 @@ function createConversation(actor) {
     choice: createConversationChoice(conversation.choice, actor),
     messages: createConversationMessages(conversation.messages, actor),
   };
+}
+
+function createEmptyConversation() {
+  return {
+    id: null,
+    choice: null,
+    messages: [],
+  };
+}
+
+function isConversation(conversation) {
+  return (
+    conversation
+    && typeof conversation.id === 'string'
+    && Array.isArray(conversation.messages)
+    && conversation.messages.length > 0
+  );
 }
 
 function findActorConversationIds(actorId) {
@@ -219,18 +248,6 @@ function createConversationChoice(choice, actor) {
       ],
     })),
   };
-}
-
-function selectConversationId(conversationIds) {
-  if (!Array.isArray(conversationIds)) {
-    return conversationIds;
-  }
-
-  if (conversationIds.length === 0) {
-    return null;
-  }
-
-  return conversationIds[getRandomInt(0, conversationIds.length - 1)];
 }
 
 function resolveConversationSpeakerName(message, actor) {

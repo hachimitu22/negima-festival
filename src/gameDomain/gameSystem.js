@@ -160,9 +160,25 @@ class GameSystem {
     }
 
     const baseChange = student.getBaseAffectionChange(conversationResult);
+    return this.applyStudentAffectionChange(actorId, baseChange);
+  }
+
+  applyStudentAffectionChange(actorId, baseChange) {
+    const student = this.actors.find(actor => (
+      actor instanceof Student
+      && actor.id === actorId
+    ));
+    if (!student) {
+      return false;
+    }
+
     const affectionChange = calculateAffectionChange({ baseChange });
     student.changeAffection(affectionChange);
     return true;
+  }
+
+  getActors() {
+    return [...this.actors];
   }
 
   findTalkableActor(actorId) {

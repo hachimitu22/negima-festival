@@ -139,7 +139,8 @@ snapshotは状態参照用であり、呼び出し側からsessionの状態を�
 `ConversationScene`は`ConversationSession`を保持し、renderer由来の入力を`next()`または`selectChoice(choiceId)`へ変換する。
 選択結果を保持し、`COMPLETED`を受け取った場合は会話IDと選択肢IDから成る結果を完了callbackへ一度だけ渡す。
 通知後に`ConversationScene`自身をpopし、stackに保持されている同じ`MainGameScene`インスタンスへ戻る。
-完了callbackは`MainGameScene`が生成し、会話結果を`GameSystem`へ反映する。
+完了callbackは`MainGameScene`が生成する。
+通常会話の結果は`GameSystem`へ反映し、配達イベントの会話結果は`DeliveryEvent`を通して`DeliveryTask`の状態へ反映する。
 生徒の基礎好感度変化量の決定と最終変化量の計算は、`ConversationSession`の責務に含めない。
 
 `ConversationScene`のsnapshotには`SCENE_IDS.CONVERSATION`、停止時点のゲーム時間とMP、`ConversationSession.getSnapshot()`の結果を格納する。

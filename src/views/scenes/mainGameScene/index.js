@@ -21,8 +21,6 @@ function createMainGameSceneView(rootElement, options) {
       back: createRegion(createDiv('back')),
       mapList: createRegion(createDiv('map-list')),
       eventList: createRegion(createList('event-list')),
-      succeededEventList: createRegion(createList('succeeded-event-list')),
-      failedEventList: createRegion(createList('failed-event-list')),
     };
 
     statusView.mount(root, options);
@@ -30,8 +28,6 @@ function createMainGameSceneView(rootElement, options) {
       elements.menu,
       elements.back,
       elements.eventList,
-      elements.succeededEventList,
-      elements.failedEventList,
     ].forEach(region => {
       elements.eventPanel.element.append(region.anchor, region.element);
     });
@@ -67,12 +63,6 @@ function createMainGameSceneView(rootElement, options) {
     } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.EXECUTING_EVENTS) {
       updateBackButton();
       updateExecutingEvents(snapshot.executingEvents);
-    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
-      updateBackButton();
-      updateCompletedEvents(elements.succeededEventList.element, snapshot.succeededEvents, '成功');
-    } else if (snapshot.activePanelLayerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
-      updateBackButton();
-      updateCompletedEvents(elements.failedEventList.element, snapshot.failedEvents, '失敗');
     }
   }
 
@@ -120,14 +110,6 @@ function createMainGameSceneView(rootElement, options) {
       return [elements.back, elements.eventList];
     }
 
-    if (layerId === MAIN_GAME_LAYER_IDS.SUCCEEDED_EVENTS) {
-      return [elements.back, elements.succeededEventList];
-    }
-
-    if (layerId === MAIN_GAME_LAYER_IDS.FAILED_EVENTS) {
-      return [elements.back, elements.failedEventList];
-    }
-
     return [];
   }
 
@@ -136,8 +118,6 @@ function createMainGameSceneView(rootElement, options) {
       elements.menu,
       elements.back,
       elements.eventList,
-      elements.succeededEventList,
-      elements.failedEventList,
     ];
   }
 
@@ -406,7 +386,6 @@ function createMainGameSceneView(rootElement, options) {
 
     const eventItem = document.createElement('li');
     const label = document.createElement('span');
-    const action = createEventAction(event);
 
     eventItem.id = `event-${event.id}`;
     eventItem.dataset.eventId = String(event.id);
@@ -414,88 +393,6 @@ function createMainGameSceneView(rootElement, options) {
     label.dataset.eventLabel = '';
     eventItem.appendChild(label);
 
-    if (action) {
-      eventItem.appendChild(action);
-    }
-
-    return eventItem;
-  }
-
-  function createEventAction(event) {
-    if (event.type === 'click') {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = '成功';
-      button.addEventListener('click', () => {
-        enqueueInput({
-          type: INPUT_TYPES.TARGET_ACTIVATE,
-          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
-        });
-      });
-      return button;
-    }
-
-    if (event.type === 'input') {
-      const form = document.createElement('form');
-      const input = document.createElement('input');
-      const button = document.createElement('button');
-
-      input.type = 'text';
-      input.value = event.inputValue ?? '';
-      input.placeholder = event.targetInput;
-      input.addEventListener('input', () => {
-        enqueueInput({
-          type: INPUT_TYPES.TARGET_INPUT_CHANGE,
-          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
-          value: input.value,
-        });
-      });
-
-      button.type = 'submit';
-      button.textContent = '送信';
-
-      form.addEventListener('submit', submitEvent => {
-        submitEvent.preventDefault();
-        enqueueInput({
-          type: INPUT_TYPES.TARGET_SUBMIT,
-          targetId: createTargetId(TARGET_PREFIXES.EVENT, event.id),
-        });
-      });
-
-      form.append(input, button);
-      return form;
-    }
-
-    return null;
-  }
-
-  function updateCompletedEvents(eventList, events, statusText) {
-    const eventIds = new Set(events.map(event => String(event.id)));
-
-    Array.from(eventList.children).forEach(eventItem => {
-      if (!eventIds.has(eventItem.dataset.eventId)) {
-        eventItem.remove();
-      }
-    });
-
-    events.forEach(event => {
-      const eventItem = getOrCreateCompletedEventItem(eventList, event);
-      eventItem.textContent = formatCompletedEvent(event, statusText);
-
-      if (!eventItem.isConnected) {
-        eventList.appendChild(eventItem);
-      }
-    });
-  }
-
-  function getOrCreateCompletedEventItem(eventList, event) {
-    const existingItem = eventList.querySelector(`[data-event-id="${event.id}"]`);
-    if (existingItem) {
-      return existingItem;
-    }
-
-    const eventItem = document.createElement('li');
-    eventItem.dataset.eventId = String(event.id);
     return eventItem;
   }
 
@@ -527,11 +424,7 @@ function createList(id) {
 }
 
 function formatExecutingEvent(event) {
-  return `${event.id}: ${event.name}: ${event.description} (残り時間: ${event.remainingSeconds}秒)`;
-}
-
-function formatCompletedEvent(event, statusText) {
-  return `${event.id}: ${event.name}: ${event.description} (${statusText})`;
+  return `${event.id}: ${event.name}: ${event.description}`;
 }
 
 function updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput) {
