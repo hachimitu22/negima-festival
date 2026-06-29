@@ -14,6 +14,7 @@ function createStatusView() {
       gameTime: createParagraph('game-time'),
       loopCount: createParagraph('loop-count'),
       location: createParagraph('location'),
+      companion: createParagraph('companion'),
       magicPower: createParagraph('magic-power'),
       festivalState: createParagraph('festival-state'),
       cassiopeia: createButton('cassiopeia', 'カシオペアを使う'),
@@ -23,6 +24,7 @@ function createStatusView() {
       elements.gameTime,
       elements.loopCount,
       elements.location,
+      elements.companion,
       elements.magicPower,
       elements.festivalState,
       elements.cassiopeia,
@@ -45,6 +47,9 @@ function createStatusView() {
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;
     elements.location.textContent = `現在地: ${snapshot.character.location.name}`;
+    elements.companion.textContent = snapshot.companion
+      ? `同伴者: ${snapshot.companion.name}`
+      : '';
     elements.magicPower.textContent = `MP ${formatMagicPower(snapshot.character.magicPower.current)} / ${snapshot.character.magicPower.max}`;
     elements.festivalState.textContent = snapshot.gameTime.isEnded
       ? 'フェス終了'
@@ -55,6 +60,7 @@ function createStatusView() {
 
     elements.loopCount.hidden = isConversationActive;
     elements.location.hidden = isConversationActive;
+    elements.companion.hidden = !snapshot.companion;
     elements.festivalState.hidden = isConversationActive;
     elements.cassiopeia.hidden = isConversationActive;
   }

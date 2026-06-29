@@ -1,4 +1,7 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
+import { ACCOMPANIMENT_CONVERSATION_IDS } from './accompanimentConversations.js';
+import { AccompanimentEvent } from './accompanimentEvent.js';
+import { ACTOR_MOVEMENT_MODES } from './actor.js';
 import { ConversationScene } from './conversationScene.js';
 import { createConversation } from './conversations.js';
 import { DELIVERY_CONVERSATION_IDS } from './deliveryConversations.js';
@@ -8,17 +11,18 @@ import { LOCATIONS } from './locations.js';
 import { getRandomInt } from './random.js';
 
 const DELIVERY_AFFECTION_REWARD = 5;
+const ACCOMPANIMENT_AFFECTION_REWARD = 20;
 
 class MainGameScene {
   #system;
   #activeLayerId;
-  #activeDeliveryEvent;
+  #activeEvent;
   #lastEventId;
 
   constructor(system = new GameSystem()) {
     this.#system = system;
     this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    this.#activeDeliveryEvent = null;
+    this.#activeEvent = null;
     this.#lastEventId = 0;
   }
 
@@ -52,7 +56,11 @@ class MainGameScene {
   #handleTargetActivate(targetId) {
     const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
     if (locationId) {
-      this.#system.moveCharacterToLocation(locationId);
+      const didMove = this.#system.moveCharacterToLocation(locationId);
+      const companionActorId = this.#getActiveCompanionActorId();
+      if (didMove && companionActorId) {
+        this.#system.moveActorToLocation(companionActorId, locationId);
+      }
       return;
     }
 
@@ -70,19 +78,21 @@ class MainGameScene {
   }
 
   createSnapshot() {
+    const statusSnapshot = this.#createStatusSnapshot();
     return {
-      ...this.#system.createSnapshot(),
+      ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.#activeLayerId,
       mapLocations: LOCATIONS,
-      executingEvents: this.#activeDeliveryEvent
-        ? [this.#activeDeliveryEvent.getSnapshot()]
+      executingEvents: this.#activeEvent
+        ? [this.#activeEvent.getSnapshot()]
         : [],
     };
   }
 
   #rewind() {
-    this.#activeDeliveryEvent = null;
+    this.#releaseActiveCompanion({ resetNextMoveTime: false });
+    this.#activeEvent = null;
   }
 
   #createConversationSceneFromInputs(inputs = []) {
@@ -111,42 +121,63 @@ class MainGameScene {
       return null;
     }
 
-    if (this.#activeDeliveryEvent) {
-      const interaction = this.#activeDeliveryEvent.createActorInteraction(actor.id);
+    if (this.#activeEvent) {
+      const currentLocationId = this.#system.createSnapshot().character.location.id;
+      const interaction = this.#activeEvent.createActorInteraction(
+        actor.id,
+        currentLocationId,
+      );
       if (interaction) {
-        return this.#createDeliveryConversationScene(
-          this.#activeDeliveryEvent,
+        return this.#createEventConversationScene(
+          this.#activeEvent,
           interaction,
         );
+      }
+
+      if (this.#isActorInteractionBlocked(actor.id, currentLocationId)) {
+        return null;
       }
 
       return this.#createNormalConversationScene(actor);
     }
 
-    return this.#createConversationSceneWithDeliveryCandidate(actor);
+    return this.#createConversationSceneWithEventCandidates(actor);
   }
 
-  #createConversationSceneWithDeliveryCandidate(actor) {
+  #createConversationSceneWithEventCandidates(actor) {
     const deliveryEvent = this.#createDeliveryEventCandidate(actor);
-    const requestInteraction = deliveryEvent?.createRequestInteraction() ?? null;
+    const accompanimentEvent = this.#createAccompanimentEventCandidate(actor);
+    const eventCandidates = [
+      createEventCandidate(
+        deliveryEvent,
+        DELIVERY_CONVERSATION_IDS.REQUEST,
+      ),
+      createEventCandidate(
+        accompanimentEvent,
+        ACCOMPANIMENT_CONVERSATION_IDS.REQUEST,
+      ),
+    ].filter(Boolean);
     const conversation = createConversation(actor, {
-      additionalConversations: requestInteraction
-        ? [requestInteraction.conversation]
-        : [],
+      additionalConversations: eventCandidates.map(candidate => (
+        candidate.interaction.conversation
+      )),
     });
     if (conversation.messages.length === 0) {
       return null;
     }
 
-    if (
-      deliveryEvent
-      && requestInteraction
-      && conversation.id === DELIVERY_CONVERSATION_IDS.REQUEST
-    ) {
+    const selectedCandidate = eventCandidates.find(candidate => (
+      candidate.conversationId === conversation.id
+    ));
+    if (selectedCandidate) {
       this.#lastEventId += 1;
-      return this.#createDeliveryConversationScene(deliveryEvent, requestInteraction, {
-        activateOnComplete: true,
-      });
+      return this.#createEventConversationScene(
+        selectedCandidate.event,
+        selectedCandidate.interaction,
+        {
+          activateOnComplete: true,
+        },
+      );
     }
 
     return this.#createNormalConversationScene(actor, conversation);
@@ -159,30 +190,31 @@ class MainGameScene {
 
     return new ConversationScene({
       conversation,
-      statusSnapshot: this.#system.createSnapshot(),
+      statusSnapshot: this.#createStatusSnapshot(),
       onComplete: conversationResult => {
         this.#system.applyStudentConversationResult(actor.id, conversationResult);
       },
     });
   }
 
-  #createDeliveryConversationScene(
-    deliveryEvent,
+  #createEventConversationScene(
+    event,
     interaction,
     { activateOnComplete = false } = {},
   ) {
     return new ConversationScene({
       conversation: interaction.conversation,
-      statusSnapshot: this.#system.createSnapshot(),
+      statusSnapshot: this.#createStatusSnapshot(),
       onComplete: conversationResult => {
-        deliveryEvent.completeInteraction(interaction.kind, conversationResult);
+        event.completeInteraction(interaction.kind, conversationResult);
 
-        if (activateOnComplete && deliveryEvent.isExecuting()) {
-          this.#activeDeliveryEvent = deliveryEvent;
+        if (activateOnComplete && event.isExecuting()) {
+          this.#activeEvent = event;
+          this.#controlActiveCompanionExternally();
           return;
         }
 
-        this.#finishDeliveryEvent(deliveryEvent);
+        this.#finishActiveEvent(event);
       },
     });
   }
@@ -200,24 +232,122 @@ class MainGameScene {
     });
   }
 
-  #finishDeliveryEvent(deliveryEvent) {
-    if (deliveryEvent !== this.#activeDeliveryEvent) {
+  #createAccompanimentEventCandidate(companion) {
+    const destinationLocations = LOCATIONS.filter(location => (
+      location.id !== companion.locationId
+    ));
+    if (destinationLocations.length === 0) {
+      return null;
+    }
+
+    const destination = destinationLocations[
+      getRandomInt(0, destinationLocations.length - 1)
+    ];
+    return new AccompanimentEvent(this.#lastEventId, {
+      companion,
+      destination,
+    });
+  }
+
+  #finishActiveEvent(event) {
+    if (event !== this.#activeEvent) {
       return;
     }
 
-    if (deliveryEvent.isSucceeded()) {
-      this.#applyDeliveryReward(deliveryEvent);
-      this.#activeDeliveryEvent = null;
-    } else if (deliveryEvent.isFailed()) {
-      this.#activeDeliveryEvent = null;
+    if (event.isSucceeded()) {
+      this.#applyEventReward(event);
+      this.#releaseActiveCompanion();
+      this.#activeEvent = null;
+    } else if (typeof event.isFailed === 'function' && event.isFailed()) {
+      this.#releaseActiveCompanion();
+      this.#activeEvent = null;
     }
   }
 
-  #applyDeliveryReward(deliveryEvent) {
-    deliveryEvent.getParticipantActorIds().forEach(actorId => {
+  #applyEventReward(event) {
+    if (event instanceof AccompanimentEvent) {
+      this.#system.applyStudentAffectionChange(
+        event.getCompanionActorId(),
+        ACCOMPANIMENT_AFFECTION_REWARD,
+      );
+      return;
+    }
+
+    event.getParticipantActorIds().forEach(actorId => {
       this.#system.applyStudentAffectionChange(actorId, DELIVERY_AFFECTION_REWARD);
     });
   }
+
+  #getActiveCompanionActorId() {
+    return this.#activeEvent instanceof AccompanimentEvent
+      ? this.#activeEvent.getCompanionActorId()
+      : null;
+  }
+
+  #controlActiveCompanionExternally() {
+    const companionActorId = this.#getActiveCompanionActorId();
+    if (!companionActorId) {
+      return;
+    }
+
+    this.#system.setActorMovementMode(
+      companionActorId,
+      ACTOR_MOVEMENT_MODES.EXTERNAL,
+    );
+  }
+
+  #releaseActiveCompanion({ resetNextMoveTime = true } = {}) {
+    const companionActorId = this.#getActiveCompanionActorId();
+    if (!companionActorId) {
+      return;
+    }
+
+    this.#system.setActorMovementMode(
+      companionActorId,
+      ACTOR_MOVEMENT_MODES.AUTOMATIC,
+    );
+    if (resetNextMoveTime) {
+      this.#system.resetActorNextMoveTime(companionActorId);
+    }
+  }
+
+  #isActorInteractionBlocked(actorId, currentLocationId) {
+    return (
+      this.#activeEvent instanceof AccompanimentEvent
+      && this.#activeEvent.isActorInteractionBlocked(actorId, currentLocationId)
+    );
+  }
+
+  #createStatusSnapshot() {
+    const snapshot = this.#system.createSnapshot();
+    const currentLocationId = snapshot.character.location.id;
+    return {
+      ...snapshot,
+      companion: this.#activeEvent instanceof AccompanimentEvent
+        ? this.#activeEvent.getCompanionSnapshot()
+        : null,
+      actors: snapshot.actors.map(actor => ({
+        ...actor,
+        isTalkable: (
+          actor.location?.id === currentLocationId
+          && !this.#isActorInteractionBlocked(actor.id, currentLocationId)
+        ),
+      })),
+    };
+  }
+}
+
+function createEventCandidate(event, conversationId) {
+  if (!event) {
+    return null;
+  }
+
+  const interaction = event.createRequestInteraction();
+  return {
+    conversationId,
+    event,
+    interaction,
+  };
 }
 
 function getTargetValue(targetId, prefix) {

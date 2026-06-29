@@ -4,9 +4,14 @@ import { getRandomInt } from './random.js';
 
 const MIN_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_MOVEMENT_INTERVAL_HOURS = 10;
+const ACTOR_MOVEMENT_MODES = Object.freeze({
+  AUTOMATIC: 'automatic',
+  EXTERNAL: 'external',
+});
 
 class Actor extends GameObject {
   #excludedLocationIds;
+  #movementMode;
   #nextMoveTimeHours;
 
   constructor(id, name, locationId, { excludedLocationIds = [] } = {}) {
@@ -15,11 +20,19 @@ class Actor extends GameObject {
     this.name = name;
     this.locationId = locationId;
     this.#excludedLocationIds = new Set(excludedLocationIds);
+    this.#movementMode = ACTOR_MOVEMENT_MODES.AUTOMATIC;
     this.#nextMoveTimeHours = this.#createNextMoveTime(0);
   }
 
   update(context) {
-    const gameTimeHours = context.gameTimeHours;
+    this.#updateAutomaticMovement(context);
+  }
+
+  #updateAutomaticMovement({ gameTimeHours }) {
+    if (this.#movementMode !== ACTOR_MOVEMENT_MODES.AUTOMATIC) {
+      return;
+    }
+
     if (typeof gameTimeHours !== 'number') {
       return;
     }
@@ -34,6 +47,19 @@ class Actor extends GameObject {
 
   resetNextMoveTime(currentGameTimeHours) {
     this.#nextMoveTimeHours = this.#createNextMoveTime(currentGameTimeHours);
+  }
+
+  moveToLocation(locationId) {
+    this.locationId = locationId;
+  }
+
+  setMovementMode(movementMode) {
+    if (!Object.values(ACTOR_MOVEMENT_MODES).includes(movementMode)) {
+      return false;
+    }
+
+    this.#movementMode = movementMode;
+    return true;
   }
 
   #advanceNextMoveTime(currentGameTimeHours) {
@@ -77,5 +103,6 @@ class Actor extends GameObject {
 }
 
 export {
+  ACTOR_MOVEMENT_MODES,
   Actor,
 };

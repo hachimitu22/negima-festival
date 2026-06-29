@@ -244,7 +244,7 @@ function createMainGameSceneView(rootElement, options) {
       locationButton.disabled = disabled;
     }
 
-    updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput);
+    updateLocationActors(actorList, actors, enqueueInput);
   }
 
   function updateExecutingEvents(events) {
@@ -322,7 +322,7 @@ function formatExecutingEvent(event) {
   return `${event.id}: ${event.name}: ${event.description}`;
 }
 
-function updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput) {
+function updateLocationActors(actorList, actors, enqueueInput) {
   const actorIds = new Set(actors.map(actor => actor.id));
 
   Array.from(actorList.children).forEach(actorItem => {
@@ -337,7 +337,7 @@ function updateLocationActors(actorList, actors, isCurrentLocation, enqueueInput
     const actorAffection = actorItem.querySelector('[data-actor-affection]');
     const hasAffection = typeof actor.affection === 'number';
     const affectionText = hasAffection ? `${actor.affection}` : '';
-    const disabled = !isCurrentLocation;
+    const disabled = !actor.isTalkable;
 
     if (actorButton.textContent !== actor.name) {
       actorButton.textContent = actor.name;

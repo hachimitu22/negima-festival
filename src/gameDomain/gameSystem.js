@@ -155,6 +155,36 @@ class GameSystem {
     return true;
   }
 
+  moveActorToLocation(actorId, locationId) {
+    const actor = this.#actors.find(candidate => candidate.id === actorId);
+    const location = findLocation(locationId);
+    if (!actor || !location) {
+      return false;
+    }
+
+    actor.moveToLocation(location.id);
+    return true;
+  }
+
+  resetActorNextMoveTime(actorId) {
+    const actor = this.#actors.find(candidate => candidate.id === actorId);
+    if (!actor) {
+      return false;
+    }
+
+    actor.resetNextMoveTime(this.#gameTime.currentHours);
+    return true;
+  }
+
+  setActorMovementMode(actorId, movementMode) {
+    const actor = this.#actors.find(candidate => candidate.id === actorId);
+    if (!actor) {
+      return false;
+    }
+
+    return actor.setMovementMode(movementMode);
+  }
+
   applyStudentConversationResult(actorId, conversationResult) {
     const student = this.#actors.find(actor => (
       actor instanceof Student
