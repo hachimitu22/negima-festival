@@ -60,8 +60,10 @@
   isolation: isolate;
   display: grid;
   grid-template-columns: repeat(5, minmax(150px, 1fr));
-  gap: 56px 40px;
-  align-items: start;
+  grid-template-rows: repeat(8, 78px);
+  grid-auto-rows: 78px;
+  gap: 44px 40px;
+  align-items: stretch;
   min-width: 910px;
   padding: 20px;
 }
@@ -83,7 +85,12 @@
 [data-location-id] {
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 42px 18px;
+  gap: 2px;
   min-width: 0;
+  height: 78px;
   padding: 6px;
   border: 2px solid var(--map-group-border, #64748b);
   border-radius: 8px;
@@ -92,18 +99,37 @@
 }
 
 [data-location-id][data-current-location] {
-  outline: 4px solid #2563eb;
-  outline-offset: 3px;
+  background: color-mix(
+    in srgb,
+    var(--map-group-border, #64748b) 70%,
+    white
+  );
 }
 
 [data-location-id][data-movable-location] {
   box-shadow: 0 0 0 3px rgb(37 99 235 / 18%);
 }
 
+[data-location-id]:hover,
+[data-location-id]:focus-within {
+  z-index: 2;
+}
+
 [data-location-button] {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 40px;
+  height: 42px;
+  padding: 2px 6px;
   font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+[data-location-actor-count] {
+  align-self: center;
+  font-size: 0.85rem;
+  line-height: 18px;
+  text-align: center;
 }
 
 [data-map-legend-group="school-first-floor"],
@@ -137,12 +163,46 @@
 }
 
 [data-location-actors] {
-  display: flex;
+  position: absolute;
+  z-index: 3;
+  display: none;
   flex-wrap: wrap;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 280px;
+  overflow-x: hidden;
+  overflow-y: auto;
   gap: 4px;
   list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
+  margin: 0;
+  padding: 8px;
+  border: 2px solid var(--map-group-border, #64748b);
+  border-radius: 8px;
+  background: var(--map-group-background, #f8fafc);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 30%);
+}
+
+[data-location-id][data-has-actors]:hover > [data-location-actors],
+[data-location-id][data-has-actors]:focus-within > [data-location-actors] {
+  display: flex;
+}
+
+[data-actor-popover-horizontal="right"] > [data-location-actors] {
+  left: 0;
+}
+
+[data-actor-popover-horizontal="left"] > [data-location-actors] {
+  right: 0;
+}
+
+[data-actor-popover-vertical="below"] > [data-location-actors] {
+  top: calc(100% - 2px);
+}
+
+[data-actor-popover-vertical="above"] > [data-location-actors] {
+  bottom: calc(100% - 2px);
 }
 
 [data-location-actors] > li {

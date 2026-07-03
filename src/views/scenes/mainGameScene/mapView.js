@@ -44,7 +44,6 @@ function createMapView(rootElement, options) {
   let resizeObserver = null;
   let drawFrameId = null;
   let lastConnectionSignature = null;
-  let lastGeometrySignature = null;
   let isDestroyed = false;
 
   rootElement.setAttribute('aria-labelledby', title.id);
@@ -69,11 +68,6 @@ function createMapView(rootElement, options) {
     const locationIds = new Set(locations.map(location => location.id));
     const actorsByLocationId = groupActorsByLocationId(actors);
     const connectionSignature = createConnectionSignature(locations);
-    const geometrySignature = createGeometrySignature(
-      connectionSignature,
-      currentLocation,
-      actors,
-    );
     let fallbackIndex = 0;
 
     Array.from(stage.querySelectorAll('[data-location-id]')).forEach(locationItem => {
@@ -89,6 +83,7 @@ function createMapView(rootElement, options) {
 
       locationItem.style.gridColumn = String(layout.column);
       locationItem.style.gridRow = String(layout.row);
+      updateActorPopoverPlacement(locationItem, layout);
       updateLocationItem(
         locationItem,
         location,
@@ -104,11 +99,8 @@ function createMapView(rootElement, options) {
     if (connectionSignature !== lastConnectionSignature) {
       updateLegend(locations);
       updateConnections(locations);
-      lastConnectionSignature = connectionSignature;
-    }
-    if (geometrySignature !== lastGeometrySignature) {
       scheduleConnectionDraw();
-      lastGeometrySignature = geometrySignature;
+      lastConnectionSignature = connectionSignature;
     }
   }
 
@@ -123,7 +115,6 @@ function createMapView(rootElement, options) {
       drawFrameId = null;
     }
     lastConnectionSignature = null;
-    lastGeometrySignature = null;
     rootElement.replaceChildren();
   }
 
@@ -135,6 +126,7 @@ function createMapView(rootElement, options) {
   function createLocationItem(location) {
     const locationItem = document.createElement('div');
     const locationButton = document.createElement('button');
+    const actorCount = document.createElement('span');
     const actorList = document.createElement('menu');
 
     locationItem.dataset.locationId = location.id;
@@ -147,24 +139,27 @@ function createMapView(rootElement, options) {
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
+    actorCount.dataset.locationActorCount = '';
     actorList.dataset.locationActors = '';
     actorList.setAttribute('aria-label', `${location.name}にいるアクター`);
 
-    locationItem.append(locationButton, actorList);
+    locationItem.append(locationButton, actorCount, actorList);
     return locationItem;
   }
 
   function updateLocationItem(locationItem, location, currentLocation, actors) {
     const locationButton = locationItem.querySelector('[data-location-button]');
+    const actorCount = locationItem.querySelector('[data-location-actor-count]');
     const actorList = locationItem.querySelector('[data-location-actors]');
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
-    const locationName = isCurrentLocation ? `${location.name} (現在地)` : location.name;
+    const locationName = location.name;
     const disabled = isCurrentLocation || !isMovable;
 
     locationItem.dataset.locationGroup = getGroupKey(location.group);
     locationItem.toggleAttribute('data-current-location', isCurrentLocation);
     locationItem.toggleAttribute('data-movable-location', isMovable);
+    locationItem.toggleAttribute('data-has-actors', actors.length > 0);
 
     if (locationButton.value !== location.name) {
       locationButton.value = location.name;
@@ -182,9 +177,14 @@ function createMapView(rootElement, options) {
     }
 
     const actorListLabel = `${location.name}にいるアクター`;
+    const actorCountText = `${actors.length}人`;
+    if (actorCount.textContent !== actorCountText) {
+      actorCount.textContent = actorCountText;
+    }
     if (actorList.getAttribute('aria-label') !== actorListLabel) {
       actorList.setAttribute('aria-label', actorListLabel);
     }
+    actorList.hidden = actors.length === 0;
     updateLocationActors(actorList, actors, enqueueInput);
   }
 
@@ -342,19 +342,6 @@ function createConnectionSignature(locations) {
   })));
 }
 
-function createGeometrySignature(connectionSignature, currentLocation, actors) {
-  return JSON.stringify({
-    connectionSignature,
-    currentLocationId: currentLocation.id,
-    actors: actors.map(actor => ({
-      id: actor.id,
-      name: actor.name,
-      locationId: actor.location?.id ?? null,
-      affection: actor.affection ?? null,
-    })),
-  });
-}
-
 function calculateConnectionEndpoints(sourceRect, targetRect, stageRect) {
   const sourceCenter = getRelativeCenter(sourceRect, stageRect);
   const targetCenter = getRelativeCenter(targetRect, stageRect);
@@ -403,6 +390,15 @@ function createFallbackLayout(index) {
     column: (index % MAP_COLUMN_COUNT) + 1,
     row: 9 + Math.floor(index / MAP_COLUMN_COUNT),
   };
+}
+
+function updateActorPopoverPlacement(locationItem, layout) {
+  locationItem.dataset.actorPopoverHorizontal = layout.column >= 4
+    ? 'left'
+    : 'right';
+  locationItem.dataset.actorPopoverVertical = layout.row >= 7
+    ? 'above'
+    : 'below';
 }
 
 function groupActorsByLocationId(actors) {
