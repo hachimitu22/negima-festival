@@ -1,8 +1,8 @@
 import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
 import {
-  CONVERSATION_SESSION_RESULTS,
-  ConversationSession,
-} from './conversationSession.js';
+  CONVERSATION_SCENE_SESSION_RESULTS,
+  ConversationSceneSession,
+} from './conversationSceneSession.js';
 
 class ConversationScene {
   #session;
@@ -11,12 +11,12 @@ class ConversationScene {
   #result;
   #isCompleted;
 
-  constructor({ conversation, statusSnapshot, onComplete }) {
-    this.#session = new ConversationSession(conversation);
+  constructor({ script, statusSnapshot, onComplete }) {
+    this.#session = new ConversationSceneSession(script);
     this.#statusSnapshot = statusSnapshot;
     this.#onComplete = onComplete;
     this.#result = {
-      conversationId: conversation.id,
+      scriptId: script.id,
       choiceId: null,
     };
     this.#isCompleted = false;
@@ -40,7 +40,10 @@ class ConversationScene {
       return false;
     }
 
-    const action = getTargetValue(input.targetId, TARGET_PREFIXES.CONVERSATION);
+    const action = getTargetValue(
+      input.targetId,
+      TARGET_PREFIXES.CONVERSATION_SCENE,
+    );
     if (!action) {
       return false;
     }
@@ -63,7 +66,10 @@ class ConversationScene {
     }
 
     const result = this.#session.next();
-    if (result !== CONVERSATION_SESSION_RESULTS.COMPLETED || this.#isCompleted) {
+    if (
+      result !== CONVERSATION_SCENE_SESSION_RESULTS.COMPLETED
+      || this.#isCompleted
+    ) {
       return false;
     }
 

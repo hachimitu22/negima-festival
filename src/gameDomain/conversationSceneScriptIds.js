@@ -1,4 +1,4 @@
-const CONVERSATION_IDS = Object.freeze({
+const CONVERSATION_SCENE_SCRIPT_IDS = Object.freeze({
   ASUNA_WHERE_WERE_YOU: 'asunaWhereWereYou',
   EFFORT_FEEDBACK: 'effortFeedback',
   FAREWELL: 'farewell',
@@ -8,7 +8,7 @@ const CONVERSATION_IDS = Object.freeze({
   TEACHER_CHECK_IN: 'teacherCheckIn',
 });
 
-const CONVERSATION_CHOICE_IDS = Object.freeze({
+const CONVERSATION_SCENE_SCRIPT_CHOICE_IDS = Object.freeze({
   EFFORT_FEEDBACK: Object.freeze({
     WORKED_VERY_HARD: 'worked-very-hard',
     AS_USUAL: 'as-usual',
@@ -17,6 +17,6 @@ const CONVERSATION_CHOICE_IDS = Object.freeze({
 });
 
 export {
-  CONVERSATION_CHOICE_IDS,
-  CONVERSATION_IDS,
+  CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
+  CONVERSATION_SCENE_SCRIPT_IDS,
 };

@@ -1,12 +1,12 @@
-const ACCOMPANIMENT_CONVERSATION_IDS = Object.freeze({
+const ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS = Object.freeze({
   REQUEST: 'accompanimentRequest',
   COMPLETE: 'accompanimentComplete',
 });
 
-function createAccompanimentRequestConversation(task) {
+function createAccompanimentRequestConversationSceneScript(task) {
   const { companion, destination } = task;
   return {
-    id: ACCOMPANIMENT_CONVERSATION_IDS.REQUEST,
+    id: ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
     choice: null,
     messages: [
       {
@@ -21,10 +21,10 @@ function createAccompanimentRequestConversation(task) {
   };
 }
 
-function createAccompanimentCompleteConversation(task) {
+function createAccompanimentCompleteConversationSceneScript(task) {
   const { companion, destination } = task;
   return {
-    id: ACCOMPANIMENT_CONVERSATION_IDS.COMPLETE,
+    id: ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS.COMPLETE,
     choice: null,
     messages: [
       {
@@ -40,7 +40,7 @@ function createAccompanimentCompleteConversation(task) {
 }
 
 export {
-  ACCOMPANIMENT_CONVERSATION_IDS,
-  createAccompanimentCompleteConversation,
-  createAccompanimentRequestConversation,
+  ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS,
+  createAccompanimentCompleteConversationSceneScript,
+  createAccompanimentRequestConversationSceneScript,
 };

@@ -83,7 +83,7 @@ function createConversationSceneView(rootElement, options) {
     next.addEventListener('click', () => {
       enqueueInput({
         type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, 'next'),
+        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION_SCENE, 'next'),
       });
     });
 
@@ -131,7 +131,10 @@ function createConversationSceneView(rootElement, options) {
     choiceButton.addEventListener('click', () => {
       enqueueInput({
         type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.CONVERSATION, `choice:${choice.id}`),
+        targetId: createTargetId(
+          TARGET_PREFIXES.CONVERSATION_SCENE,
+          `choice:${choice.id}`,
+        ),
       });
     });
     return choiceButton;

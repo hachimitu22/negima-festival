@@ -1,9 +1,9 @@
 import {
-  DELIVERY_CHOICE_IDS,
-  createDeliveryCompleteConversation,
-  createDeliveryReconfirmConversation,
-  createDeliveryRequestConversation,
-} from './deliveryConversations.js';
+  DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
+  createDeliveryCompleteConversationSceneScript,
+  createDeliveryReconfirmConversationSceneScript,
+  createDeliveryRequestConversationSceneScript,
+} from './deliveryConversationSceneScripts.js';
 import { DeliveryTask } from './deliveryTask.js';
 
 const DELIVERY_INTERACTION_KINDS = Object.freeze({
@@ -24,7 +24,9 @@ class DeliveryEvent {
   createRequestInteraction() {
     return {
       kind: DELIVERY_INTERACTION_KINDS.REQUEST,
-      conversation: createDeliveryRequestConversation(this.#task),
+      conversationSceneScript: createDeliveryRequestConversationSceneScript(
+        this.#task,
+      ),
     };
   }
 
@@ -36,21 +38,25 @@ class DeliveryEvent {
     if (actorId === this.#task.sender.id) {
       return {
         kind: DELIVERY_INTERACTION_KINDS.RECONFIRM,
-        conversation: createDeliveryReconfirmConversation(this.#task),
+        conversationSceneScript: createDeliveryReconfirmConversationSceneScript(
+          this.#task,
+        ),
       };
     }
 
     if (actorId === this.#task.recipient.id) {
       return {
         kind: DELIVERY_INTERACTION_KINDS.COMPLETE,
-        conversation: createDeliveryCompleteConversation(this.#task),
+        conversationSceneScript: createDeliveryCompleteConversationSceneScript(
+          this.#task,
+        ),
       };
     }
 
     return null;
   }
 
-  completeInteraction(kind, conversationResult = {}) {
+  completeInteraction(kind, conversationSceneResult = {}) {
     if (kind === DELIVERY_INTERACTION_KINDS.REQUEST) {
       return this.#task.accept();
     }
@@ -61,14 +67,16 @@ class DeliveryEvent {
 
     if (
       kind === DELIVERY_INTERACTION_KINDS.RECONFIRM
-      && conversationResult.choiceId === DELIVERY_CHOICE_IDS.DECLINE
+      && conversationSceneResult.choiceId
+        === DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.DECLINE
     ) {
       return this.#task.decline();
     }
 
     return (
       kind === DELIVERY_INTERACTION_KINDS.RECONFIRM
-      && conversationResult.choiceId === DELIVERY_CHOICE_IDS.CONTINUE
+      && conversationSceneResult.choiceId
+        === DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.CONTINUE
     );
   }
 

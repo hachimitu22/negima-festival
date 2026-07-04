@@ -1,34 +1,34 @@
-const CONVERSATION_SESSION_RESULTS = Object.freeze({
+const CONVERSATION_SCENE_SESSION_RESULTS = Object.freeze({
   ADVANCED: 'advanced',
   BLOCKED: 'blocked',
   COMPLETED: 'completed',
 });
 
-class ConversationSession {
-  #conversationId;
+class ConversationSceneSession {
+  #scriptId;
   #choice;
   #messages;
   #messageIndex;
 
-  constructor(conversation) {
-    this.#conversationId = conversation.id;
-    this.#choice = conversation.choice;
-    this.#messages = conversation.messages;
+  constructor(script) {
+    this.#scriptId = script.id;
+    this.#choice = script.choice;
+    this.#messages = script.messages;
     this.#messageIndex = 0;
   }
 
   next() {
-    if (getConversationChoices(this.#choice, this.#messageIndex).length > 0) {
-      return CONVERSATION_SESSION_RESULTS.BLOCKED;
+    if (getConversationSceneChoices(this.#choice, this.#messageIndex).length > 0) {
+      return CONVERSATION_SCENE_SESSION_RESULTS.BLOCKED;
     }
 
     const nextMessageIndex = this.#messageIndex + 1;
     if (nextMessageIndex >= this.#messages.length) {
-      return CONVERSATION_SESSION_RESULTS.COMPLETED;
+      return CONVERSATION_SCENE_SESSION_RESULTS.COMPLETED;
     }
 
     this.#messageIndex = nextMessageIndex;
-    return CONVERSATION_SESSION_RESULTS.ADVANCED;
+    return CONVERSATION_SCENE_SESSION_RESULTS.ADVANCED;
   }
 
   selectChoice(choiceId) {
@@ -49,14 +49,14 @@ class ConversationSession {
     this.#choice = null;
     this.#messageIndex += 1;
     return {
-      conversationId: this.#conversationId,
+      scriptId: this.#scriptId,
       choiceId: selectedOption.id,
     };
   }
 
   getSnapshot() {
     const message = this.#messages[this.#messageIndex];
-    const choices = getConversationChoices(this.#choice, this.#messageIndex);
+    const choices = getConversationSceneChoices(this.#choice, this.#messageIndex);
     return {
       speakerName: message.speakerName,
       messageIndex: this.#messageIndex,
@@ -71,7 +71,7 @@ class ConversationSession {
   }
 }
 
-function getConversationChoices(choice, messageIndex) {
+function getConversationSceneChoices(choice, messageIndex) {
   if (!choice || choice.messageIndex !== messageIndex) {
     return [];
   }
@@ -83,6 +83,6 @@ function getConversationChoices(choice, messageIndex) {
 }
 
 export {
-  CONVERSATION_SESSION_RESULTS,
-  ConversationSession,
+  CONVERSATION_SCENE_SESSION_RESULTS,
+  ConversationSceneSession,
 };

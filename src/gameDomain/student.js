@@ -1,17 +1,17 @@
 import { Actor } from './actor.js';
 import {
-  CONVERSATION_CHOICE_IDS,
-  CONVERSATION_IDS,
-} from './conversationIds.js';
+  CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
+  CONVERSATION_SCENE_SCRIPT_IDS,
+} from './conversationSceneScriptIds.js';
 
 const MIN_AFFECTION = -100;
 const MAX_AFFECTION = 100;
-const DEFAULT_CONVERSATION_AFFECTION_CHANGE = 5;
-const CONVERSATION_AFFECTION_CHANGES = Object.freeze({
-  [CONVERSATION_IDS.EFFORT_FEEDBACK]: Object.freeze({
-    [CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.WORKED_VERY_HARD]: 10,
-    [CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.AS_USUAL]: 0,
-    [CONVERSATION_CHOICE_IDS.EFFORT_FEEDBACK.NEEDS_MORE_EFFORT]: -5,
+const DEFAULT_CONVERSATION_SCENE_AFFECTION_CHANGE = 5;
+const CONVERSATION_SCENE_AFFECTION_CHANGES = Object.freeze({
+  [CONVERSATION_SCENE_SCRIPT_IDS.EFFORT_FEEDBACK]: Object.freeze({
+    [CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.EFFORT_FEEDBACK.WORKED_VERY_HARD]: 10,
+    [CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.EFFORT_FEEDBACK.AS_USUAL]: 0,
+    [CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.EFFORT_FEEDBACK.NEEDS_MORE_EFFORT]: -5,
   }),
 });
 
@@ -25,9 +25,12 @@ class Student extends Actor {
     this.#setAffection(affection);
   }
 
-  getBaseAffectionChange(conversationResult) {
-    const changes = CONVERSATION_AFFECTION_CHANGES[conversationResult?.conversationId];
-    return changes?.[conversationResult?.choiceId] ?? DEFAULT_CONVERSATION_AFFECTION_CHANGE;
+  getBaseConversationSceneAffectionChange(conversationSceneResult) {
+    const changes = CONVERSATION_SCENE_AFFECTION_CHANGES[
+      conversationSceneResult?.scriptId
+    ];
+    return changes?.[conversationSceneResult?.choiceId]
+      ?? DEFAULT_CONVERSATION_SCENE_AFFECTION_CHANGE;
   }
 
   changeAffection(amount) {

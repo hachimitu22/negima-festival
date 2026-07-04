@@ -1,10 +1,14 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
-import { ACCOMPANIMENT_CONVERSATION_IDS } from './accompanimentConversations.js';
+import {
+  ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS,
+} from './accompanimentConversationSceneScripts.js';
 import { AccompanimentEvent } from './accompanimentEvent.js';
 import { ACTOR_MOVEMENT_MODES } from './actor.js';
 import { ConversationScene } from './conversationScene.js';
-import { createConversation } from './conversations.js';
-import { DELIVERY_CONVERSATION_IDS } from './deliveryConversations.js';
+import { createConversationSceneScript } from './conversationSceneScripts.js';
+import {
+  DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
+} from './deliveryConversationSceneScripts.js';
 import { DeliveryEvent } from './deliveryEvent.js';
 import { GameSystem } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
@@ -150,24 +154,24 @@ class MainGameScene {
     const eventCandidates = [
       createEventCandidate(
         deliveryEvent,
-        DELIVERY_CONVERSATION_IDS.REQUEST,
+        DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
       ),
       createEventCandidate(
         accompanimentEvent,
-        ACCOMPANIMENT_CONVERSATION_IDS.REQUEST,
+        ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
       ),
     ].filter(Boolean);
-    const conversation = createConversation(actor, {
-      additionalConversations: eventCandidates.map(candidate => (
-        candidate.interaction.conversation
+    const script = createConversationSceneScript(actor, {
+      additionalScripts: eventCandidates.map(candidate => (
+        candidate.interaction.conversationSceneScript
       )),
     });
-    if (conversation.messages.length === 0) {
+    if (script.messages.length === 0) {
       return null;
     }
 
     const selectedCandidate = eventCandidates.find(candidate => (
-      candidate.conversationId === conversation.id
+      candidate.scriptId === script.id
     ));
     if (selectedCandidate) {
       this.#lastEventId += 1;
@@ -180,19 +184,25 @@ class MainGameScene {
       );
     }
 
-    return this.#createNormalConversationScene(actor, conversation);
+    return this.#createNormalConversationScene(actor, script);
   }
 
-  #createNormalConversationScene(actor, conversation = createConversation(actor)) {
-    if (conversation.messages.length === 0) {
+  #createNormalConversationScene(
+    actor,
+    script = createConversationSceneScript(actor),
+  ) {
+    if (script.messages.length === 0) {
       return null;
     }
 
     return new ConversationScene({
-      conversation,
+      script,
       statusSnapshot: this.#createStatusSnapshot(),
-      onComplete: conversationResult => {
-        this.#system.applyStudentConversationResult(actor.id, conversationResult);
+      onComplete: conversationSceneResult => {
+        this.#system.applyStudentConversationSceneResult(
+          actor.id,
+          conversationSceneResult,
+        );
       },
     });
   }
@@ -203,10 +213,10 @@ class MainGameScene {
     { activateOnComplete = false } = {},
   ) {
     return new ConversationScene({
-      conversation: interaction.conversation,
+      script: interaction.conversationSceneScript,
       statusSnapshot: this.#createStatusSnapshot(),
-      onComplete: conversationResult => {
-        event.completeInteraction(interaction.kind, conversationResult);
+      onComplete: conversationSceneResult => {
+        event.completeInteraction(interaction.kind, conversationSceneResult);
 
         if (activateOnComplete && event.isExecuting()) {
           this.#activeEvent = event;
@@ -337,14 +347,14 @@ class MainGameScene {
   }
 }
 
-function createEventCandidate(event, conversationId) {
+function createEventCandidate(event, scriptId) {
   if (!event) {
     return null;
   }
 
   const interaction = event.createRequestInteraction();
   return {
-    conversationId,
+    scriptId,
     event,
     interaction,
   };

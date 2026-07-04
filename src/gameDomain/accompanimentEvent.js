@@ -1,7 +1,7 @@
 import {
-  createAccompanimentCompleteConversation,
-  createAccompanimentRequestConversation,
-} from './accompanimentConversations.js';
+  createAccompanimentCompleteConversationSceneScript,
+  createAccompanimentRequestConversationSceneScript,
+} from './accompanimentConversationSceneScripts.js';
 import { AccompanimentTask } from './accompanimentTask.js';
 
 const ACCOMPANIMENT_INTERACTION_KINDS = Object.freeze({
@@ -21,7 +21,9 @@ class AccompanimentEvent {
   createRequestInteraction() {
     return {
       kind: ACCOMPANIMENT_INTERACTION_KINDS.REQUEST,
-      conversation: createAccompanimentRequestConversation(this.#task),
+      conversationSceneScript: createAccompanimentRequestConversationSceneScript(
+        this.#task,
+      ),
     };
   }
 
@@ -36,7 +38,9 @@ class AccompanimentEvent {
 
     return {
       kind: ACCOMPANIMENT_INTERACTION_KINDS.COMPLETE,
-      conversation: createAccompanimentCompleteConversation(this.#task),
+      conversationSceneScript: createAccompanimentCompleteConversationSceneScript(
+        this.#task,
+      ),
     };
   }
 

@@ -185,7 +185,7 @@ class GameSystem {
     return actor.setMovementMode(movementMode);
   }
 
-  applyStudentConversationResult(actorId, conversationResult) {
+  applyStudentConversationSceneResult(actorId, conversationSceneResult) {
     const student = this.#actors.find(actor => (
       actor instanceof Student
       && actor.id === actorId
@@ -194,7 +194,9 @@ class GameSystem {
       return false;
     }
 
-    const baseChange = student.getBaseAffectionChange(conversationResult);
+    const baseChange = student.getBaseConversationSceneAffectionChange(
+      conversationSceneResult,
+    );
     return this.applyStudentAffectionChange(actorId, baseChange);
   }
 

@@ -1,18 +1,18 @@
-const DELIVERY_CONVERSATION_IDS = Object.freeze({
+const DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS = Object.freeze({
   REQUEST: 'deliveryRequest',
   RECONFIRM: 'deliveryReconfirm',
   COMPLETE: 'deliveryComplete',
 });
 
-const DELIVERY_CHOICE_IDS = Object.freeze({
+const DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS = Object.freeze({
   CONTINUE: 'continue-delivery',
   DECLINE: 'decline-delivery',
 });
 
-function createDeliveryRequestConversation(task) {
+function createDeliveryRequestConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {
-    id: DELIVERY_CONVERSATION_IDS.REQUEST,
+    id: DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
     choice: null,
     messages: [
       {
@@ -27,10 +27,10 @@ function createDeliveryRequestConversation(task) {
   };
 }
 
-function createDeliveryReconfirmConversation(task) {
+function createDeliveryReconfirmConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {
-    id: DELIVERY_CONVERSATION_IDS.RECONFIRM,
+    id: DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS.RECONFIRM,
     messages: [
       {
         speakerName: sender.name,
@@ -41,7 +41,7 @@ function createDeliveryReconfirmConversation(task) {
       messageIndex: 0,
       options: [
         {
-          id: DELIVERY_CHOICE_IDS.CONTINUE,
+          id: DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.CONTINUE,
           label: 'はい、このまま続けます。',
           messages: [
             {
@@ -55,7 +55,7 @@ function createDeliveryReconfirmConversation(task) {
           ],
         },
         {
-          id: DELIVERY_CHOICE_IDS.DECLINE,
+          id: DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS.DECLINE,
           label: 'すみません、今回はお断りします。',
           messages: [
             {
@@ -73,10 +73,10 @@ function createDeliveryReconfirmConversation(task) {
   };
 }
 
-function createDeliveryCompleteConversation(task) {
+function createDeliveryCompleteConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {
-    id: DELIVERY_CONVERSATION_IDS.COMPLETE,
+    id: DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS.COMPLETE,
     choice: null,
     messages: [
       {
@@ -92,9 +92,9 @@ function createDeliveryCompleteConversation(task) {
 }
 
 export {
-  DELIVERY_CHOICE_IDS,
-  DELIVERY_CONVERSATION_IDS,
-  createDeliveryCompleteConversation,
-  createDeliveryReconfirmConversation,
-  createDeliveryRequestConversation,
+  DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
+  DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
+  createDeliveryCompleteConversationSceneScript,
+  createDeliveryReconfirmConversationSceneScript,
+  createDeliveryRequestConversationSceneScript,
 };

@@ -4,7 +4,7 @@ const INPUT_TYPES = {
 
 const TARGET_PREFIXES = {
   CASSIOPEIA: 'cassiopeia',
-  CONVERSATION: 'conversation',
+  CONVERSATION_SCENE: 'conversation',
   LOCATION: 'location',
   ACTOR: 'actor',
 };
