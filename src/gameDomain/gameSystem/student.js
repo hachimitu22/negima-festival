@@ -2,7 +2,7 @@ import { Actor } from './actor.js';
 import {
   CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
   CONVERSATION_SCENE_SCRIPT_IDS,
-} from './conversationScene/conversationSceneScriptIds.js';
+} from '../conversationScene/conversationSceneScriptIds.js';
 
 const MIN_AFFECTION = -100;
 const MAX_AFFECTION = 100;

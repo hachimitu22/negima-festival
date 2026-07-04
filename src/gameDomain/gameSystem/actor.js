@@ -1,6 +1,6 @@
-import { GameObject } from '../gameEngine/gameObject.js';
+import { GameObject } from '../../gameEngine/gameObject.js';
 import { findLocation, findLocationByName } from './locations.js';
-import { getRandomInt } from './random.js';
+import { getRandomInt } from '../random.js';
 
 const MIN_MOVEMENT_INTERVAL_HOURS = 3;
 const MAX_MOVEMENT_INTERVAL_HOURS = 10;

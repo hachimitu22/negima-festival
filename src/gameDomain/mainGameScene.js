@@ -3,15 +3,15 @@ import {
   ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/accompanimentConversationSceneScripts.js';
 import { AccompanimentEvent } from './event/accompanimentEvent.js';
-import { ACTOR_MOVEMENT_MODES } from './actor.js';
+import { ACTOR_MOVEMENT_MODES } from './gameSystem/actor.js';
 import { ConversationScene } from './conversationScene/conversationScene.js';
 import { createConversationSceneScript } from './conversationScene/conversationSceneScripts.js';
 import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/deliveryConversationSceneScripts.js';
 import { DeliveryEvent } from './event/deliveryEvent.js';
-import { GameSystem } from './gameSystem.js';
-import { LOCATIONS } from './locations.js';
+import { GameSystem } from './gameSystem/gameSystem.js';
+import { LOCATIONS } from './gameSystem/locations.js';
 import { getRandomInt } from './random.js';
 
 const DELIVERY_AFFECTION_REWARD = 5;

@@ -1,4 +1,4 @@
-import { GameObject } from '../gameEngine/gameObject.js';
+import { GameObject } from '../../gameEngine/gameObject.js';
 import { findLocation } from './locations.js';
 
 class Character extends GameObject {
