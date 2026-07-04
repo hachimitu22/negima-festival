@@ -7,16 +7,23 @@ class DomGameView {
   #context;
   #sceneView;
   #sceneId;
+  #viewState;
 
   constructor(rootElement) {
     this.#rootElement = rootElement;
     this.#context = null;
     this.#sceneView = null;
     this.#sceneId = null;
+    this.#viewState = {
+      trackedActorId: null,
+    };
   }
 
   configure(context) {
-    this.#context = context;
+    this.#context = {
+      ...context,
+      viewState: this.#viewState,
+    };
   }
 
   init(snapshot) {
@@ -35,13 +42,13 @@ class DomGameView {
   }
 
   destroy() {
-    if (!this.#sceneView) {
-      return;
+    if (this.#sceneView) {
+      this.#sceneView.destroy();
+      this.#sceneView = null;
+      this.#sceneId = null;
     }
 
-    this.#sceneView.destroy();
-    this.#sceneView = null;
-    this.#sceneId = null;
+    this.#viewState.trackedActorId = null;
   }
 
   #getSceneView(snapshot) {

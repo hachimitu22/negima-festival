@@ -36,7 +36,12 @@ const GROUP_KEYS = new Map([
 
 function createMapView(rootElement, options) {
   const enqueueInput = options.enqueueInput;
+  const viewState = options.viewState ?? { trackedActorId: null };
   const title = createHeading('map-title', 'マップ');
+  const actorTracker = document.createElement('label');
+  const actorTrackerLabel = document.createElement('span');
+  const actorSelect = document.createElement('select');
+  const clearActorOption = document.createElement('option');
   const legend = document.createElement('ul');
   const scrollContainer = document.createElement('div');
   const stage = document.createElement('div');
@@ -44,9 +49,19 @@ function createMapView(rootElement, options) {
   let resizeObserver = null;
   let drawFrameId = null;
   let lastConnectionSignature = null;
+  let lastActorOptionSignature = null;
+  let latestActors = [];
   let isDestroyed = false;
 
   rootElement.setAttribute('aria-labelledby', title.id);
+  actorTracker.dataset.actorTracker = '';
+  actorTrackerLabel.textContent = '追跡するアクター';
+  actorSelect.id = 'tracked-actor-select';
+  actorSelect.dataset.trackedActorSelect = '';
+  clearActorOption.value = '';
+  clearActorOption.textContent = '追跡しない';
+  actorSelect.appendChild(clearActorOption);
+  actorTracker.append(actorTrackerLabel, actorSelect);
   legend.dataset.mapLegend = '';
   legend.setAttribute('aria-label', 'マップのエリア');
   scrollContainer.dataset.mapScroll = '';
@@ -57,7 +72,8 @@ function createMapView(rootElement, options) {
 
   stage.appendChild(connectionLayer);
   scrollContainer.appendChild(stage);
-  rootElement.append(title, legend, scrollContainer);
+  rootElement.append(title, actorTracker, legend, scrollContainer);
+  actorSelect.addEventListener('change', handleTrackedActorChange);
 
   if (typeof ResizeObserver === 'function') {
     resizeObserver = new ResizeObserver(scheduleConnectionDraw);
@@ -65,6 +81,8 @@ function createMapView(rootElement, options) {
   }
 
   function update(locations, currentLocation, actors = []) {
+    latestActors = actors;
+    updateActorTracker(actors);
     const locationIds = new Set(locations.map(location => location.id));
     const actorsByLocationId = groupActorsByLocationId(actors);
     const connectionSignature = createConnectionSignature(locations);
@@ -106,6 +124,7 @@ function createMapView(rootElement, options) {
 
   function destroy() {
     isDestroyed = true;
+    actorSelect.removeEventListener('change', handleTrackedActorChange);
     if (resizeObserver) {
       resizeObserver.disconnect();
       resizeObserver = null;
@@ -115,6 +134,8 @@ function createMapView(rootElement, options) {
       drawFrameId = null;
     }
     lastConnectionSignature = null;
+    lastActorOptionSignature = null;
+    latestActors = [];
     rootElement.replaceChildren();
   }
 
@@ -126,6 +147,8 @@ function createMapView(rootElement, options) {
   function createLocationItem(location) {
     const locationItem = document.createElement('div');
     const locationButton = document.createElement('button');
+    const actorSummary = document.createElement('div');
+    const trackedActorMarker = document.createElement('span');
     const actorCount = document.createElement('span');
     const actorList = document.createElement('menu');
 
@@ -139,11 +162,16 @@ function createMapView(rootElement, options) {
         targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
       });
     });
+    actorSummary.dataset.locationActorSummary = '';
+    trackedActorMarker.dataset.trackedActorMarker = '';
+    trackedActorMarker.textContent = '♥';
+    trackedActorMarker.hidden = true;
     actorCount.dataset.locationActorCount = '';
     actorList.dataset.locationActors = '';
     actorList.setAttribute('aria-label', `${location.name}にいるアクター`);
 
-    locationItem.append(locationButton, actorCount, actorList);
+    actorSummary.append(trackedActorMarker, actorCount);
+    locationItem.append(locationButton, actorSummary, actorList);
     return locationItem;
   }
 
@@ -151,6 +179,8 @@ function createMapView(rootElement, options) {
     const locationButton = locationItem.querySelector('[data-location-button]');
     const actorCount = locationItem.querySelector('[data-location-actor-count]');
     const actorList = locationItem.querySelector('[data-location-actors]');
+    const trackedActor = actors.find(actor => actor.id === viewState.trackedActorId)
+      ?? null;
     const isCurrentLocation = currentLocation.id === location.id;
     const isMovable = currentLocation.destinations.includes(location.name);
     const locationName = location.name;
@@ -185,7 +215,53 @@ function createMapView(rootElement, options) {
       actorList.setAttribute('aria-label', actorListLabel);
     }
     actorList.hidden = actors.length === 0;
+    updateTrackedActorMarker(locationItem, trackedActor);
     updateLocationActors(actorList, actors, enqueueInput);
+  }
+
+  function updateActorTracker(actors) {
+    const optionSignature = JSON.stringify(
+      actors.map(actor => ({ id: actor.id, name: actor.name })),
+    );
+    if (optionSignature !== lastActorOptionSignature) {
+      actorSelect.replaceChildren(clearActorOption);
+      actors.forEach(actor => {
+        const option = document.createElement('option');
+        option.value = actor.id;
+        option.textContent = actor.name;
+        actorSelect.appendChild(option);
+      });
+      lastActorOptionSignature = optionSignature;
+    }
+
+    const hasTrackedActor = actors.some(actor => actor.id === viewState.trackedActorId);
+    if (viewState.trackedActorId && !hasTrackedActor) {
+      viewState.trackedActorId = null;
+    }
+
+    const selectedActorId = viewState.trackedActorId ?? '';
+    if (actorSelect.value !== selectedActorId) {
+      actorSelect.value = selectedActorId;
+    }
+  }
+
+  function handleTrackedActorChange() {
+    viewState.trackedActorId = actorSelect.value || null;
+    updateTrackedActorMarkers(latestActors);
+  }
+
+  function updateTrackedActorMarkers(actors) {
+    const trackedActor = actors.find(actor => actor.id === viewState.trackedActorId)
+      ?? null;
+
+    Array.from(stage.querySelectorAll('[data-location-id]')).forEach(locationItem => {
+      const isTrackedLocation = trackedActor?.location?.id
+        === locationItem.dataset.locationId;
+      updateTrackedActorMarker(
+        locationItem,
+        isTrackedLocation ? trackedActor : null,
+      );
+    });
   }
 
   function updateLegend(locations) {
@@ -399,6 +475,26 @@ function updateActorPopoverPlacement(locationItem, layout) {
   locationItem.dataset.actorPopoverVertical = layout.row >= 7
     ? 'above'
     : 'below';
+}
+
+function updateTrackedActorMarker(locationItem, actor) {
+  const marker = locationItem.querySelector('[data-tracked-actor-marker]');
+  const isTrackedLocation = actor !== null;
+
+  locationItem.toggleAttribute(
+    'data-tracked-actor-location',
+    isTrackedLocation,
+  );
+  marker.hidden = !isTrackedLocation;
+
+  if (actor) {
+    const label = `${actor.name}を追跡中`;
+    marker.title = label;
+    marker.setAttribute('aria-label', label);
+  } else {
+    marker.removeAttribute('title');
+    marker.removeAttribute('aria-label');
+  }
 }
 
 function groupActorsByLocationId(actors) {

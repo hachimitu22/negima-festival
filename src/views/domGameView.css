@@ -27,6 +27,20 @@
   margin-bottom: 8px;
 }
 
+[data-actor-tracker] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+[data-tracked-actor-select] {
+  box-sizing: border-box;
+  width: min(100%, 320px);
+  min-width: 220px;
+}
+
 [data-map-legend] {
   display: flex;
   flex-wrap: wrap;
@@ -125,11 +139,23 @@
   overflow-wrap: anywhere;
 }
 
+[data-location-actor-summary] {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  line-height: 18px;
+}
+
+[data-tracked-actor-marker] {
+  color: #db2777;
+  font-weight: 700;
+}
+
 [data-location-actor-count] {
   align-self: center;
   font-size: 0.85rem;
-  line-height: 18px;
-  text-align: center;
 }
 
 [data-map-legend-group="school-first-floor"],
