@@ -1,4 +1,4 @@
-# ゲームオブジェクト
+# GameObject（ゲームオブジェクト）
 
 ## 基準
 
@@ -64,12 +64,12 @@ renderer向けsnapshotや状態判定を持つこと自体はGameObject化の条
 `AccompanimentEvent`は開始時と目的地での完了用の会話シーン台本、`AccompanimentTask`をまとめる同行イベントである。
 `AccompanimentTask`は同伴者、目的地、同行状態を保持し、会話シーンの完了結果によって状態を遷移させる。
 
-同行中のactor位置同期と自動移動の停止は`MainGameScene`と`GameSystem`が担当する。
+同行中のactor位置同期と自動移動の停止は`MainGameScene`が担当する。
 どちらも毎フレーム自身を更新する必要がないためGameObjectを継承しない。
 
 ## 将来の候補
 
 次のものは、毎フレーム更新する対象になった時点で GameObject 化を検討する。
 
-- [ConversationSceneSession](gameDomain/ConversationSceneSession.md): 時間制限、自動進行、演出待ちなどを持つ場合。
+- [ConversationSceneSession](../ドメイン/会話/ConversationSceneSession.md): 時間制限、自動進行、演出待ちなどを持つ場合。
 - DeliveryTask: 配達期限など、時間経過で進行するルールを持つ場合。

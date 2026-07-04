@@ -1,0 +1,282 @@
+@startuml
+title クラス図（更新待ち・依存関係中心）
+
+left to right direction
+hide circle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #4B5563
+  ArrowColor #4B5563
+  FontColor #1F2937
+}
+skinparam interface {
+  BackgroundColor #FFF2CC
+  BorderColor #D6B656
+}
+
+package "起動・実行制御" #F3F4F6 {
+  class "index.js" as Bootstrap <<bootstrap>> {
+    +main()
+  }
+
+  class GameEngine {
+    -sceneStack
+    -currentScene
+    -frame
+    -inputQueue
+    -view
+    +start()
+    +update(now)
+    +stop()
+  }
+
+  interface Scene <<structural>> {
+    +update(payload)
+    +createSnapshot()
+  }
+
+  interface GameView <<structural>> {
+    +configure(context)
+    +init(snapshot)
+    +render(snapshot)
+    +destroy()
+  }
+}
+
+package "ゲームドメイン / Scene" #E8F4F8 {
+  class MainGameScene {
+    -system
+    -activeLayerId
+    -activeEvent
+    -lastEventId
+    +update(payload)
+    +createSnapshot()
+  }
+
+  class ConversationScene {
+    -session
+    -statusSnapshot
+    -onComplete
+    -result
+    +update(payload)
+    +createSnapshot()
+  }
+
+  class ConversationSession {
+    -conversationId
+    -choice
+    -messages
+    -messageIndex
+    +next()
+    +selectChoice(choiceId)
+    +getSnapshot()
+  }
+
+  class GameSystem {
+    -gameTime
+    -loop
+    -character
+    -actors
+    +update(frame)
+    +useCassiopeia()
+    +createSnapshot()
+  }
+
+  class "actions.js\nlocations.js\nrandom.js\naffection.js" as DomainModules <<module>>
+}
+
+package "イベント / タスク" #FFF0E6 {
+  interface GameEvent <<structural>> {
+    +createStartInteraction()
+    +createActorInteraction()
+    +completeInteraction()
+    +isExecuting()
+    +isSucceeded()
+  }
+
+  class ConversationEvent {
+    -actorId
+    -conversation
+    -isCompleted
+    +createStartInteraction()
+    +completeInteraction()
+  }
+
+  class DeliveryEvent {
+    -id
+    -task
+    +createStartInteraction()
+    +createActorInteraction()
+    +completeInteraction()
+  }
+
+  class DeliveryTask {
+    -state
+    +sender
+    +recipient
+    +accept()
+    +complete()
+    +decline()
+  }
+
+  class AccompanimentEvent {
+    -id
+    -task
+    +createStartInteraction()
+    +createActorInteraction()
+    +completeInteraction()
+  }
+
+  class AccompanimentTask {
+    -state
+    +companion
+    +destination
+    +accept()
+    +complete()
+  }
+
+  class "conversations.js\n*Conversations.js\neventEffects.js" as EventModules <<module>>
+}
+
+package "ゲームオブジェクト / 登場人物" #E8F5E9 {
+  abstract class GameObject {
+    +update(context)
+  }
+
+  class Character {
+    +locationId
+    +magicPower
+    +update(context)
+    +moveToLocation(locationId)
+    +getSnapshot()
+  }
+
+  class Actor {
+    +id
+    +name
+    +locationId
+    -movementMode
+    +update(context)
+    +moveToLocation(locationId)
+    +getSnapshot()
+  }
+
+  class Student {
+    -classAndNumber
+    -affection
+    +getBaseAffectionChange(result)
+    +changeAffection(amount)
+    +getSnapshot()
+  }
+
+  class Teacher
+}
+
+package "Renderer / DOM View" #F3E8FF {
+  class DomGameView {
+    -rootElement
+    -context
+    -sceneView
+    -sceneId
+    +configure(context)
+    +init(snapshot)
+    +render(snapshot)
+    +destroy()
+  }
+
+  interface SceneView <<structural>> {
+    +init(snapshot)
+    +update(snapshot)
+    +destroy()
+  }
+
+  class "createMainGameSceneView()" as MainGameSceneView <<factory / view object>> {
+    +init(snapshot)
+    +update(snapshot)
+    +destroy()
+  }
+
+  class "createConversationSceneView()" as ConversationSceneView <<factory / view object>> {
+    +init(snapshot)
+    +update(snapshot)
+    +destroy()
+  }
+
+  class "createStatusView()" as StatusView <<factory / view object>> {
+    +mount(root, options)
+    +init(snapshot)
+    +update(snapshot)
+    +destroy()
+  }
+}
+
+Bootstrap ..> GameEngine : new
+Bootstrap ..> MainGameScene : initialScene: new
+Bootstrap ..> DomGameView : view: new
+
+GameEngine *-- Scene : sceneStack / currentScene
+GameEngine *-- GameView : view
+Scene <|.. MainGameScene
+Scene <|.. ConversationScene
+GameView <|.. DomGameView
+
+MainGameScene *-- GameSystem : system
+MainGameScene ..> ConversationScene : pushScene(new)
+ConversationScene *-- ConversationSession : session
+MainGameScene ..> DomainModules : imports
+GameSystem ..> DomainModules : imports
+
+MainGameScene o-- GameEvent : activeEvent
+GameEvent <|.. ConversationEvent
+GameEvent <|.. DeliveryEvent
+GameEvent <|.. AccompanimentEvent
+MainGameScene ..> ConversationEvent : create
+MainGameScene ..> DeliveryEvent : new
+MainGameScene ..> AccompanimentEvent : new
+ConversationEvent ..> EventModules : conversation / effects
+DeliveryEvent ..> EventModules : conversation factory
+AccompanimentEvent ..> EventModules : conversation factory
+DeliveryEvent *-- DeliveryTask : task
+AccompanimentEvent *-- AccompanimentTask : task
+
+GameObject <|-- Character
+GameObject <|-- Actor
+Actor <|-- Student
+Actor <|-- Teacher
+GameSystem "1" *-- "1" Character : character
+GameSystem "1" *-- "0..*" Actor : actors
+GameSystem ..> Student : new / instanceof
+GameSystem ..> Teacher : new
+
+DomGameView *-- SceneView : sceneView
+SceneView <|.. MainGameSceneView
+SceneView <|.. ConversationSceneView
+DomGameView ..> MainGameSceneView : create by sceneId
+DomGameView ..> ConversationSceneView : create by sceneId
+MainGameSceneView *-- StatusView : create
+ConversationSceneView *-- StatusView : create
+
+GameEngine -[#2563EB,bold]-> DomGameView : render(snapshot)
+
+note bottom of Scene
+  JavaScript上にinterface宣言はない。
+  呼び出し側が要求するメソッド群を
+  構造的契約として表記している。
+end note
+
+note bottom of DomGameView
+  DOM固有状態はView層に閉じ、
+  Sceneのsnapshotだけを描画する。
+end note
+
+legend right
+  |= 記号 |= 意味 |
+  | <&caret-right> 実線 | 所有・継承 |
+  | <&caret-right> 破線 | 生成・利用・構造的契約 |
+  | <#2563EB>青線</#2563EB> | snapshot → renderer |
+endlegend
+
+@enduml
