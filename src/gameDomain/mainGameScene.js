@@ -4,8 +4,8 @@ import {
 } from './event/accompanimentConversationSceneScripts.js';
 import { AccompanimentEvent } from './event/accompanimentEvent.js';
 import { ACTOR_MOVEMENT_MODES } from './actor.js';
-import { ConversationScene } from './conversationScene.js';
-import { createConversationSceneScript } from './conversationSceneScripts.js';
+import { ConversationScene } from './conversationScene/conversationScene.js';
+import { createConversationSceneScript } from './conversationScene/conversationSceneScripts.js';
 import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/deliveryConversationSceneScripts.js';

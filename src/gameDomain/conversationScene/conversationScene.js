@@ -1,4 +1,4 @@
-import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
+import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from '../actions.js';
 import {
   CONVERSATION_SCENE_SESSION_RESULTS,
   ConversationSceneSession,

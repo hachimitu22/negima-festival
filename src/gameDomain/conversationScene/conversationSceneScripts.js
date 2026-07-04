@@ -2,7 +2,7 @@ import {
   CONVERSATION_SCENE_SCRIPT_CHOICE_IDS,
   CONVERSATION_SCENE_SCRIPT_IDS,
 } from './conversationSceneScriptIds.js';
-import { getRandomInt } from './random.js';
+import { getRandomInt } from '../random.js';
 
 const CONVERSATION_SCENE_SCRIPT_SPEAKERS = {
   ACTOR: 'actor',
