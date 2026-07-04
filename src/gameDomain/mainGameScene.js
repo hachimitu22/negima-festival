@@ -1,15 +1,15 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from './actions.js';
 import {
   ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS,
-} from './accompanimentConversationSceneScripts.js';
-import { AccompanimentEvent } from './accompanimentEvent.js';
+} from './event/accompanimentConversationSceneScripts.js';
+import { AccompanimentEvent } from './event/accompanimentEvent.js';
 import { ACTOR_MOVEMENT_MODES } from './actor.js';
 import { ConversationScene } from './conversationScene.js';
 import { createConversationSceneScript } from './conversationSceneScripts.js';
 import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
-} from './deliveryConversationSceneScripts.js';
-import { DeliveryEvent } from './deliveryEvent.js';
+} from './event/deliveryConversationSceneScripts.js';
+import { DeliveryEvent } from './event/deliveryEvent.js';
 import { GameSystem } from './gameSystem.js';
 import { LOCATIONS } from './locations.js';
 import { getRandomInt } from './random.js';
