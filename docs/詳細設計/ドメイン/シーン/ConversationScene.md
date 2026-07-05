@@ -3,7 +3,6 @@
 ## 文書情報
 
 - 設計状態: 確定
-- 実装状況: 一部実装
 - 対象: `src/gameDomain/conversationScene/conversationScene.js`
 - 対応する基本仕様: [会話シーン](../../../基本設計/シーン/会話シーン.md)
 

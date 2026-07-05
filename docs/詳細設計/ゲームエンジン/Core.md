@@ -3,7 +3,6 @@
 ## 文書情報
 
 - 設計状態: 確定
-- 実装状況: 実装済み
 - 予定名称: `Core`
 - 現在の実装クラス: `GameEngine`
 - 現在のソース: `src/gameEngine/gameEngine.js`

@@ -7,7 +7,6 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 ## 文書情報
 
 - 設計状態: 確定
-- 実装状況: 一部実装
 - 対象: `src/gameDomain/mainGameScene/mainGameScene.js`
 - 対応する基本仕様: [メインゲームシーン](../../../基本設計/シーン/メインゲームシーン.md)
 

@@ -8,11 +8,13 @@ export default withMermaid({
     nav: [
       { text: 'ホーム', link: '/' },
       { text: '文書索引', link: '/README' },
+      { text: '実装状況', link: '/実装状況' },
       { text: 'ゲーム概要', link: '/ゲーム概要' }
     ],
 
     sidebar: [
       { text: '文書索引', link: '/README' },
+      { text: '実装状況', link: '/実装状況' },
       { text: 'ゲーム概要', link: '/ゲーム概要' },
       {
         text: '基本設計',

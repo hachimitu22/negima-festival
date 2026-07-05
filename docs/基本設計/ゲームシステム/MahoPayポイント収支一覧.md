@@ -7,7 +7,6 @@ import MahoPayTransactionTable from '../../.vitepress/components/MahoPayTransact
 ## 文書情報
 
 - 仕様状態: 確定
-- 実装状況: 未実装
 
 ## 目的
 
