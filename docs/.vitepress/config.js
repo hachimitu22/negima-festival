@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid({
   lang: 'ja-JP',
   title: 'ネギま！麻帆良祭',
   description: '麻帆良祭を題材にしたブラウザゲームの企画・設計文書',
@@ -191,5 +191,7 @@ export default defineConfig({
     sidebarMenuLabel: 'ページ一覧',
     returnToTopLabel: 'ページ上部へ戻る',
     darkModeSwitchLabel: 'テーマ'
-  }
+  },
+  mermaid: { theme: 'forest' },
+  mermaidPlugin: { class: 'mermaid my-class' }
 })
