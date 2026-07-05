@@ -18,6 +18,11 @@ DOM UIを完成させること自体を主目的にしないでください。
 - `GameEngine` に接続するrendererの公開APIは `configure`、`init`、`render`、`destroy` を基本とし、将来のcanvas rendererでも実装できる契約を維持してください。
 - renderer内部のscene viewでは必要に応じて `mount`、`init`、`update`、`destroy` を使い、`GameEngine` 向けrendererの公開APIと混同しないでください。
 
+## Markdown記述規則
+- Markdownテーブルを作成または編集する場合は、各カラムの最長セルに合わせて半角スペースでパディングし、ソース上の列幅を揃えてください。
+- 区切り行のハイフン数もカラム幅に合わせてください。
+- 日本語などの全角文字は、表示幅2として扱ってください。
+
 ## View変更後の検証
 - `src/views` 配下のJavaScriptを変更した場合は、原則として `npm run check:view` を一度だけ実行してください。
 - `npm run check:view` はviewモジュールの構文とimport参照を確認するもので、DOMの実行結果やCSSの見た目は保証しません。
