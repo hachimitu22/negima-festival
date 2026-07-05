@@ -1,5 +1,9 @@
 # MainGameScene（メインゲームシーン）
 
+<script setup>
+import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTransactionTable.vue'
+</script>
+
 ## 文書情報
 
 - 設計状態: 確定
@@ -117,6 +121,10 @@ class MainGameScene {
 
 イベントのゲームルールは[基本設計のイベント仕様](../../../基本設計/イベント/README.md)を正本とする。
 
+### 見回りのMahoPay収支
+
+<MahoPayTransactionTable :ids="['patrol-completion']" />
+
 ## snapshot
 
 ```js
@@ -172,7 +180,7 @@ class MainGameScene {
 
 - `destinations`は発生時に決定した順序を維持する。
 - `isVisited`は場所移動が成立するたびに更新する。
-- `rewardPoints`は`destinations.length * 100`とする。
+- `rewardPoints`は`patrol-completion`の収支定義に従って算出する。
 - `description`は各見回り先の訪問状態をrendererがそのまま表示できる文字列とする。
 
 ## 依存先
