@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1200px" height="760px" viewBox="0 0 1200 760" content="&lt;mxfile host=&quot;embed.diagrams.net&quot; agent=&quot;Codex&quot;&gt;&lt;diagram id=&quot;main-game-scene-layout&quot; name=&quot;画面レイアウト&quot;&gt;7VnLcqM4FP2auweJh7REGDKL6aquymJqljIImxoMLqzETn/91BWSbTBJuzuOp7syqSzg6vLSOee+DDTdHB56uV1/6UrVAPHKA9AFEOITzwNC0PIyWOLIGlZ9XVqnk+Gx/qas0bk91aXajRx11zW63o6NRde2qtAjm+z7bj92q7pm/NStXKkLw2Mhm0vrX3Wp19PvwoU/VL1a68n3baRztobdWpbdfmSSpdzq+lmlXdP19kXlk+5wlWZA077r9HC0OaSqwa11u2ZvASR/xeH45r1q9ZXXkMHhWTZP9vsho8AoJL45IJAE1iKotQjnI1Ln7LmleLqEV+V4ytjXFLIIEgZJAhkHHhr3YZHbLdMvDgetDhqoWOtNA3ThAxU73Xf/DFsHdNF2rQIqqrppJibZ1KsW6KJRFd7hWfW6LmSTWPOmLkt8iNiva60et7LAJ+57uQUq+u6pLRVujoc371ptGYoADef2FX17nstN3SDX/34C4j10el0XQIXdV9VrdXgVHv+I++bwoLqN0v0LEM9eEFj0rJAcmPszVvrOuD5jJA0t2SzBVsc7j7gAJLd0mKcGvaTGFKPTbvmv7OcZfOdIAaGV+buAFQgN4jCM+HHFqRABkH3h8AAqiq7Vsm5Vb5+w7epWqz57Vq3eWQhvj0MUXolDFHo3ASJ4TaPcqS1Jp2I9qXZY8lF3WQxJCMnCOrPELWW4xBIQESqUhcDEBda7fb1ppBHYSJOydxKhEa51ff0NcXEeY45MSKCqKhpIYO+eX0sSEkZULWdJMqdS+4p+9LZqi65p5HZXL83FV/OHvskf8l0dh3SGPiS6DX3CGfpwEAkIAVkIggGLIGMYg5P8xBHieQxogmnPPIt4MbHnv0SkPkc1vEEsDn4Ew/ASw2PYHWHIbgJhdAGhj9Bxp2ouUMOfEpc4/B4wvjcnrtsAE89oKwaWg8gMQKkByBwID2iC984CEAvg1GhuqKY4xuvBk3FgC6PLBMN3FmJxJYLPCe5YdIzdVXRsBtsQuAcsNRimCAti6GHGtNia6MkzU+iGiDNeskCcswg4A2aWuHHDa3OkxqfEdiLcO4PLL8D98hWI55+lO///VDd0vtFdkXFzgJlyN3RVbuzaTY6xk3kmiDLsWa02malgPiN4E1nNoeezj0uIvj+PHoFEjGcExIwBBmATZ3HOnNg0KXLbo2CNaucIJDAxlJuoyoFHJplGwJgpaYfeRhx1bIRNvdcnDe/pYsulkpV6s0E5J0Bwd/XGwQX+AZ/B/0a9qj83UAqxOuX5jEQnXSvn41kTBZcWProRraoqxrUfb0QLEvhe8Vs0omH833ai/sxI6RoG2LJrASRqMP4ueyDRCo9OzQ8eJMACN9IYetscSzOkXYRGu5QY/iX4j8U6h+T4UHEquDGgmNzyrnAxyRy7rSzqdvWnObPh4DUiTolWlUsZBx+QUQbNXt36XhlQGLkNZ+amX+8LKDahpGd8GCzBGfoD5ZyzHYyYsQmW9ik6/3r1BbXnZ6yJgjhgy7uzxJ+hCf3ARtyfm3INFMgc8o4CPL5TTvGqsgp+Jqf4IfNo+VvklAnuR4xHA5i5gpPSn0oqQPLTb2Rm7ex3SJr9Cw==&lt;/diagram&gt;&lt;/mxfile&gt;">
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <text x="40" y="45" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="22" font-weight="700">メインゲームシーン（PC横長）</text>
+  <rect x="40" y="65" width="1120" height="650" rx="8" fill="#ffffff" stroke="#475569" stroke-width="2"/>
+  <rect x="60" y="85" width="530" height="260" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+  <path d="M 68 85 H 582 A 8 8 0 0 1 590 93 V 121 H 60 V 93 A 8 8 0 0 1 68 85 Z" fill="#eff6ff"/>
+  <line x1="60" y1="121" x2="590" y2="121" stroke="#2563eb" stroke-width="2"/>
+  <text x="325" y="109" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="16" font-weight="700" text-anchor="middle">プレイヤーと祭りの状態</text>
+  <text x="80" y="158" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">麻帆良祭 08:00 / 72:00</text>
+  <text x="335" y="158" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">1周目</text>
+  <text x="80" y="196" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">現在地: 体育館前広場</text>
+  <text x="335" y="196" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">同伴者: 神楽坂明日菜</text>
+  <text x="80" y="234" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">MP 100 / 100</text>
+  <text x="335" y="234" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">フェス進行中</text>
+  <rect x="80" y="259" width="490" height="50" rx="8" fill="#dbeafe" stroke="#2563eb"/>
+  <text x="325" y="290" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="14" text-anchor="middle">カシオペアを使う（24時間戻る / MP 30）</text>
+  <rect x="610" y="85" width="530" height="260" rx="8" fill="#ffffff" stroke="#c2410c" stroke-width="2"/>
+  <path d="M 618 85 H 1132 A 8 8 0 0 1 1140 93 V 121 H 610 V 93 A 8 8 0 0 1 618 85 Z" fill="#fff7ed"/>
+  <line x1="610" y1="121" x2="1140" y2="121" stroke="#c2410c" stroke-width="2"/>
+  <text x="875" y="109" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="16" font-weight="700" text-anchor="middle">実行中イベント</text>
+  <rect x="630" y="139" width="490" height="82" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="645" y="171" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">
+    <tspan x="645" dy="0">イベント名</tspan>
+    <tspan x="645" dy="25">目的に必要な人物・場所</tspan>
+  </text>
+  <text x="630" y="262" fill="#64748b" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="13">実行中イベントがない場合は空欄</text>
+  <rect x="60" y="365" width="1080" height="330" rx="8" fill="#ffffff" stroke="#15803d" stroke-width="2"/>
+  <path d="M 68 365 H 1132 A 8 8 0 0 1 1140 373 V 401 H 60 V 373 A 8 8 0 0 1 68 365 Z" fill="#f0fdf4"/>
+  <line x1="60" y1="401" x2="1140" y2="401" stroke="#15803d" stroke-width="2"/>
+  <text x="600" y="389" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="16" font-weight="700" text-anchor="middle">マップ</text>
+</svg>
