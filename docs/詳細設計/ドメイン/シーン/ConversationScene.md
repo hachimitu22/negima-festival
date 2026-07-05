@@ -22,11 +22,11 @@ new ConversationScene({
 })
 ```
 
-| 引数 | 内容 |
-| --- | --- |
-| `script` | 生成、検証済みの`ConversationSceneScript` |
-| `statusSnapshot` | 会話開始時点のゲーム時間、MP、同伴者など |
-| `onComplete` | 会話結果を一度受け取るcallback |
+| 引数             | 内容                                      |
+| ---------------- | ----------------------------------------- |
+| `script`         | 生成、検証済みの`ConversationSceneScript` |
+| `statusSnapshot` | 会話開始時点のゲーム時間、MP、同伴者など  |
+| `onComplete`     | 会話結果を一度受け取るcallback            |
 
 生成時に`ConversationSceneSession`を作る。
 結果の初期値は台本IDと`choiceId: null`とする。
@@ -52,10 +52,10 @@ class ConversationScene {
 
 `INPUT_TYPES.TARGET_ACTIVATE`のうち、`conversation:`から始まるtargetだけを処理する。
 
-| action | 処理 |
-| --- | --- |
+| action              | 処理                                   |
+| ------------------- | -------------------------------------- |
 | `choice:<choiceId>` | `session.selectChoice(choiceId)`を呼ぶ |
-| `next` | `session.next()`を呼ぶ |
+| `next`              | `session.next()`を呼ぶ                 |
 
 - 無関係なinputは無視する。
 - 有効な選択結果が返った場合は`result`を更新する。

@@ -46,11 +46,11 @@
 `sceneControl`だけをシーンへ渡し、`GameEngine`本体とscene stackは公開しない。
 ゲームシステムやGameObjectのupdate contextには含めない。
 
-| 操作 | 結果 | 戻り値 | 実装状況 |
-| --- | --- | --- | --- |
-| `pushScene(scene)` | 最上位へ追加してcurrent sceneにする | 追加したscene | 実装済み |
-| `popScene()` | 最上位を除き、直下へ戻る | 除いたscene。初期sceneだけなら`null` | 実装済み |
-| `replaceScene(scene)` | 最上位を新しいsceneへ置き換える | 置き換えられたscene | 未実装 |
+| 操作                  | 結果                                | 戻り値                               | 実装状況 |
+| --------------------- | ----------------------------------- | ------------------------------------ | -------- |
+| `pushScene(scene)`    | 最上位へ追加してcurrent sceneにする | 追加したscene                        | 実装済み |
+| `popScene()`          | 最上位を除き、直下へ戻る            | 除いたscene。初期sceneだけなら`null` | 実装済み |
+| `replaceScene(scene)` | 最上位を新しいsceneへ置き換える     | 置き換えられたscene                  | 未実装   |
 
 `pushScene()`と`replaceScene()`はsceneがない場合に`TypeError`とする。
 
@@ -100,10 +100,10 @@ scene viewの生成と破棄はrendererが`sceneId`の変化を見て行う。
 
 ## 現在と予定のシーン
 
-| scene | 遷移方法 | 実装状況 |
-| --- | --- | --- |
-| `TitleScene` | ゲーム開始時に`MainGameScene`へreplace | 未実装 |
-| `MainGameScene` | 会話開始時に`ConversationScene`をpush | 実装済み |
-| `ConversationScene` | 会話完了時に自身をpop | 実装済み |
+| scene               | 遷移方法                               | 実装状況 |
+| ------------------- | -------------------------------------- | -------- |
+| `TitleScene`        | ゲーム開始時に`MainGameScene`へreplace | 未実装   |
+| `MainGameScene`     | 会話開始時に`ConversationScene`をpush  | 実装済み |
+| `ConversationScene` | 会話完了時に自身をpop                  | 実装済み |
 
 個別の責務は[ドメインのシーン設計](../ドメイン/シーン/README.md)を参照する。

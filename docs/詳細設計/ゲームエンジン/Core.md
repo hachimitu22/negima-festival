@@ -46,10 +46,10 @@ const engine = new GameEngine({
 });
 ```
 
-| 引数 | 内容 |
-| --- | --- |
-| `initialScene` | 最初のcurrent scene |
-| `view` | snapshotを描画し、inputをenqueueするrenderer |
+| 引数           | 内容                                         |
+| -------------- | -------------------------------------------- |
+| `initialScene` | 最初のcurrent scene                          |
+| `view`         | snapshotを描画し、inputをenqueueするrenderer |
 
 生成時に初期シーンをscene stackへ登録する。
 viewが`configure()`を持つ場合は、inputをqueueへ追加する`enqueueInput`を渡す。
@@ -132,12 +132,12 @@ gameEngineは経過時間とinputを運ぶだけで、その意味を解釈し�
 }
 ```
 
-| メソッド | 責務 |
-| --- | --- |
+| メソッド    | 責務                                        |
+| ----------- | ------------------------------------------- |
 | `configure` | viewからinput queueへ入力する窓口を受け取る |
-| `init` | 最初のsnapshotで描画状態を初期化する |
-| `render` | 現在のsnapshotを描画する |
-| `destroy` | renderer固有の状態とイベント購読を破棄する |
+| `init`      | 最初のsnapshotで描画状態を初期化する        |
+| `render`    | 現在のsnapshotを描画する                    |
+| `destroy`   | renderer固有の状態とイベント購読を破棄する  |
 
 viewはsnapshotだけを参照し、sceneやGameObjectを直接参照しない。
 DOM rendererは`sceneId`に応じてscene viewを選択し、`sceneId`が変わった場合は以前のscene viewを破棄して新しいviewを初期化する。
