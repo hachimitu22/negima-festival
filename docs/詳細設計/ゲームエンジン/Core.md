@@ -107,13 +107,13 @@ gameEngineは経過時間とinputを運ぶだけで、その意味を解釈し�
 
 ## inputの流れ
 
-```text
-実行環境の入力
-  -> viewがinputへ変換
-  -> enqueueInput(input)
-  -> input queue
-  -> update context
-  -> current scene
+```mermaid
+flowchart TB
+  RuntimeInput["実行環境の入力"] --> ConvertInput["viewがinputへ変換"]
+  ConvertInput --> EnqueueInput["enqueueInput(input)"]
+  EnqueueInput --> InputQueue["input queue"]
+  InputQueue --> UpdateContext["update context"]
+  UpdateContext --> CurrentScene["current scene"]
 ```
 
 - input contractはgame domainが定義する。

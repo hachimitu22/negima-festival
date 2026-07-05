@@ -13,11 +13,11 @@
 
 ## 依存方向
 
-```text
-TitleScene
-  -> MainGameScene
-       -> ConversationScene
-            -> ConversationSceneSession
+```mermaid
+flowchart TB
+  TitleScene --> MainGameScene
+  MainGameScene --> ConversationScene
+  ConversationScene --> ConversationSceneSession
 ```
 
 - `TitleScene`はゲーム開始時に`MainGameScene`を生成する。

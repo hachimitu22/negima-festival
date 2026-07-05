@@ -25,15 +25,17 @@
 
 ## シーンの流れ
 
-```text
-ゲーム起動
-  ↓
-タイトル
-  ↓ ゲーム開始
-メインゲーム
-  ├─ 登場人物との会話を開始 → 会話
-  │                            ↓
-  └──────────── 会話完了後に復帰
+```mermaid
+flowchart TB
+  Startup["ゲーム起動"] --> Title["タイトル"]
+  Title --> StartGame(["ゲーム開始"])
+  StartGame --> MainGame["メインゲーム"]
+
+  MainGame --> StartConversation(["登場人物との会話を開始"])
+  StartConversation --> Conversation["会話"]
+
+  Conversation --> CompleteConversation(["会話完了後に復帰"])
+  CompleteConversation --> MainGame
 ```
 
 タイトルからゲームを開始すると、新しい麻帆良祭を開始する。
