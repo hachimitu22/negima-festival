@@ -22,9 +22,10 @@ scene や game system は各 GameObject の公開プロパティを列挙せず�
 主人公を毎フレーム更新する GameObject。
 
 - `update(context)` で魔力回復などの主人公状態を更新する。
-- 現在地と魔力を保持する。
+- 現在地、魔力、MahoPayポイントを保持する。
 - location 移動は `moveToLocation(locationId)` で行う。
-- `getSnapshot()` で現在地と魔力の snapshot を作る。
+- 見回り報酬の加算は `addMahoPayPoints(points)` で行う。
+- `getSnapshot()` で現在地、魔力、MahoPayポイントの snapshot を作る。
 
 ### Actor
 
@@ -65,6 +66,14 @@ renderer向けsnapshotや状態判定を持つこと自体はGameObject化の条
 `AccompanimentTask`は同伴者、目的地、同行状態を保持し、会話シーンの完了結果によって状態を遷移させる。
 
 同行中のactor位置同期と自動移動の停止は`MainGameScene`が担当する。
+どちらも毎フレーム自身を更新する必要がないためGameObjectを継承しない。
+
+### PatrolEventとPatrolTask
+
+`PatrolEvent`は見回り先、訪問状態、成功状態を持つ`PatrolTask`と、成功時のMahoPay報酬をまとめる見回りイベントである。
+場所移動が成立した場合だけ`MainGameScene`が`visitLocation(locationId)`を呼び出す。
+
+時間の到達による見回りの生成と見送りは`MainGameScene`が担当する。
 どちらも毎フレーム自身を更新する必要がないためGameObjectを継承しない。
 
 ## 将来の候補

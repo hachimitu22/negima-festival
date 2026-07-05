@@ -143,4 +143,4 @@ snapshotは状態参照用であり、呼び出し側からsessionの状態を�
 通常の会話シーンの結果は`MainGameScene`へ反映し、配達イベントの会話シーン結果は`DeliveryEvent`を通して`DeliveryTask`の状態へ反映する。
 生徒の基礎好感度変化量の決定と最終変化量の計算は、`ConversationSceneSession`の責務に含めない。
 
-`ConversationScene`のsnapshotには`SCENE_IDS.CONVERSATION`、停止時点のゲーム時間とMP、`ConversationSceneSession.getSnapshot()`の結果を格納する。
+`ConversationScene`のsnapshotには`SCENE_IDS.CONVERSATION`、停止時点のゲーム時間、MP、MahoPayポイント、`ConversationSceneSession.getSnapshot()`の結果を格納する。

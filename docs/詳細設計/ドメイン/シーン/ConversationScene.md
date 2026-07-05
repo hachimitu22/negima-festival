@@ -3,7 +3,7 @@
 ## 文書情報
 
 - 設計状態: 確定
-- 実装状況: 実装済み
+- 実装状況: 一部実装
 - 対象: `src/gameDomain/conversationScene/conversationScene.js`
 - 対応する基本仕様: [会話シーン](../../../基本設計/シーン/会話シーン.md)
 
@@ -25,7 +25,7 @@ new ConversationScene({
 | 引数             | 内容                                      |
 | ---------------- | ----------------------------------------- |
 | `script`         | 生成、検証済みの`ConversationSceneScript` |
-| `statusSnapshot` | 会話開始時点のゲーム時間、MP、同伴者など  |
+| `statusSnapshot` | 会話開始時点の固定status snapshot         |
 | `onComplete`     | 会話結果を一度受け取るcallback            |
 
 生成時に`ConversationSceneSession`を作る。
@@ -82,7 +82,7 @@ class ConversationScene {
 }
 ```
 
-会話開始後は`MainGameScene`を更新しないため、ゲーム時間やMPは`statusSnapshot`の値を維持する。
+会話開始後は`MainGameScene`を更新しないため、ゲーム時間、MP、MahoPayポイントは`statusSnapshot`の値を維持する。
 会話内容だけをsessionの現在状態から毎回作る。
 
 ## 会話セッションとの境界

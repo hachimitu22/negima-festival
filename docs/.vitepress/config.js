@@ -35,6 +35,7 @@ export default withMermaid({
             items: [
               { text: '三日間システム', link: '/基本設計/ゲームシステム/三日間システム' },
               { text: 'カシオペアシステム', link: '/基本設計/ゲームシステム/カシオペアシステム' },
+              { text: 'MahoPayポイント', link: '/基本設計/ゲームシステム/MahoPayポイント' },
               { text: 'マップ', link: '/基本設計/ゲームシステム/マップ' },
               { text: '会話', link: '/基本設計/ゲームシステム/会話' }
             ]
@@ -45,7 +46,8 @@ export default withMermaid({
             collapsed: false,
             items: [
               { text: '配達イベント', link: '/基本設計/イベント/配達イベント' },
-              { text: '同行イベント', link: '/基本設計/イベント/同行イベント' }
+              { text: '同行イベント', link: '/基本設計/イベント/同行イベント' },
+              { text: '見回りイベント', link: '/基本設計/イベント/見回りイベント' }
             ]
           }
         ]

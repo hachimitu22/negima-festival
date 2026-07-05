@@ -1,5 +1,5 @@
 @startuml
-title クラス図（更新待ち・依存関係中心）
+title クラス図（依存関係中心）
 
 left to right direction
 hide circle
@@ -48,9 +48,14 @@ package "起動・実行制御" #F3F4F6 {
 
 package "ゲームドメイン / Scene" #E8F4F8 {
   class MainGameScene {
-    -system
+    -gameTime
+    -loop
+    -character
+    -actors
     -activeLayerId
-    -activeEvent
+    -activeConversationEvent
+    -activePatrolEvent
+    -nextPatrolTimeHours
     -lastEventId
     +update(payload)
     +createSnapshot()
@@ -75,40 +80,20 @@ package "ゲームドメイン / Scene" #E8F4F8 {
     +getSnapshot()
   }
 
-  class GameSystem {
-    -gameTime
-    -loop
-    -character
-    -actors
-    +update(frame)
-    +useCassiopeia()
-    +createSnapshot()
-  }
-
   class "actions.js\nlocations.js\nrandom.js\naffection.js" as DomainModules <<module>>
 }
 
 package "イベント / タスク" #FFF0E6 {
   interface GameEvent <<structural>> {
-    +createStartInteraction()
-    +createActorInteraction()
-    +completeInteraction()
     +isExecuting()
     +isSucceeded()
-  }
-
-  class ConversationEvent {
-    -actorId
-    -conversation
-    -isCompleted
-    +createStartInteraction()
-    +completeInteraction()
+    +getSnapshot()
   }
 
   class DeliveryEvent {
     -id
     -task
-    +createStartInteraction()
+    +createRequestInteraction()
     +createActorInteraction()
     +completeInteraction()
   }
@@ -125,7 +110,7 @@ package "イベント / タスク" #FFF0E6 {
   class AccompanimentEvent {
     -id
     -task
-    +createStartInteraction()
+    +createRequestInteraction()
     +createActorInteraction()
     +completeInteraction()
   }
@@ -138,7 +123,25 @@ package "イベント / タスク" #FFF0E6 {
     +complete()
   }
 
-  class "conversations.js\n*Conversations.js\neventEffects.js" as EventModules <<module>>
+  class PatrolEvent {
+    -id
+    -task
+    -rewardPoints
+    +visitLocation(locationId)
+    +getRewardPoints()
+    +getSnapshot()
+  }
+
+  class PatrolTask {
+    -state
+    +destinations
+    +visitLocation(locationId)
+    +isExecuting()
+    +isSucceeded()
+    +getSnapshot()
+  }
+
+  class "*ConversationSceneScripts.js" as EventModules <<module>>
 }
 
 package "ゲームオブジェクト / 登場人物" #E8F5E9 {
@@ -149,8 +152,10 @@ package "ゲームオブジェクト / 登場人物" #E8F5E9 {
   class Character {
     +locationId
     +magicPower
+    +mahoPayPoints
     +update(context)
     +moveToLocation(locationId)
+    +addMahoPayPoints(points)
     +getSnapshot()
   }
 
@@ -223,33 +228,32 @@ Scene <|.. MainGameScene
 Scene <|.. ConversationScene
 GameView <|.. DomGameView
 
-MainGameScene *-- GameSystem : system
 MainGameScene ..> ConversationScene : pushScene(new)
 ConversationScene *-- ConversationSession : session
 MainGameScene ..> DomainModules : imports
-GameSystem ..> DomainModules : imports
 
-MainGameScene o-- GameEvent : activeEvent
-GameEvent <|.. ConversationEvent
+MainGameScene o-- GameEvent : activeConversationEvent
+MainGameScene o-- GameEvent : activePatrolEvent
 GameEvent <|.. DeliveryEvent
 GameEvent <|.. AccompanimentEvent
-MainGameScene ..> ConversationEvent : create
+GameEvent <|.. PatrolEvent
 MainGameScene ..> DeliveryEvent : new
 MainGameScene ..> AccompanimentEvent : new
-ConversationEvent ..> EventModules : conversation / effects
+MainGameScene ..> PatrolEvent : new / visit
 DeliveryEvent ..> EventModules : conversation factory
 AccompanimentEvent ..> EventModules : conversation factory
 DeliveryEvent *-- DeliveryTask : task
 AccompanimentEvent *-- AccompanimentTask : task
+PatrolEvent *-- PatrolTask : task
 
 GameObject <|-- Character
 GameObject <|-- Actor
 Actor <|-- Student
 Actor <|-- Teacher
-GameSystem "1" *-- "1" Character : character
-GameSystem "1" *-- "0..*" Actor : actors
-GameSystem ..> Student : new / instanceof
-GameSystem ..> Teacher : new
+MainGameScene "1" *-- "1" Character : character
+MainGameScene "1" *-- "0..*" Actor : actors
+MainGameScene ..> Student : new / instanceof
+MainGameScene ..> Teacher : new
 
 DomGameView *-- SceneView : sceneView
 SceneView <|.. MainGameSceneView
