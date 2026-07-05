@@ -27,7 +27,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
 | `activePatrolEvent`       | 実行中の見回り。未実行時は`null`                 |
 | `nextPatrolTimeHours`     | 次に見回りの発生判定を行うゲーム時間             |
-| `lastEventId`             | 両イベント枠で一意な識別子を作るための直前値     |
+| `lastEventId`             | 両イベント枠で次に割り当てるevent ID             |
 
 初期layerはmap、初期の配達または同行はなしとする。
 初期の見回りはコンストラクタで生成し、最初のsnapshotから実行中イベントとして公開する。
@@ -93,9 +93,9 @@ class MainGameScene {
 
 ## 見回りの生成と進行
 
-- 見回りは`PatrolEvent`と`PatrolTask`で訪問先、訪問状態、成功状態を管理する。
-- 発生時は現在地、`LOCATION_IDS.GIRLS_BATHROOM`、`LOCATION_IDS.GYM_CHANGING_ROOM`以外のlocationから1から3件を重複なしで選ぶ。
-- ゲーム開始時の見回りには最初のevent IDを割り当てる。
+- `MainGameScene`は見回り先の抽選、発生時刻、進行通知、報酬適用を担当する。
+- [`PatrolEvent`](../イベント/PatrolEvent.md)が報酬とevent snapshotを管理し、[`PatrolTask`](../イベント/PatrolTask.md)が訪問状態と成功状態を管理する。
+- ゲーム開始時の見回りにはevent ID 0を割り当て、以後は配達、同行、見回りで共通の連番を割り当てる。
 - 時間更新後、`nextPatrolTimeHours`以下の各12時間境界を順に消費する。
 - 境界の時点で`activePatrolEvent`が`null`なら新しい見回りを生成し、実行中ならその回を見送る。
 - 大きなframe差分で複数の境界を越えた場合も、最初に生成した見回りが後続境界では実行中となるため、同一frameで複数件を生成しない。
@@ -107,10 +107,20 @@ class MainGameScene {
 `nextPatrolTimeHours`は、遡行後の時刻より大きい最小の12の倍数へ再設定する。
 遡行後がゲーム時間0の場合も次回は12とし、開始時の見回りを再生成しない。
 
+### 見回り先の抽選
+
+1. `LOCATIONS`から発生時の現在地、`LOCATION_IDS.GIRLS_BATHROOM`、`LOCATION_IDS.GYM_CHANGING_ROOM`を除外し、候補配列を作る。
+2. `getRandomInt(1, 3)`で見回り先の数を決定する。
+3. 候補配列のindexを`getRandomInt()`で1件選び、選んだlocationを候補配列から取り除く。
+4. 決定した件数に達するまで手順3を繰り返す。
+
+件数1、2、3の確率を等しくし、同じ件数内では各locationが選ばれる確率を等しくする。
+選出した順序はeventの完了まで維持する。
+
 ## 継続イベントとの境界
 
 - `DeliveryEvent`と`AccompanimentEvent`がtask状態と会話台本を管理する。
-- `PatrolEvent`が見回りtaskの状態と報酬を管理する。
+- [`PatrolEvent`](../イベント/PatrolEvent.md)が見回りtaskの状態と報酬を管理する。
 - `MainGameScene`が配達または同行を1件、見回りを1件まで別々に保持する。
 - 同行開始時は同伴者の移動modeを`external`へ変更する。
 - 同行中の場所同期は`MainGameScene`が行う。
@@ -157,37 +167,15 @@ class MainGameScene {
 - `executingEvents`は見回り、配達または同行の順で実行中イベントを格納し、0件から2件とする。
 - actorやeventの内部オブジェクトを直接公開しない。
 
-見回りのevent snapshotは次の契約とする。
-
-```js
-{
-  id,
-  type: 'patrol',
-  name: '見回り',
-  description,
-  state: 'executing',
-  destinations: [
-    {
-      id,
-      name,
-      isVisited,
-    },
-  ],
-  rewardPoints,
-}
-```
-
-- `destinations`は発生時に決定した順序を維持する。
-- `isVisited`は場所移動が成立するたびに更新する。
-- `rewardPoints`は`patrol-completion`の収支定義に従って算出する。
-- `description`は各見回り先の訪問状態をrendererがそのまま表示できる文字列とする。
+見回りのevent snapshotは[`PatrolEvent`のsnapshot契約](../イベント/PatrolEvent.md#snapshot)を使用する。
 
 ## 依存先
 
 - `Character`、`Student`、`Teacher`
 - location定義と乱数
 - 好感度計算
-- `DeliveryEvent`、`AccompanimentEvent`、`PatrolEvent`
+- `DeliveryEvent`、`AccompanimentEvent`
+- [`PatrolEvent`](../イベント/PatrolEvent.md)
 - 会話台本生成
 - `ConversationScene`
 

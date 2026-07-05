@@ -92,6 +92,15 @@ export default withMermaid({
                     link: '/詳細設計/ドメイン/会話/ConversationSceneSession'
                   }
                 ]
+              },
+              {
+                text: 'イベント',
+                link: '/詳細設計/ドメイン/イベント/README',
+                collapsed: false,
+                items: [
+                  { text: 'PatrolEvent', link: '/詳細設計/ドメイン/イベント/PatrolEvent' },
+                  { text: 'PatrolTask', link: '/詳細設計/ドメイン/イベント/PatrolTask' }
+                ]
               }
             ]
           }

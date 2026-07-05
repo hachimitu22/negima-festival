@@ -41,6 +41,12 @@
 
 - [ConversationSceneSession（会話セッション）](ドメイン/会話/ConversationSceneSession.md)
 
+### イベント
+
+- [イベント索引](ドメイン/イベント/README.md)
+- [PatrolEvent（見回りイベント）](ドメイン/イベント/PatrolEvent.md)
+- [PatrolTask（見回りタスク）](ドメイン/イベント/PatrolTask.md)
+
 ## 横断資料
 
 クラス図は現在の主要な責務と依存関係を示す。
