@@ -13,6 +13,7 @@ import {
 } from './event/deliveryConversationSceneScripts.js';
 import { DeliveryEvent } from './event/deliveryEvent.js';
 import { LOCATION_IDS, LOCATIONS, findLocation } from './locations.js';
+import { PatrolEvent } from './event/patrolEvent.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
 import { getRandomInt } from '../random.js';
@@ -29,6 +30,7 @@ const TEACHER_IDS = {
 };
 const DELIVERY_AFFECTION_REWARD = 5;
 const ACCOMPANIMENT_AFFECTION_REWARD = 20;
+const PATROL_INTERVAL_HOURS = 12;
 
 class MainGameScene {
   #gameTime;
@@ -36,7 +38,9 @@ class MainGameScene {
   #character;
   #actors;
   #activeLayerId;
-  #activeEvent;
+  #activeConversationEvent;
+  #activePatrolEvent;
+  #nextPatrolTimeHours;
   #lastEventId;
 
   constructor() {
@@ -108,8 +112,10 @@ class MainGameScene {
       ),
     ];
     this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    this.#activeEvent = null;
     this.#lastEventId = 0;
+    this.#activeConversationEvent = null;
+    this.#activePatrolEvent = this.#createPatrolEvent();
+    this.#nextPatrolTimeHours = PATROL_INTERVAL_HOURS;
   }
 
   update({
@@ -129,6 +135,7 @@ class MainGameScene {
 
   #updateGameState(frame) {
     const elapsedGameHours = this.#updateGameTime(frame);
+    this.#updatePatrolSchedule();
     const context = {
       ...this.#createUpdateContext(frame),
       elapsedGameHours,
@@ -304,6 +311,9 @@ class MainGameScene {
       if (didMove && companionActorId) {
         this.#moveActorToLocation(companionActorId, locationId);
       }
+      if (didMove) {
+        this.#visitPatrolLocation(locationId);
+      }
       return;
     }
 
@@ -327,15 +337,22 @@ class MainGameScene {
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.#activeLayerId,
       mapLocations: LOCATIONS,
-      executingEvents: this.#activeEvent
-        ? [this.#activeEvent.getSnapshot()]
-        : [],
+      executingEvents: [
+        this.#activePatrolEvent,
+        this.#activeConversationEvent,
+      ]
+        .filter(Boolean)
+        .map(event => event.getSnapshot()),
     };
   }
 
   #rewind() {
     this.#releaseActiveCompanion({ resetNextMoveTime: false });
-    this.#activeEvent = null;
+    this.#activeConversationEvent = null;
+    this.#activePatrolEvent = null;
+    this.#nextPatrolTimeHours = (
+      Math.floor(this.#gameTime.currentHours / PATROL_INTERVAL_HOURS) + 1
+    ) * PATROL_INTERVAL_HOURS;
   }
 
   #createConversationSceneFromInputs(inputs = []) {
@@ -364,15 +381,15 @@ class MainGameScene {
       return null;
     }
 
-    if (this.#activeEvent) {
+    if (this.#activeConversationEvent) {
       const currentLocationId = this.#character.locationId;
-      const interaction = this.#activeEvent.createActorInteraction(
+      const interaction = this.#activeConversationEvent.createActorInteraction(
         actor.id,
         currentLocationId,
       );
       if (interaction) {
         return this.#createEventConversationScene(
-          this.#activeEvent,
+          this.#activeConversationEvent,
           interaction,
         );
       }
@@ -458,12 +475,12 @@ class MainGameScene {
         event.completeInteraction(interaction.kind, conversationSceneResult);
 
         if (activateOnComplete && event.isExecuting()) {
-          this.#activeEvent = event;
+          this.#activeConversationEvent = event;
           this.#controlActiveCompanionExternally();
           return;
         }
 
-        this.#finishActiveEvent(event);
+        this.#finishActiveConversationEvent(event);
       },
     });
   }
@@ -498,18 +515,69 @@ class MainGameScene {
     });
   }
 
-  #finishActiveEvent(event) {
-    if (event !== this.#activeEvent) {
+  #createPatrolEvent() {
+    const excludedLocationIds = new Set([
+      this.#character.locationId,
+      LOCATION_IDS.GIRLS_BATHROOM,
+      LOCATION_IDS.GYM_CHANGING_ROOM,
+    ]);
+    const candidates = LOCATIONS.filter(location => (
+      !excludedLocationIds.has(location.id)
+    ));
+    const destinationCount = getRandomInt(1, 3);
+    const destinations = [];
+
+    while (destinations.length < destinationCount) {
+      const candidateIndex = getRandomInt(0, candidates.length - 1);
+      destinations.push(candidates.splice(candidateIndex, 1)[0]);
+    }
+
+    const event = new PatrolEvent(this.#lastEventId, { destinations });
+    this.#lastEventId += 1;
+    return event;
+  }
+
+  #updatePatrolSchedule() {
+    while (
+      this.#nextPatrolTimeHours < this.#gameTime.durationHours
+      && this.#nextPatrolTimeHours <= this.#gameTime.currentHours
+    ) {
+      if (!this.#activePatrolEvent) {
+        this.#activePatrolEvent = this.#createPatrolEvent();
+      }
+      this.#nextPatrolTimeHours += PATROL_INTERVAL_HOURS;
+    }
+  }
+
+  #visitPatrolLocation(locationId) {
+    if (!this.#activePatrolEvent) {
+      return false;
+    }
+
+    const didVisit = this.#activePatrolEvent.visitLocation(locationId);
+    if (!didVisit || !this.#activePatrolEvent.isSucceeded()) {
+      return didVisit;
+    }
+
+    this.#character.addMahoPayPoints(
+      this.#activePatrolEvent.getRewardPoints(),
+    );
+    this.#activePatrolEvent = null;
+    return true;
+  }
+
+  #finishActiveConversationEvent(event) {
+    if (event !== this.#activeConversationEvent) {
       return;
     }
 
     if (event.isSucceeded()) {
       this.#applyEventReward(event);
       this.#releaseActiveCompanion();
-      this.#activeEvent = null;
+      this.#activeConversationEvent = null;
     } else if (typeof event.isFailed === 'function' && event.isFailed()) {
       this.#releaseActiveCompanion();
-      this.#activeEvent = null;
+      this.#activeConversationEvent = null;
     }
   }
 
@@ -528,8 +596,8 @@ class MainGameScene {
   }
 
   #getActiveCompanionActorId() {
-    return this.#activeEvent instanceof AccompanimentEvent
-      ? this.#activeEvent.getCompanionActorId()
+    return this.#activeConversationEvent instanceof AccompanimentEvent
+      ? this.#activeConversationEvent.getCompanionActorId()
       : null;
   }
 
@@ -562,8 +630,11 @@ class MainGameScene {
 
   #isActorInteractionBlocked(actorId, currentLocationId) {
     return (
-      this.#activeEvent instanceof AccompanimentEvent
-      && this.#activeEvent.isActorInteractionBlocked(actorId, currentLocationId)
+      this.#activeConversationEvent instanceof AccompanimentEvent
+      && this.#activeConversationEvent.isActorInteractionBlocked(
+        actorId,
+        currentLocationId,
+      )
     );
   }
 
@@ -572,8 +643,8 @@ class MainGameScene {
     const currentLocationId = snapshot.character.location.id;
     return {
       ...snapshot,
-      companion: this.#activeEvent instanceof AccompanimentEvent
-        ? this.#activeEvent.getCompanionSnapshot()
+      companion: this.#activeConversationEvent instanceof AccompanimentEvent
+        ? this.#activeConversationEvent.getCompanionSnapshot()
         : null,
       actors: snapshot.actors.map(actor => ({
         ...actor,

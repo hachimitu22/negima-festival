@@ -3,7 +3,7 @@
 ## 対象
 
 - 詳細設計: [PatrolEvent（見回りイベント）](../../../../詳細設計/ドメイン/イベント/PatrolEvent.md)
-- 対象予定: `src/gameDomain/mainGameScene/event/patrolEvent.js`
+- 対象: `src/gameDomain/mainGameScene/event/patrolEvent.js`
 
 `PatrolEvent`の公開APIから観察できる振る舞いを検証する。
 モックは使用せず、caseごとに新しいeventと入力値を生成する。

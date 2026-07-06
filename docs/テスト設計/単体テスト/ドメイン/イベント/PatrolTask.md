@@ -3,7 +3,7 @@
 ## 対象
 
 - 詳細設計: [PatrolTask（見回りタスク）](../../../../詳細設計/ドメイン/イベント/PatrolTask.md)
-- 対象予定: `src/gameDomain/mainGameScene/event/patrolTask.js`
+- 対象: `src/gameDomain/mainGameScene/event/patrolTask.js`
 
 `PatrolTask`をcaseごとに新しく生成し、公開APIだけを使用して検証する。
 

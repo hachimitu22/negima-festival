@@ -16,6 +16,7 @@ function createStatusView() {
       location: createParagraph('location'),
       companion: createParagraph('companion'),
       magicPower: createParagraph('magic-power'),
+      mahoPayPoints: createParagraph('maho-pay-points'),
       festivalState: createParagraph('festival-state'),
       cassiopeia: createButton('cassiopeia', 'カシオペアを使う'),
     };
@@ -26,6 +27,7 @@ function createStatusView() {
       elements.location,
       elements.companion,
       elements.magicPower,
+      elements.mahoPayPoints,
       elements.festivalState,
       elements.cassiopeia,
     );
@@ -51,6 +53,7 @@ function createStatusView() {
       ? `同伴者: ${snapshot.companion.name}`
       : '';
     elements.magicPower.textContent = `MP ${formatMagicPower(snapshot.character.magicPower.current)} / ${snapshot.character.magicPower.max}`;
+    elements.mahoPayPoints.textContent = `MahoPay ${snapshot.character.mahoPayPoints}ポイント`;
     elements.festivalState.textContent = snapshot.gameTime.isEnded
       ? 'フェス終了'
       : 'フェス進行中';

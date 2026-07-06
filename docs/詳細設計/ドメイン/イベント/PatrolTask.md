@@ -3,7 +3,7 @@
 ## 文書情報
 
 - 設計状態: 確定
-- 対象予定: `src/gameDomain/mainGameScene/event/patrolTask.js`
+- 対象: `src/gameDomain/mainGameScene/event/patrolTask.js`
 - 対応する基本仕様: [見回りイベント](../../../基本設計/イベント/見回りイベント.md)
 
 ## 目的

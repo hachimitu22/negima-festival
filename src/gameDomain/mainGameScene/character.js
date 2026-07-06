@@ -6,6 +6,7 @@ class Character extends GameObject {
     super();
     this.locationId = locationId;
     this.magicPower = magicPower;
+    this.mahoPayPoints = 0;
   }
 
   update(context) {
@@ -27,6 +28,14 @@ class Character extends GameObject {
     this.locationId = locationId;
   }
 
+  addMahoPayPoints(points) {
+    if (!Number.isInteger(points) || points < 0) {
+      throw new TypeError('MahoPay points must be a non-negative integer.');
+    }
+
+    this.mahoPayPoints += points;
+  }
+
   getSnapshot() {
     return {
       location: findLocation(this.locationId),
@@ -35,6 +44,7 @@ class Character extends GameObject {
         max: this.magicPower.max,
         recoveryPerGameHour: this.magicPower.recoveryPerGameHour,
       },
+      mahoPayPoints: this.mahoPayPoints,
     };
   }
 }
