@@ -4,13 +4,19 @@ import { PatrolEvent } from './patrolEvent.js';
 
 const PATROL_INTERVAL_HOURS = 12;
 
+/**
+ * 往訪イベントを一括管理。時間進行に基づきイベント生成を制徤。
+ * @public
+ */
 class PatrolEventManager {
-  #character;
-  #eventIdSequence;
-  #durationHours;
-  #activeEvent;
-  #nextPatrolTimeHours;
-
+  /**
+   * 往訪イベントマネージャーを初期化。
+   * @public
+   * @param {Object} config - 設定オブジェクト
+   * @param {Character} config.character - プレイヤーキャラクター
+   * @param {EventIdSequence} config.eventIdSequence - イベント ID シークエンス
+   * @param {number} config.durationHours - 整体イベント時間
+   */
   constructor({ character, eventIdSequence, durationHours }) {
     this.#character = character;
     this.#eventIdSequence = eventIdSequence;
@@ -19,6 +25,12 @@ class PatrolEventManager {
     this.#nextPatrolTimeHours = PATROL_INTERVAL_HOURS;
   }
 
+  /**
+   * 往訪イベントを最新時夙まで関数を実行。
+   * @public
+   * @param {number} currentHours - 現在ゲーム時間
+   * @returns {void}
+   */
   advanceTo(currentHours) {
     while (
       this.#nextPatrolTimeHours < this.#durationHours
@@ -31,6 +43,11 @@ class PatrolEventManager {
     }
   }
 
+  /**
+   * 現在位置を訪問。
+   * @private
+   * @returns {boolean} 訪問の成功判定
+   */
   visitCurrentLocation() {
     if (!this.#activeEvent) {
       return false;
@@ -51,6 +68,12 @@ class PatrolEventManager {
     return true;
   }
 
+  /**
+   * 時間を巻き戻してイベントをリセット。
+   * @private
+   * @param {number} currentHours - 現在ゲーム時刻
+   * @returns {void}
+   */
   rewindTo(currentHours) {
     this.#activeEvent = null;
     this.#nextPatrolTimeHours = (
@@ -58,6 +81,11 @@ class PatrolEventManager {
     ) * PATROL_INTERVAL_HOURS;
   }
 
+  /**
+   * 実行中の往訪イベントを取得。
+   * @private
+   * @returns {Object|null} イベントスナップショット、実行中のイベントがない場合は null
+   */
   getExecutingEventSnapshot() {
     return this.#activeEvent?.getSnapshot() ?? null;
   }

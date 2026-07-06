@@ -2,6 +2,15 @@ import { SCENE_IDS } from '../gameDomain/actions.js';
 import { createConversationSceneView } from './scenes/conversationScene/index.js';
 import { createMainGameSceneView } from './scenes/mainGameScene/index.js';
 
+/**
+ * DOMレンダラー。ユーザーインタフェースを DOM で描画し、ユーザー入力を受け付ける。
+ * @public
+ * @example
+ * const domGameView = new DomGameView(document.getElementById('root'));
+ * domGameView.configure(context);
+ * domGameView.init(initialSnapshot);
+ * domGameView.render(snapshot);
+ */
 class DomGameView {
   #rootElement;
   #context;
@@ -9,6 +18,11 @@ class DomGameView {
   #sceneId;
   #viewState;
 
+  /**
+   * DOMレンダラーを初期化。
+   * @public
+   * @param {HTMLElement} rootElement - 描画対象的要素
+   */
   constructor(rootElement) {
     this.#rootElement = rootElement;
     this.#context = null;
@@ -19,6 +33,12 @@ class DomGameView {
     };
   }
 
+  /**
+   * レンダラーを設定。
+   * @public
+   * @param {Object} context - インプットやのコンテキスト
+   * @returns {void}
+   */
   configure(context) {
     this.#context = {
       ...context,
@@ -26,11 +46,23 @@ class DomGameView {
     };
   }
 
+  /**
+   * 第一回轉画を実行。
+   * @public
+   * @param {Object} snapshot - ゲーム状態スナップショット
+   * @returns {void}
+   */
   init(snapshot) {
     const view = this.#getSceneView(snapshot);
     view.init(snapshot);
   }
 
+  /**
+   * 描画を実行。シーン变更時は init をコール。
+   * @public
+   * @param {Object} snapshot - ゲーム状態スナップショット
+   * @returns {void}
+   */
   render(snapshot) {
     const didSceneChange = this.#sceneId !== snapshot?.sceneId;
     const view = this.#getSceneView(snapshot);
@@ -41,6 +73,11 @@ class DomGameView {
     }
   }
 
+  /**
+   * レンダラーを終了。
+   * @public
+   * @returns {void}
+   */
   destroy() {
     if (this.#sceneView) {
       this.#sceneView.destroy();

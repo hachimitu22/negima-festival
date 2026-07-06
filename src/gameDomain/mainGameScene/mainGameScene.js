@@ -32,6 +32,14 @@ const TEACHER_IDS = {
 const DELIVERY_AFFECTION_REWARD = 5;
 const ACCOMPANIMENT_AFFECTION_REWARD = 20;
 
+/**
+ * メインゲームシーン。3日間の麻帆良祭を管理するシーン（GameObject を継承）。
+ * 
+ * キャラクター移動、時間管理、イベント制御、UI状態を一元管理。
+ * ユーザー入力やゲーム時間経過に応じてゲーム状態を更新し、スナップショットを作成する。
+ * 
+ * @public
+ */
 class MainGameScene {
   #gameTime;
   #loop;
@@ -42,6 +50,16 @@ class MainGameScene {
   #eventIdSequence;
   #patrolEventManager;
 
+  /**
+   * メインゲームシーンをインスタンス化する。
+   * 
+   * キャラクター、学生・教員アクター、イベント管理、ゲーム時間を初期化。
+   * 
+   * @public
+   * 
+   * @example
+   * const scene = new MainGameScene();\n   * // ゲームエンジンに登録して start()
+   */
   constructor() {
     this.#gameTime = {
       currentHours: 0,
@@ -120,6 +138,17 @@ class MainGameScene {
     });
   }
 
+  /**
+   * ゲームエンジンから毎フレーム呼び出される。入力処理、ゲーム時間管理、アクター更新を実行。
+   * 
+   * 会話シーン遷移が必要な場合は新しいシーンを push する。
+   * 
+   * @public
+   * @param {Object} options - 更新オプション
+   * @param {Object} options.context - 更新コンテキスト
+   * @param {Object} options.sceneControl - シーン制御オブジェクト
+   * @returns {void}
+   */
   update({
     context,
     sceneControl: { pushScene },
@@ -332,6 +361,12 @@ class MainGameScene {
     }
   }
 
+  /**
+   * ゲーム状態のスナップショットを作成する。ビューレンダラーがこれを描画。
+   * 
+   * @public
+   * @returns {Object} メインゲームシーンのスナップショット
+   */
   createSnapshot() {
     const statusSnapshot = this.#createStatusSnapshot();
     return {

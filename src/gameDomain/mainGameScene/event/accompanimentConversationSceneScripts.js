@@ -1,8 +1,18 @@
+/**
+ * 同伴会話シーンスクリプト ID値。
+ * @public
+ */
 const ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS = Object.freeze({
   REQUEST: 'accompanimentRequest',
   COMPLETE: 'accompanimentComplete',
 });
 
+/**
+ * 同伴要求会話を初期化。
+ * @public
+ * @param {AccompanimentTask} task - 同伴タスク
+ * @returns {Object} 会話スクリプトオブジェクト
+ */
 function createAccompanimentRequestConversationSceneScript(task) {
   const { companion, destination } = task;
   return {
@@ -21,6 +31,12 @@ function createAccompanimentRequestConversationSceneScript(task) {
   };
 }
 
+/**
+ * 同伴完了会話を初期化。
+ * @private
+ * @param {AccompanimentTask} task - 同伴タスク
+ * @returns {Object} 会話スクリプトオブジェクト
+ */
 function createAccompanimentCompleteConversationSceneScript(task) {
   const { companion, destination } = task;
   return {

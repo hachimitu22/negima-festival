@@ -13,11 +13,24 @@ class AccompanimentEvent {
   #id;
   #task;
 
+  /**
+   * 同伴イベントを初期化。
+   * @public
+   * @param {number} id - イベント ID
+   * @param {Object} config - 設定オブジェクト
+   * @param {Object} config.companion - 同伴キャラクター
+   * @param {Object} config.destination - 目的地
+   */
   constructor(id, { companion, destination }) {
     this.#id = id;
     this.#task = new AccompanimentTask({ companion, destination });
   }
 
+  /**
+   * 同伴リクエストを申し出る。
+   * @public
+   * @returns {Object} 会話シーン一式
+   */
   createRequestInteraction() {
     return {
       kind: ACCOMPANIMENT_INTERACTION_KINDS.REQUEST,
@@ -27,6 +40,13 @@ class AccompanimentEvent {
     };
   }
 
+  /**
+   * アクターとのインタラクションを作成。
+   * @private
+   * @param {string} actorId - アクター ID
+   * @param {string} currentLocationId - 現在位置 ID
+   * @returns {Object|null} インタラクション
+   */
   createActorInteraction(actorId, currentLocationId) {
     if (
       !this.#task.isExecuting()
@@ -56,6 +76,13 @@ class AccompanimentEvent {
     return false;
   }
 
+  /**
+   * アクターとのインタラクションがブロックされているかどうかを確認。
+   * @private
+   * @param {string} actorId - アクター ID
+   * @param {string} currentLocationId - 現在位置 ID
+   * @returns {boolean} ブロック中の場合 true
+   */
   isActorInteractionBlocked(actorId, currentLocationId) {
     return (
       this.#task.isExecuting()
@@ -64,6 +91,11 @@ class AccompanimentEvent {
     );
   }
 
+  /**
+   * イベント実行中かどうかを確認。
+   * @private
+   * @returns {boolean} 実行中の場合 true
+   */
   isExecuting() {
     return this.#task.isExecuting();
   }
@@ -80,6 +112,11 @@ class AccompanimentEvent {
     return { ...this.#task.companion };
   }
 
+  /**
+   * イベント状態のスナップショット。
+   * @private
+   * @returns {Object} スナップショット
+   */
   getSnapshot() {
     const task = this.#task.getSnapshot();
     return {

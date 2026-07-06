@@ -16,11 +16,24 @@ class DeliveryEvent {
   #id;
   #task;
 
+  /**
+   * 配達イベントを初期化。
+   * @public
+   * @param {number} id - イベント ID
+   * @param {Object} config - 設定オブジェクト
+   * @param {Object} config.sender - 送信者
+   * @param {Object} config.recipient - 受取人
+   */
   constructor(id, { sender, recipient }) {
     this.#id = id;
     this.#task = new DeliveryTask({ sender, recipient });
   }
 
+  /**
+   * 配達スクリプトを要求。
+   * @public
+   * @returns {Object} 会話シーン一式
+   */
   createRequestInteraction() {
     return {
       kind: DELIVERY_INTERACTION_KINDS.REQUEST,
@@ -30,6 +43,12 @@ class DeliveryEvent {
     };
   }
 
+  /**
+   * アクターとのインタラクションを作成。
+   * @private
+   * @param {string} actorId - アクター ID
+   * @returns {Object|null} インタラクション
+   */
   createActorInteraction(actorId) {
     if (!this.#task.isExecuting()) {
       return null;
@@ -56,6 +75,13 @@ class DeliveryEvent {
     return null;
   }
 
+  /**
+   * インタラクションを完了。
+   * @private
+   * @param {string} kind - インタラクション種別
+   * @param {Object} [conversationSceneResult={}] - 会話結果
+   * @returns {boolean} 処理成功の可否
+   */
   completeInteraction(kind, conversationSceneResult = {}) {
     if (kind === DELIVERY_INTERACTION_KINDS.REQUEST) {
       return this.#task.accept();
@@ -99,6 +125,11 @@ class DeliveryEvent {
     ];
   }
 
+  /**
+   * イベント状態のスナップショット。
+   * @private
+   * @returns {Object} スナップショット
+   */
   getSnapshot() {
     const task = this.#task.getSnapshot();
     return {

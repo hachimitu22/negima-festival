@@ -1,6 +1,13 @@
 import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 import { createStatusView } from '../../statusView.js';
 
+/**
+ * 会話シーン用ビューを作成。会話内容と選択肢を表示。
+ * @public
+ * @param {HTMLElement} rootElement - 描画対象的要素
+ * @param {Object} options - オプション設定
+ * @returns {Object} 会話シーン view API (init, update, destroy)
+ */
 function createConversationSceneView(rootElement, options) {
   const statusView = createStatusView();
   let root = null;

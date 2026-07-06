@@ -1,14 +1,28 @@
+/**
+ * 配達会話シーンスクリプト ID値。
+ * @public
+ */
 const DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS = Object.freeze({
   REQUEST: 'deliveryRequest',
   RECONFIRM: 'deliveryReconfirm',
   COMPLETE: 'deliveryComplete',
 });
 
+/**
+ * 配達会話選抚肢 ID値。
+ * @public
+ */
 const DELIVERY_CONVERSATION_SCENE_SCRIPT_CHOICE_IDS = Object.freeze({
   CONTINUE: 'continue-delivery',
   DECLINE: 'decline-delivery',
 });
 
+/**
+ * 配達要求会話を初期化。
+ * @public
+ * @param {DeliveryTask} task - 配達タスク
+ * @returns {Object} 会話スクリプトオブジェクト
+ */
 function createDeliveryRequestConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {
@@ -27,6 +41,12 @@ function createDeliveryRequestConversationSceneScript(task) {
   };
 }
 
+/**
+ * 配達再確認会話を初期化。
+ * @private
+ * @param {DeliveryTask} task - 配達タスク
+ * @returns {Object} 会話スクリプトオブジェクト
+ */
 function createDeliveryReconfirmConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {
@@ -73,6 +93,12 @@ function createDeliveryReconfirmConversationSceneScript(task) {
   };
 }
 
+/**
+ * 配達完了会話を初期化。
+ * @private
+ * @param {DeliveryTask} task - 配達タスク
+ * @returns {Object} 会話スクリプトオブジェクト
+ */
 function createDeliveryCompleteConversationSceneScript(task) {
   const { sender, recipient } = task;
   return {

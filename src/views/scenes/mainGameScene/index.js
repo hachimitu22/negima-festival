@@ -1,6 +1,13 @@
 import { createStatusView } from '../../statusView.js';
 import { createMapView } from './mapView.js';
 
+/**
+ * メインゲームシーン用ビューを作成。ステータス・マップ・イベント一覧を表示。
+ * @public
+ * @param {HTMLElement} rootElement - 描画対象的要素
+ * @param {Object} options - オプション設定
+ * @returns {Object} メインゲームシーン view API (init, update, destroy)
+ */
 function createMainGameSceneView(rootElement, options) {
   const statusView = createStatusView();
   let mapView = null;

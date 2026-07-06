@@ -1,3 +1,7 @@
+/**
+ * 位置 ID 定数。
+ * @public
+ */
 const LOCATION_IDS = {
   LIBRARY_ROOM: 'library_room',
   LIBRARY_ROOM_FRONT_CORRIDOR: 'library_room_front_corridor',
@@ -23,6 +27,10 @@ const LOCATION_IDS = {
   DAVID_PLAZA: 'david_plaza',
 };
 
+/**
+ * 位置グループ定数。
+ * @public
+ */
 const LOCATION_GROUPS = {
   SCHOOL_FIRST_FLOOR: '校舎1階',
   SCHOOL_SECOND_FLOOR: '校舎2階',
@@ -31,6 +39,10 @@ const LOCATION_GROUPS = {
   OUTDOOR: '屋外',
 };
 
+/**
+ * 全位置データ。
+ * @public
+ */
 const LOCATIONS = [
   { id: LOCATION_IDS.LIBRARY_ROOM                 , name: '図書室'         , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室前廊下'] },
   { id: LOCATION_IDS.LIBRARY_ROOM_FRONT_CORRIDOR  , name: '図書室前廊下'   , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室', '職員室', 'ホール'] },
@@ -56,10 +68,22 @@ const LOCATIONS = [
   { id: LOCATION_IDS.DAVID_PLAZA                  , name: 'ダビデ広場'     , group: LOCATION_GROUPS.OUTDOOR, destinations: ['クラブ棟', '教会前'] },
 ];
 
+/**
+ * 位置 ID から位置を検索。
+ * @public
+ * @param {string} locationId - 位置 ID
+ * @returns {Object|null} 位置オブジェクト、見つからない場合は null
+ */
 function findLocation(locationId) {
   return LOCATIONS.find(location => location.id === locationId) ?? null;
 }
 
+/**
+ * 位置名から位置を検索。
+ * @public
+ * @param {string} locationName - 位置名
+ * @returns {Object|null} 位置オブジェクト、見つからない場合は null
+ */
 function findLocationByName(locationName) {
   return LOCATIONS.find(location => location.name === locationName) ?? null;
 }

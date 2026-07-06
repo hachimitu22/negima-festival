@@ -1,5 +1,10 @@
 import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from '../gameDomain/actions.js';
 
+/**
+ * ステータスビューを作成。ゲーム時間、MP、與件などを表示。
+ * @public
+ * @returns {Object} ステータスビュー APIオブジェクト
+ */
 function createStatusView() {
   let root = null;
   let elements = null;

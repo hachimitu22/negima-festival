@@ -1,8 +1,16 @@
+/**
+ * 往訪タスクステート値。
+ * @private
+ */
 const PATROL_TASK_STATES = Object.freeze({
   EXECUTING: 'executing',
   SUCCEEDED: 'succeeded',
 });
 
+/**
+ * 往訪タスク。複数の位置を訪問して成功を目指す。
+ * @private
+ */
 class PatrolTask {
   #state;
   #destinations;
@@ -40,6 +48,12 @@ class PatrolTask {
     this.#state = PATROL_TASK_STATES.EXECUTING;
   }
 
+  /**
+   * 位置訪問を試みる。
+   * @private
+   * @param {string} locationId - 訪問先位置 ID
+   * @returns {boolean} 訪問の成功判定
+   */
   visitLocation(locationId) {
     if (this.#state !== PATROL_TASK_STATES.EXECUTING) {
       return false;
@@ -60,14 +74,29 @@ class PatrolTask {
     return true;
   }
 
+  /**
+   * タスク実行中かどうかを確認。
+   * @private
+   * @returns {boolean} 実行中の場合 true
+   */
   isExecuting() {
     return this.#state === PATROL_TASK_STATES.EXECUTING;
   }
 
+  /**
+   * タスク完了かどうかを確認。
+   * @private
+   * @returns {boolean} 完了時 true
+   */
   isSucceeded() {
     return this.#state === PATROL_TASK_STATES.SUCCEEDED;
   }
 
+  /**
+   * タスク状態のスナップショット。
+   * @private
+   * @returns {Object} スナップショット
+   */
   getSnapshot() {
     return {
       state: this.#state,

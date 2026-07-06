@@ -1,5 +1,9 @@
 import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 
+/**
+ * マップレイアウト定数。
+ * @private
+ */
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const MAP_COLUMN_COUNT = 5;
 const MAP_LAYOUT = Object.freeze({
@@ -34,6 +38,13 @@ const GROUP_KEYS = new Map([
   ['屋外', 'outdoor'],
 ]);
 
+/**
+ * マップビューを作成。複数位置・キャラクター配置を表示。
+ * @public
+ * @param {HTMLElement} rootElement - 描画対象的要素
+ * @param {Object} options - オプション設定
+ * @returns {Object} マップビュー API
+ */
 function createMapView(rootElement, options) {
   const enqueueInput = options.enqueueInput;
   const viewState = options.viewState ?? { trackedActorId: null };

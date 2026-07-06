@@ -8,6 +8,13 @@ class PatrolEvent {
   #rewardPoints;
   #isRewardClaimed;
 
+  /**
+   * 往訪イベントを初期化。
+   * @public
+   * @param {number} id - イベント ID
+   * @param {Object} config - 設定オブジェクト
+   * @param {Array<Object>} config.destinations - 訪問先位置配列
+   */
   constructor(id, { destinations }) {
     this.#id = id;
     this.#task = new PatrolTask({ destinations });
@@ -15,18 +22,39 @@ class PatrolEvent {
     this.#isRewardClaimed = false;
   }
 
+  /**
+   * 位置訪問を試みる。
+   * @public
+   * @param {string} locationId - 訪問先位置 ID
+   * @returns {boolean} 訪問の成功判定
+   */
   visitLocation(locationId) {
     return this.#task.visitLocation(locationId);
   }
 
+  /**
+   * イベント実行中かどうかを確認。
+   * @public
+   * @returns {boolean} 実行中の場合 true
+   */
   isExecuting() {
     return this.#task.isExecuting();
   }
 
+  /**
+   * イベント完了かどうかを確認。
+   * @public
+   * @returns {boolean} 完了時 true
+   */
   isSucceeded() {
     return this.#task.isSucceeded();
   }
 
+  /**
+   * 报酬ポイントを購布。
+   * @public
+   * @returns {number|null} 报酬ポイント、未購布時 null
+   */
   claimRewardPoints() {
     if (!this.isSucceeded() || this.#isRewardClaimed) {
       return null;
@@ -36,6 +64,11 @@ class PatrolEvent {
     return this.#rewardPoints;
   }
 
+  /**
+   * イベント状態のスナップショット。
+   * @public
+   * @returns {Object} スナップショット
+   */
   getSnapshot() {
     const task = this.#task.getSnapshot();
     return {
