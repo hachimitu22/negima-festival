@@ -94,6 +94,10 @@ class PatrolEvent {
 - rendererはscene snapshotへ格納されたevent snapshotだけを参照する。
 - カシオペアによる破棄は`MainGameScene`がeventへの参照を解放することで行う。
 
+## 単体テスト
+
+[PatrolEvent単体テストケース](../../../テスト設計/単体テスト/ドメイン/イベント/PatrolEvent.md)を参照する。
+
 ## 依存先
 
 - [PatrolTask（見回りタスク）](PatrolTask.md)

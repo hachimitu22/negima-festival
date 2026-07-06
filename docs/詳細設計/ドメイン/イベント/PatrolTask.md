@@ -42,6 +42,7 @@ class PatrolTask {
 
 `destinations`は次の条件をすべて満たす配列とする。
 
+- `destinations`自体が配列でない場合は`TypeError`とする。
 - 要素数は1件以上3件以下とする。範囲外は`RangeError`とする。
 - 各要素は空でない文字列の`id`と`name`を持つ。形式不正は`TypeError`とする。
 - `id`は配列内で一意とする。重複時は`Error`とする。
@@ -101,6 +102,10 @@ flowchart TB
 - `state`には現在の状態を格納する。
 - `destinations`は発生時の順序を維持する。
 - 各要素は新しいオブジェクトとして返し、内部状態を直接公開しない。
+
+## 単体テスト
+
+[PatrolTask単体テストケース](../../../テスト設計/単体テスト/ドメイン/イベント/PatrolTask.md)を参照する。
 
 ## 依存先
 

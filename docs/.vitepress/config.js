@@ -107,6 +107,27 @@ export default withMermaid({
         ]
       },
       {
+        text: 'テスト設計',
+        link: '/テスト設計/README',
+        collapsed: false,
+        items: [
+          {
+            text: '単体テスト',
+            collapsed: false,
+            items: [
+              {
+                text: 'PatrolEvent',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/PatrolEvent'
+              },
+              {
+                text: 'PatrolTask',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/PatrolTask'
+              }
+            ]
+          }
+        ]
+      },
+      {
         text: '用語集',
         collapsed: true,
         items: [
