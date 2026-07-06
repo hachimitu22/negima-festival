@@ -237,6 +237,7 @@ export default withMermaid({
     returnToTopLabel: 'ページ上部へ戻る',
     darkModeSwitchLabel: 'テーマ'
   },
+  srcExclude: ['**/AGENTS.md'],
   mermaid: { theme: 'forest' },
   mermaidPlugin: { class: 'mermaid my-class' }
 })
