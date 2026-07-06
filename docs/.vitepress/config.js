@@ -98,6 +98,8 @@ export default withMermaid({
                 link: '/詳細設計/ドメイン/イベント/README',
                 collapsed: false,
                 items: [
+                  { text: 'EventIdSequence', link: '/詳細設計/ドメイン/イベント/EventIdSequence' },
+                  { text: 'PatrolEventManager', link: '/詳細設計/ドメイン/イベント/PatrolEventManager' },
                   { text: 'PatrolEvent', link: '/詳細設計/ドメイン/イベント/PatrolEvent' },
                   { text: 'PatrolTask', link: '/詳細設計/ドメイン/イベント/PatrolTask' }
                 ]
@@ -115,6 +117,14 @@ export default withMermaid({
             text: '単体テスト',
             collapsed: false,
             items: [
+              {
+                text: 'EventIdSequence',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/EventIdSequence'
+              },
+              {
+                text: 'PatrolEventManager',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/PatrolEventManager'
+              },
               {
                 text: 'PatrolEvent',
                 link: '/テスト設計/単体テスト/ドメイン/イベント/PatrolEvent'

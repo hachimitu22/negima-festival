@@ -54,9 +54,8 @@ package "ゲームドメイン / Scene" #E8F4F8 {
     -actors
     -activeLayerId
     -activeConversationEvent
-    -activePatrolEvent
-    -nextPatrolTimeHours
-    -lastEventId
+    -eventIdSequence
+    -patrolEventManager
     +update(payload)
     +createSnapshot()
   }
@@ -88,6 +87,12 @@ package "イベント / タスク" #FFF0E6 {
     +isExecuting()
     +isSucceeded()
     +getSnapshot()
+  }
+
+  class EventIdSequence {
+    -nextId
+    +peek()
+    +next()
   }
 
   class DeliveryEvent {
@@ -127,9 +132,22 @@ package "イベント / タスク" #FFF0E6 {
     -id
     -task
     -rewardPoints
+    -isRewardClaimed
     +visitLocation(locationId)
-    +getRewardPoints()
+    +claimRewardPoints()
     +getSnapshot()
+  }
+
+  class PatrolEventManager {
+    -character
+    -eventIdSequence
+    -durationHours
+    -activeEvent
+    -nextPatrolTimeHours
+    +advanceTo(currentHours)
+    +visitCurrentLocation()
+    +rewindTo(currentHours)
+    +getExecutingEventSnapshot()
   }
 
   class PatrolTask {
@@ -233,13 +251,15 @@ ConversationScene *-- ConversationSession : session
 MainGameScene ..> DomainModules : imports
 
 MainGameScene o-- GameEvent : activeConversationEvent
-MainGameScene o-- GameEvent : activePatrolEvent
 GameEvent <|.. DeliveryEvent
 GameEvent <|.. AccompanimentEvent
 GameEvent <|.. PatrolEvent
 MainGameScene ..> DeliveryEvent : new
 MainGameScene ..> AccompanimentEvent : new
-MainGameScene ..> PatrolEvent : new / visit
+MainGameScene *-- EventIdSequence : event IDs
+MainGameScene *-- PatrolEventManager : patrol
+PatrolEventManager o-- PatrolEvent : activeEvent
+PatrolEventManager ..> EventIdSequence : next
 DeliveryEvent ..> EventModules : conversation factory
 AccompanimentEvent ..> EventModules : conversation factory
 DeliveryEvent *-- DeliveryTask : task
@@ -251,6 +271,7 @@ GameObject <|-- Actor
 Actor <|-- Student
 Actor <|-- Teacher
 MainGameScene "1" *-- "1" Character : character
+PatrolEventManager --> Character : current location / reward
 MainGameScene "1" *-- "0..*" Actor : actors
 MainGameScene ..> Student : new / instanceof
 MainGameScene ..> Teacher : new

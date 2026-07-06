@@ -6,11 +6,13 @@ class PatrolEvent {
   #id;
   #task;
   #rewardPoints;
+  #isRewardClaimed;
 
   constructor(id, { destinations }) {
     this.#id = id;
     this.#task = new PatrolTask({ destinations });
     this.#rewardPoints = destinations.length * PATROL_REWARD_POINTS_PER_DESTINATION;
+    this.#isRewardClaimed = false;
   }
 
   visitLocation(locationId) {
@@ -25,7 +27,12 @@ class PatrolEvent {
     return this.#task.isSucceeded();
   }
 
-  getRewardPoints() {
+  claimRewardPoints() {
+    if (!this.isSucceeded() || this.#isRewardClaimed) {
+      return null;
+    }
+
+    this.#isRewardClaimed = true;
     return this.#rewardPoints;
   }
 

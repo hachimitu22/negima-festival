@@ -25,13 +25,11 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `actors`                  | 生徒31人と教師2人                                |
 | `activeLayerId`           | メインゲーム内で表示するlayer                    |
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
-| `activePatrolEvent`       | 実行中の見回り。未実行時は`null`                 |
-| `nextPatrolTimeHours`     | 次に見回りの発生判定を行うゲーム時間             |
-| `lastEventId`             | 両イベント枠で次に割り当てるevent ID             |
+| `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
+| `patrolEventManager`      | 見回りの生成、進行、報酬、保持を管理するManager  |
 
 初期layerはmap、初期の配達または同行はなしとする。
-初期の見回りはコンストラクタで生成し、最初のsnapshotから実行中イベントとして公開する。
-次回見回り時刻はゲーム時間12とする。
+`PatrolEventManager`が初期の見回りを生成し、最初のsnapshotから実行中イベントとして公開する。
 キャラクター、登場人物、各数値の初期値は基本設計を正本とする。
 
 ## 公開契約
@@ -48,9 +46,9 @@ class MainGameScene {
 1. input全体から会話開始を成立させるactor入力を探す。
 2. 成立した場合は`ConversationScene`を生成してpushし、直ちに終了する。
 3. 会話へ遷移しなかった場合だけ、場所移動とカシオペア入力を処理する。
-4. 場所移動が成立した場合は、見回りへ移動先を通知して完了と報酬を処理する。
+4. 場所移動が成立した場合は、`PatrolEventManager`へ現在地の訪問を通知する。
 5. frame経過量からゲーム時間を進める。
-6. 到達した定期発生時刻ごとに見回りの発生可否を判定する。
+6. 更新後のゲーム時間を`PatrolEventManager`へ通知する。
 7. 経過ゲーム時間を含むcontextで`Character`を更新する。
 8. 同じcontextで全`Actor`を更新する。
 
@@ -67,18 +65,18 @@ class MainGameScene {
 | `cassiopeia`            | MP条件を満たす場合に時間を戻す   |
 
 同行中に場所移動が成立した場合は、同伴者も同じlocationへ移動する。
-見回り中に場所移動が成立した場合は、移動先を訪問済みに更新する。
+見回り中に場所移動が成立した場合は、`PatrolEventManager.visitCurrentLocation()`を呼ぶ。
 
 ## 会話シーンの生成
 
 `MainGameScene`は会話相手と`activeConversationEvent`から使用する台本を決定する。
-`activePatrolEvent`は会話台本の選出に関与しない。
+`PatrolEventManager`が管理する見回りは会話台本の選出に関与しない。
 
 ### 実行中の配達または同行がない場合
 
 1. 通常会話、配達依頼、同行開始の候補を作る。
 2. 会話scriptを選出する。
-3. イベントscriptが選ばれた場合だけevent IDを進める。
+3. イベントscriptが選ばれた場合だけ`EventIdSequence`のevent IDを進める。
 4. 台本、status snapshot、完了callbackから`ConversationScene`を生成する。
 
 ### 実行中の配達または同行がある場合
@@ -93,40 +91,25 @@ class MainGameScene {
 
 ## 見回りの生成と進行
 
-- `MainGameScene`は見回り先の抽選、発生時刻、進行通知、報酬適用を担当する。
-- [`PatrolEvent`](../イベント/PatrolEvent.md)が報酬とevent snapshotを管理し、[`PatrolTask`](../イベント/PatrolTask.md)が訪問状態と成功状態を管理する。
-- ゲーム開始時の見回りにはevent ID 0を割り当て、以後は配達、同行、見回りで共通の連番を割り当てる。
-- 時間更新後、`nextPatrolTimeHours`以下の各12時間境界を順に消費する。
-- 境界の時点で`activePatrolEvent`が`null`なら新しい見回りを生成し、実行中ならその回を見送る。
-- 大きなframe差分で複数の境界を越えた場合も、最初に生成した見回りが後続境界では実行中となるため、同一frameで複数件を生成しない。
-- ゲーム時間72の境界では発生判定を行わない。
-- 場所移動後に`PatrolEvent`へlocation IDを渡し、成功へ遷移した場合だけ報酬を`Character`へ加算して`activePatrolEvent`を破棄する。
-- 報酬額は`PatrolEvent`から取得し、同じ成功へ複数回適用しない。
+- [`PatrolEventManager`](../イベント/PatrolEventManager.md)が見回り先の抽選、発生時刻、進行、報酬適用、実行中eventの保持と破棄を担当する。
+- `MainGameScene`は`Character`の生成後に、同じCharacter、共有[`EventIdSequence`](../イベント/EventIdSequence.md)、祭終了時刻からManagerを生成する。
+- ゲーム開始時の見回りにはevent ID 0を割り当て、以後は配達、同行、見回りで共有する連番を割り当てる。
+- 時間更新後は`advanceTo(currentHours)`を呼ぶ。
+- 場所移動の成立後は`visitCurrentLocation()`を呼ぶ。
+- カシオペアによる遡行後は`rewindTo(currentHours)`を呼ぶ。
+- scene snapshotの生成時は`getExecutingEventSnapshot()`の結果を配達または同行のsnapshotより前へ格納する。
 
-カシオペア使用時は`activePatrolEvent`を破棄する。
-`nextPatrolTimeHours`は、遡行後の時刻より大きい最小の12の倍数へ再設定する。
-遡行後がゲーム時間0の場合も次回は12とし、開始時の見回りを再生成しない。
-
-### 見回り先の抽選
-
-1. `LOCATIONS`から発生時の現在地、`LOCATION_IDS.GIRLS_BATHROOM`、`LOCATION_IDS.GYM_CHANGING_ROOM`を除外し、候補配列を作る。
-2. `getRandomInt(1, 3)`で見回り先の数を決定する。
-3. 候補配列のindexを`getRandomInt()`で1件選び、選んだlocationを候補配列から取り除く。
-4. 決定した件数に達するまで手順3を繰り返す。
-
-件数1、2、3の確率を等しくし、同じ件数内では各locationが選ばれる確率を等しくする。
-選出した順序はeventの完了まで維持する。
+見回り固有の生成条件、抽選、完了報酬、巻き戻し時の破棄は`MainGameScene`で判定しない。
 
 ## 継続イベントとの境界
 
 - `DeliveryEvent`と`AccompanimentEvent`がtask状態と会話台本を管理する。
-- [`PatrolEvent`](../イベント/PatrolEvent.md)が見回りtaskの状態と報酬を管理する。
-- `MainGameScene`が配達または同行を1件、見回りを1件まで別々に保持する。
+- `MainGameScene`が配達または同行を1件保持し、`PatrolEventManager`が見回りを1件まで保持する。
 - 同行開始時は同伴者の移動modeを`external`へ変更する。
 - 同行中の場所同期は`MainGameScene`が行う。
 - 配達または同行の完了や失敗時は報酬を適用し、同伴者を`automatic`へ戻して対象イベントを破棄する。
-- 見回り完了時はMahoPayポイントを適用して対象イベントを破棄する。
-- カシオペア使用時は同伴者を解放し、両方の実行中イベントを破棄する。
+- 見回り完了時は`PatrolEventManager`がMahoPayポイントを適用して対象イベントを破棄する。
+- カシオペア使用時は同伴者を解放し、Managerへ見回りの破棄を通知する。
 
 イベントのゲームルールは[基本設計のイベント仕様](../../../基本設計/イベント/README.md)を正本とする。
 
@@ -175,7 +158,8 @@ class MainGameScene {
 - location定義と乱数
 - 好感度計算
 - `DeliveryEvent`、`AccompanimentEvent`
-- [`PatrolEvent`](../イベント/PatrolEvent.md)
+- [`EventIdSequence`](../イベント/EventIdSequence.md)
+- [`PatrolEventManager`](../イベント/PatrolEventManager.md)
 - 会話台本生成
 - `ConversationScene`
 

@@ -24,7 +24,7 @@ scene や game system は各 GameObject の公開プロパティを列挙せず�
 - `update(context)` で魔力回復などの主人公状態を更新する。
 - 現在地、魔力、MahoPayポイントを保持する。
 - location 移動は `moveToLocation(locationId)` で行う。
-- 見回り報酬の加算は `addMahoPayPoints(points)` で行う。
+- 見回り報酬は`PatrolEventManager`が`addMahoPayPoints(points)`で加算する。
 - `getSnapshot()` で現在地、魔力、MahoPayポイントの snapshot を作る。
 
 ### Actor
@@ -71,9 +71,9 @@ renderer向けsnapshotや状態判定を持つこと自体はGameObject化の条
 ### PatrolEventとPatrolTask
 
 [`PatrolEvent`](../ドメイン/イベント/PatrolEvent.md)は[`PatrolTask`](../ドメイン/イベント/PatrolTask.md)と成功時のMahoPay報酬をまとめる見回りイベントである。
-場所移動が成立した場合だけ`MainGameScene`が`visitLocation(locationId)`を呼び出す。
+場所移動が成立した場合だけ[`PatrolEventManager`](../ドメイン/イベント/PatrolEventManager.md)が`visitLocation(locationId)`を呼び出す。
 
-時間の到達による見回りの生成と見送りは`MainGameScene`が担当する。
+時間の到達による見回りの生成と見送り、成功報酬のCharacterへの反映は`PatrolEventManager`が担当する。
 どちらも毎フレーム自身を更新する必要がないためGameObjectを継承しない。
 状態、公開契約、snapshotの正本は各クラスの詳細設計とする。
 

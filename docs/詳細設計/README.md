@@ -44,7 +44,9 @@
 ### イベント
 
 - [イベント索引](ドメイン/イベント/README.md)
+- [EventIdSequence（イベントID採番器）](ドメイン/イベント/EventIdSequence.md)
 - [PatrolEvent（見回りイベント）](ドメイン/イベント/PatrolEvent.md)
+- [PatrolEventManager（見回りイベント管理）](ドメイン/イベント/PatrolEventManager.md)
 - [PatrolTask（見回りタスク）](ドメイン/イベント/PatrolTask.md)
 
 ## 横断資料

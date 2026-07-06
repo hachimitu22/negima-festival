@@ -32,7 +32,6 @@ describe('PE-UT-S01 生成と公開情報', () => {
     // Assert
     assert.equal(event.isExecuting(), true);
     assert.equal(event.isSucceeded(), false);
-    assert.equal(event.getRewardPoints(), 100);
     assert.deepEqual(snapshot, {
       id: 7,
       type: 'patrol',
@@ -58,10 +57,10 @@ describe('PE-UT-S01 生成と公開情報', () => {
     const event = new PatrolEvent(7, {
       destinations,
     });
-    const rewardPoints = event.getRewardPoints();
+    const snapshot = event.getSnapshot();
 
     // Assert
-    assert.equal(rewardPoints, 300);
+    assert.equal(snapshot.rewardPoints, 300);
   });
 
   it('PE-UT-S01-C03 初期descriptionへ順序と訪問状態を反映する', () => {
@@ -156,11 +155,11 @@ describe('PE-UT-S02 訪問と状態遷移', () => {
     });
 
     // Act
-    const initialRewardPoints = event.getRewardPoints();
+    const initialRewardPoints = event.getSnapshot().rewardPoints;
     event.visitLocation(createLocationA().id);
-    const progressingRewardPoints = event.getRewardPoints();
+    const progressingRewardPoints = event.getSnapshot().rewardPoints;
     event.visitLocation(createLocationB().id);
-    const succeededRewardPoints = event.getRewardPoints();
+    const succeededRewardPoints = event.getSnapshot().rewardPoints;
 
     // Assert
     assert.equal(initialRewardPoints, 200);
@@ -169,8 +168,53 @@ describe('PE-UT-S02 訪問と状態遷移', () => {
   });
 });
 
-describe('PE-UT-S03 snapshot', () => {
-  it('PE-UT-S03-C01 snapshotからeventの状態を変更できない', () => {
+describe('PE-UT-S03 報酬の請求', () => {
+  it('PE-UT-S03-C01 成功前は報酬を請求できない', () => {
+    // Arrange
+    const event = new PatrolEvent(7, {
+      destinations: [createLocationA()],
+    });
+
+    // Act
+    const rewardPoints = event.claimRewardPoints();
+
+    // Assert
+    assert.equal(rewardPoints, null);
+  });
+
+  it('PE-UT-S03-C02 成功後の初回請求で報酬を取得する', () => {
+    // Arrange
+    const event = new PatrolEvent(7, {
+      destinations: [createLocationA(), createLocationB()],
+    });
+    event.visitLocation(createLocationA().id);
+    event.visitLocation(createLocationB().id);
+
+    // Act
+    const rewardPoints = event.claimRewardPoints();
+
+    // Assert
+    assert.equal(rewardPoints, 200);
+  });
+
+  it('PE-UT-S03-C03 報酬を二回請求できない', () => {
+    // Arrange
+    const event = new PatrolEvent(7, {
+      destinations: [createLocationA()],
+    });
+    event.visitLocation(createLocationA().id);
+    event.claimRewardPoints();
+
+    // Act
+    const rewardPoints = event.claimRewardPoints();
+
+    // Assert
+    assert.equal(rewardPoints, null);
+  });
+});
+
+describe('PE-UT-S04 snapshot', () => {
+  it('PE-UT-S04-C01 snapshotからeventの状態を変更できない', () => {
     // Arrange
     const event = new PatrolEvent(7, {
       destinations: [createLocationA(), createLocationB()],

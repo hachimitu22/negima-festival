@@ -12,7 +12,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 ## 目的
 
-`PatrolTask`と成功時のMahoPay報酬をまとめ、`MainGameScene`へ見回りの進行、状態照会、renderer向けsnapshotを提供する。
+`PatrolTask`と成功時のMahoPay報酬をまとめ、`PatrolEventManager`へ見回りの進行、状態照会、一度限りの報酬請求、renderer向けsnapshotを提供する。
 見回りの生成時期、見回り先の抽選、報酬残高への加算は管理しない。
 
 ## 所有する状態
@@ -20,6 +20,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 - `id`: 配達、同行、見回りで一意となるevent ID
 - `task`: 見回り先と訪問状態を管理する`PatrolTask`
 - `rewardPoints`: 成功時に一括付与するMahoPayポイント
+- `isRewardClaimed`: 成功報酬を請求済みか
 
 報酬単価はモジュール内部の`PATROL_REWARD_POINTS_PER_DESTINATION`で定義する。
 値は`patrol-completion`の収支定義に従い、`rewardPoints`はコンストラクタで見回り先の件数から確定して進行中に変更しない。
@@ -34,7 +35,7 @@ class PatrolEvent {
   visitLocation(locationId)
   isExecuting()
   isSucceeded()
-  getRewardPoints()
+  claimRewardPoints()
   getSnapshot()
 }
 ```
@@ -57,9 +58,12 @@ class PatrolEvent {
 - eventはtaskとは別の進行状態や`failed`状態を持たない。
 - `isExecuting()`はeventが実行中の場合だけ`true`を返す。
 - `isSucceeded()`はeventが成功済みの場合だけ`true`を返す。
-- `getRewardPoints()`はコンストラクタで確定した`rewardPoints`を返す。
 
-`MainGameScene`は場所移動の前後で成功状態を判定し、成功へ遷移した呼び出しに対してだけ報酬を適用する。
+### claimRewardPoints
+
+eventが成功済みかつ報酬を未請求の場合だけ、コンストラクタで確定した`rewardPoints`を返して請求済みにする。
+成功前または請求済みの場合は状態を変更せず`null`を返す。
+これにより、同じeventの成功報酬を通常の完了処理から複数回取得できないようにする。
 
 ## snapshot
 
@@ -89,10 +93,10 @@ class PatrolEvent {
 
 ## 他オブジェクトとの境界
 
-- [`MainGameScene`](../シーン/MainGameScene.md)がeventを生成し、成立した場所移動を通知する。
-- `MainGameScene`が成功を検出し、`getRewardPoints()`の値を[`Character.addMahoPayPoints()`](../../ゲームエンジン/GameObject.md#character)へ渡す。
+- [`PatrolEventManager`](PatrolEventManager.md)がeventを生成し、成立した場所移動を通知する。
+- `PatrolEventManager`が成功を検出し、`claimRewardPoints()`の戻り値を[`Character.addMahoPayPoints()`](../../ゲームエンジン/GameObject.md#character)へ渡す。
 - rendererはscene snapshotへ格納されたevent snapshotだけを参照する。
-- カシオペアによる破棄は`MainGameScene`がeventへの参照を解放することで行う。
+- カシオペアによる破棄は`PatrolEventManager`がeventへの参照を解放することで行う。
 
 ## 単体テスト
 

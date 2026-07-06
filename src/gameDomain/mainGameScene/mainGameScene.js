@@ -12,8 +12,9 @@ import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/deliveryConversationSceneScripts.js';
 import { DeliveryEvent } from './event/deliveryEvent.js';
+import { EventIdSequence } from './event/eventIdSequence.js';
 import { LOCATION_IDS, LOCATIONS, findLocation } from './locations.js';
-import { PatrolEvent } from './event/patrolEvent.js';
+import { PatrolEventManager } from './event/patrolEventManager.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
 import { getRandomInt } from '../random.js';
@@ -30,7 +31,6 @@ const TEACHER_IDS = {
 };
 const DELIVERY_AFFECTION_REWARD = 5;
 const ACCOMPANIMENT_AFFECTION_REWARD = 20;
-const PATROL_INTERVAL_HOURS = 12;
 
 class MainGameScene {
   #gameTime;
@@ -39,9 +39,8 @@ class MainGameScene {
   #actors;
   #activeLayerId;
   #activeConversationEvent;
-  #activePatrolEvent;
-  #nextPatrolTimeHours;
-  #lastEventId;
+  #eventIdSequence;
+  #patrolEventManager;
 
   constructor() {
     this.#gameTime = {
@@ -112,10 +111,13 @@ class MainGameScene {
       ),
     ];
     this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
-    this.#lastEventId = 0;
+    this.#eventIdSequence = new EventIdSequence();
     this.#activeConversationEvent = null;
-    this.#activePatrolEvent = this.#createPatrolEvent();
-    this.#nextPatrolTimeHours = PATROL_INTERVAL_HOURS;
+    this.#patrolEventManager = new PatrolEventManager({
+      character: this.#character,
+      eventIdSequence: this.#eventIdSequence,
+      durationHours: this.#gameTime.durationHours,
+    });
   }
 
   update({
@@ -135,7 +137,7 @@ class MainGameScene {
 
   #updateGameState(frame) {
     const elapsedGameHours = this.#updateGameTime(frame);
-    this.#updatePatrolSchedule();
+    this.#patrolEventManager.advanceTo(this.#gameTime.currentHours);
     const context = {
       ...this.#createUpdateContext(frame),
       elapsedGameHours,
@@ -312,7 +314,7 @@ class MainGameScene {
         this.#moveActorToLocation(companionActorId, locationId);
       }
       if (didMove) {
-        this.#visitPatrolLocation(locationId);
+        this.#patrolEventManager.visitCurrentLocation();
       }
       return;
     }
@@ -338,21 +340,17 @@ class MainGameScene {
       activeLayerId: this.#activeLayerId,
       mapLocations: LOCATIONS,
       executingEvents: [
-        this.#activePatrolEvent,
-        this.#activeConversationEvent,
+        this.#patrolEventManager.getExecutingEventSnapshot(),
+        this.#activeConversationEvent?.getSnapshot() ?? null,
       ]
-        .filter(Boolean)
-        .map(event => event.getSnapshot()),
+        .filter(Boolean),
     };
   }
 
   #rewind() {
     this.#releaseActiveCompanion({ resetNextMoveTime: false });
     this.#activeConversationEvent = null;
-    this.#activePatrolEvent = null;
-    this.#nextPatrolTimeHours = (
-      Math.floor(this.#gameTime.currentHours / PATROL_INTERVAL_HOURS) + 1
-    ) * PATROL_INTERVAL_HOURS;
+    this.#patrolEventManager.rewindTo(this.#gameTime.currentHours);
   }
 
   #createConversationSceneFromInputs(inputs = []) {
@@ -430,7 +428,7 @@ class MainGameScene {
       candidate.scriptId === script.id
     ));
     if (selectedCandidate) {
-      this.#lastEventId += 1;
+      this.#eventIdSequence.next();
       return this.#createEventConversationScene(
         selectedCandidate.event,
         selectedCandidate.interaction,
@@ -492,7 +490,7 @@ class MainGameScene {
     }
 
     const recipient = recipients[getRandomInt(0, recipients.length - 1)];
-    return new DeliveryEvent(this.#lastEventId, {
+    return new DeliveryEvent(this.#eventIdSequence.peek(), {
       sender,
       recipient,
     });
@@ -509,61 +507,10 @@ class MainGameScene {
     const destination = destinationLocations[
       getRandomInt(0, destinationLocations.length - 1)
     ];
-    return new AccompanimentEvent(this.#lastEventId, {
+    return new AccompanimentEvent(this.#eventIdSequence.peek(), {
       companion,
       destination,
     });
-  }
-
-  #createPatrolEvent() {
-    const excludedLocationIds = new Set([
-      this.#character.locationId,
-      LOCATION_IDS.GIRLS_BATHROOM,
-      LOCATION_IDS.GYM_CHANGING_ROOM,
-    ]);
-    const candidates = LOCATIONS.filter(location => (
-      !excludedLocationIds.has(location.id)
-    ));
-    const destinationCount = getRandomInt(1, 3);
-    const destinations = [];
-
-    while (destinations.length < destinationCount) {
-      const candidateIndex = getRandomInt(0, candidates.length - 1);
-      destinations.push(candidates.splice(candidateIndex, 1)[0]);
-    }
-
-    const event = new PatrolEvent(this.#lastEventId, { destinations });
-    this.#lastEventId += 1;
-    return event;
-  }
-
-  #updatePatrolSchedule() {
-    while (
-      this.#nextPatrolTimeHours < this.#gameTime.durationHours
-      && this.#nextPatrolTimeHours <= this.#gameTime.currentHours
-    ) {
-      if (!this.#activePatrolEvent) {
-        this.#activePatrolEvent = this.#createPatrolEvent();
-      }
-      this.#nextPatrolTimeHours += PATROL_INTERVAL_HOURS;
-    }
-  }
-
-  #visitPatrolLocation(locationId) {
-    if (!this.#activePatrolEvent) {
-      return false;
-    }
-
-    const didVisit = this.#activePatrolEvent.visitLocation(locationId);
-    if (!didVisit || !this.#activePatrolEvent.isSucceeded()) {
-      return didVisit;
-    }
-
-    this.#character.addMahoPayPoints(
-      this.#activePatrolEvent.getRewardPoints(),
-    );
-    this.#activePatrolEvent = null;
-    return true;
   }
 
   #finishActiveConversationEvent(event) {

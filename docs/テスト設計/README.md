@@ -63,10 +63,12 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 
 ## 単体テストケース
 
+- [EventIdSequence（イベントID採番器）](単体テスト/ドメイン/イベント/EventIdSequence.md)
 - [PatrolTask（見回りタスク）](単体テスト/ドメイン/イベント/PatrolTask.md)
 - [PatrolEvent（見回りイベント）](単体テスト/ドメイン/イベント/PatrolEvent.md)
+- [PatrolEventManager（見回りイベント管理）](単体テスト/ドメイン/イベント/PatrolEventManager.md)
 
 ## 統合テスト
 
 現時点では統合テストケースとテストコードを作成しない。
-`MainGameScene`による見回り先の抽選、定期発生、報酬残高への反映、renderer表示は将来の統合テスト対象とする。
+`MainGameScene`と`PatrolEventManager`の接続、renderer表示は将来の統合テスト対象とする。
