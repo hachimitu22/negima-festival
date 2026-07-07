@@ -79,7 +79,6 @@ class AccompanimentTask {
       state: this.#state,
     };
   }
-  };
 }
 
 /**

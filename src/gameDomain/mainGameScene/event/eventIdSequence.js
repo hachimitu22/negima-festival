@@ -3,6 +3,8 @@
  * @public
  */
 class EventIdSequence {
+  #nextId;
+
   /**
    * 次次 ID を初期化してインスタンス化。
    * @public

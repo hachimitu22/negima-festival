@@ -9,6 +9,12 @@ const PATROL_INTERVAL_HOURS = 12;
  * @public
  */
 class PatrolEventManager {
+  #character;
+  #eventIdSequence;
+  #durationHours;
+  #activeEvent;
+  #nextPatrolTimeHours;
+
   /**
    * 往訪イベントマネージャーを初期化。
    * @public
