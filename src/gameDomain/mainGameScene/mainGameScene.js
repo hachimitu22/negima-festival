@@ -4,6 +4,7 @@ import {
 } from './event/accompanimentConversationSceneScripts.js';
 import { AccompanimentEvent } from './event/accompanimentEvent.js';
 import { ACTOR_MOVEMENT_MODES } from './actor.js';
+import { BranchEventManager } from './event/branchEventManager.js';
 import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
 import { ConversationScene } from '../conversationScene/conversationScene.js';
@@ -48,6 +49,7 @@ class MainGameScene {
   #activeLayerId;
   #activeConversationEvent;
   #eventIdSequence;
+  #branchEventManager;
   #patrolEventManager;
 
   /**
@@ -136,6 +138,10 @@ class MainGameScene {
       eventIdSequence: this.#eventIdSequence,
       durationHours: this.#gameTime.durationHours,
     });
+    this.#branchEventManager = new BranchEventManager({
+      character: this.#character,
+      eventIdSequence: this.#eventIdSequence,
+    });
   }
 
   /**
@@ -167,6 +173,7 @@ class MainGameScene {
   #updateGameState(frame) {
     const elapsedGameHours = this.#updateGameTime(frame);
     this.#patrolEventManager.advanceTo(this.#gameTime.currentHours);
+    this.#branchEventManager.advanceTo(this.#gameTime.currentHours);
     const context = {
       ...this.#createUpdateContext(frame),
       elapsedGameHours,
@@ -344,6 +351,7 @@ class MainGameScene {
       }
       if (didMove) {
         this.#patrolEventManager.visitCurrentLocation();
+        this.#branchEventManager.visitCurrentLocation();
       }
       return;
     }
@@ -376,6 +384,7 @@ class MainGameScene {
       mapLocations: LOCATIONS,
       executingEvents: [
         this.#patrolEventManager.getExecutingEventSnapshot(),
+        this.#branchEventManager.getExecutingEventSnapshot(),
         this.#activeConversationEvent?.getSnapshot() ?? null,
       ]
         .filter(Boolean),
@@ -386,6 +395,7 @@ class MainGameScene {
     this.#releaseActiveCompanion({ resetNextMoveTime: false });
     this.#activeConversationEvent = null;
     this.#patrolEventManager.rewindTo(this.#gameTime.currentHours);
+    this.#branchEventManager.rewindTo(this.#gameTime.currentHours);
   }
 
   #createConversationSceneFromInputs(inputs = []) {

@@ -6,6 +6,10 @@
 ## 設計一覧
 
 - [EventIdSequence（イベントID採番器）](EventIdSequence.md)
+- [BranchEvent（分岐イベント）](BranchEvent.md)
+- [BranchEventManager（分岐イベント管理）](BranchEventManager.md)
+- [BranchTask（分岐タスク）](BranchTask.md)
+- [NoticeBoardEvent（連絡掲示イベント定義）](NoticeBoardEvent.md)
 - [PatrolEvent（見回りイベント）](PatrolEvent.md)
 - [PatrolEventManager（見回りイベント管理）](PatrolEventManager.md)
 - [PatrolTask（見回りタスク）](PatrolTask.md)
@@ -16,4 +20,5 @@
 - taskは達成すべき目的と状態遷移を管理する。
 - sceneはイベント管理を呼び出す時刻や入力との接続を担当する。
 - 見回りでは`PatrolEventManager`が生成時期、報酬の適用、実行中イベントの保持と破棄を担当する。
+- 分岐では`BranchEventManager`が時間制限付きタスクチェーンの保持と破棄を担当し、報酬は扱わない。
 - eventとtaskは時間経過による自己更新を行わず、`GameObject`を継承しない。

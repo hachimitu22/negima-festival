@@ -30,7 +30,7 @@ class ConversationScene {
    * @example
    * const scene = new ConversationScene({
    *   script: conversationScript,
-   *   statusSnapshot: { /* UI状態 */ },
+   *   statusSnapshot: { UI状態 },
    *   onComplete: (result) => console.log('会話完了:', result)
    * });
    */

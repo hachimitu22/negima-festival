@@ -50,10 +50,11 @@ export default withMermaid({
             items: [
               { text: '配達イベント', link: '/基本設計/イベント/配達イベント' },
               { text: '同行イベント', link: '/基本設計/イベント/同行イベント' },
-              { text: '見回りイベント', link: '/基本設計/イベント/見回りイベント' }
-            ]
-          }
-        ]
+              { text: '見回りイベント', link: '/基本設計/イベント/見回りイベント' },
+              { text: '連絡掲示イベント', link: '/基本設計/イベント/連絡掲示イベント' },
+            ],
+          },
+        ],
       },
       {
         text: '詳細設計',
@@ -101,12 +102,16 @@ export default withMermaid({
                   { text: 'EventIdSequence', link: '/詳細設計/ドメイン/イベント/EventIdSequence' },
                   { text: 'PatrolEventManager', link: '/詳細設計/ドメイン/イベント/PatrolEventManager' },
                   { text: 'PatrolEvent', link: '/詳細設計/ドメイン/イベント/PatrolEvent' },
-                  { text: 'PatrolTask', link: '/詳細設計/ドメイン/イベント/PatrolTask' }
-                ]
-              }
-            ]
-          }
-        ]
+                  { text: 'PatrolTask', link: '/詳細設計/ドメイン/イベント/PatrolTask' },
+                  { text: 'BranchEventManager', link: '/詳細設計/ドメイン/イベント/BranchEventManager' },
+                  { text: 'BranchEvent', link: '/詳細設計/ドメイン/イベント/BranchEvent' },
+                  { text: 'BranchTask', link: '/詳細設計/ドメイン/イベント/BranchTask' },
+                  { text: 'NoticeBoardEvent', link: '/詳細設計/ドメイン/イベント/NoticeBoardEvent' },
+                ],
+              },
+            ],
+          },
+        ],
       },
       {
         text: 'テスト設計',
