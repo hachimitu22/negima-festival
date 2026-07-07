@@ -14,8 +14,11 @@ function createStatusView() {
     enqueueInput = options.enqueueInput;
     root = document.createElement('section');
     root.id = 'status';
+    root.setAttribute('aria-labelledby', 'status-title');
 
     elements = {
+      title: createHeading('status-title', 'プレイヤーと祭りの状態'),
+      statusItems: document.createElement('div'),
       gameTime: createParagraph('game-time'),
       loopCount: createParagraph('loop-count'),
       location: createParagraph('location'),
@@ -26,7 +29,8 @@ function createStatusView() {
       cassiopeia: createButton('cassiopeia', 'カシオペアを使う'),
     };
 
-    root.append(
+    elements.statusItems.dataset.statusItems = '';
+    elements.statusItems.append(
       elements.gameTime,
       elements.loopCount,
       elements.location,
@@ -36,6 +40,7 @@ function createStatusView() {
       elements.festivalState,
       elements.cassiopeia,
     );
+    root.append(elements.title, elements.statusItems);
     rootElement.appendChild(root);
     elements.cassiopeia.addEventListener('click', handleCassiopeiaClick);
   }
@@ -104,6 +109,13 @@ function createParagraph(id) {
   const paragraph = document.createElement('p');
   paragraph.id = id;
   return paragraph;
+}
+
+function createHeading(id, textContent) {
+  const heading = document.createElement('h2');
+  heading.id = id;
+  heading.textContent = textContent;
+  return heading;
 }
 
 function createButton(id, textContent) {
