@@ -12,6 +12,7 @@
 - sceneはタイトル、メインゲーム、会話のような大きな実行単位とし、メインゲーム内の表示切り替えは `activeLayerId` のようなlayer状態で表してください。
 - `GameEngine` に接続するrendererの公開APIは `configure`、`init`、`render`、`destroy` を基本とし、将来のcanvas rendererでも実装できる契約を維持してください。
 - renderer内部のscene viewでは必要に応じて `mount`、`init`、`update`、`destroy` を使い、`GameEngine` 向けrendererの公開APIと混同しないでください。
+- すべてのクラスとメソッドには、役割、主要な引数、戻り値を示すJSDoc形式のコメントを追加してください。
 
 ## View変更後の検証
 
