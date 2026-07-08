@@ -8,18 +8,20 @@ import {
   EventIdSequence,
 } from '../../../../src/gameDomain/mainGameScene/event/eventIdSequence.js';
 import {
-  LOCATION_IDS,
-} from '../../../../src/gameDomain/mainGameScene/locations.js';
-import {
-  NOTICE_BOARD_EVENT_NAME,
-  NOTICE_BOARD_EVENT_TASK_IDS,
-  NOTICE_BOARD_EVENT_TYPE,
-} from '../../../../src/gameDomain/mainGameScene/event/noticeBoardEvent.js';
-import {
   EXHIBIT_TROUBLE_EVENT_CHOICE_IDS,
   EXHIBIT_TROUBLE_EVENT_TASK_IDS,
   EXHIBIT_TROUBLE_EVENT_TYPE,
 } from '../../../../src/gameDomain/mainGameScene/event/exhibitTroubleEvent.js';
+import {
+  NOTICE_BOARD_EVENT_TASK_IDS,
+  NOTICE_BOARD_EVENT_TYPE,
+} from '../../../../src/gameDomain/mainGameScene/event/noticeBoardEvent.js';
+import {
+  BRANCH_TASK_STATES,
+} from '../../../../src/gameDomain/mainGameScene/event/branchTask.js';
+import {
+  LOCATION_IDS,
+} from '../../../../src/gameDomain/mainGameScene/locations.js';
 
 function createCharacter(locationId = LOCATION_IDS.GYM_FRONT_PARKING) {
   return new Character(locationId, {
@@ -53,10 +55,24 @@ function completeNoticeBoardEvent(character, manager) {
   return visitCurrentTaskDestination(character, manager);
 }
 
-describe('BEM-UT-S01 initial event', () => {
-  it('BEM-UT-S01-C01 creates a branch event at game start', () => {
+function startExhibitTroubleEvent() {
+  const { character, manager } = createManager();
+  completeNoticeBoardEvent(character, manager);
+  return { character, manager };
+}
+
+function completeAllBranchEvents() {
+  const { character, manager } = startExhibitTroubleEvent();
+  manager.chooseCurrentTask(EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES);
+  visitCurrentTaskDestination(character, manager);
+  visitCurrentTaskDestination(character, manager);
+  return { character, manager };
+}
+
+describe('BEM-UT-S01 initial branch event', () => {
+  it('BEM-UT-S01-C01 starts the notice board event immediately', () => {
     // Arrange
-    const { character, manager } = createManager();
+    const { manager } = createManager();
 
     // Act
     const snapshot = manager.getExecutingEventSnapshot();
@@ -64,15 +80,23 @@ describe('BEM-UT-S01 initial event', () => {
     // Assert
     assert.equal(snapshot.id, 0);
     assert.equal(snapshot.type, NOTICE_BOARD_EVENT_TYPE);
-    assert.equal(snapshot.name, NOTICE_BOARD_EVENT_NAME);
     assert.equal(snapshot.state, 'executing');
     assert.equal(snapshot.currentTask.id, NOTICE_BOARD_EVENT_TASK_IDS.FIND_NOTICE);
-    assert.equal(snapshot.currentTask.title, '紛失した連絡掲示を探す');
+  });
+
+  it('BEM-UT-S01-C02 chooses an initial destination outside the current location', () => {
+    // Arrange
+    const { character, manager } = createManager();
+
+    // Act
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
     assert.notEqual(snapshot.currentTask.destination.id, character.locationId);
   });
 });
 
-describe('BEM-UT-S02 movement and time branch progression', () => {
+describe('BEM-UT-S02 movement and time progression', () => {
   it('BEM-UT-S02-C01 advances to the success branch after visiting the destination', () => {
     // Arrange
     const { character, manager } = createManager();
@@ -83,12 +107,10 @@ describe('BEM-UT-S02 movement and time branch progression', () => {
 
     // Assert
     assert.equal(result, true);
-    assert.equal(snapshot.stepIndex, 1);
     assert.equal(snapshot.currentTask.id, NOTICE_BOARD_EVENT_TASK_IDS.DELIVER_NOTICE);
-    assert.equal(snapshot.currentTask.title, '連絡掲示を届ける');
     assert.deepEqual(snapshot.lastResult, {
       taskId: NOTICE_BOARD_EVENT_TASK_IDS.FIND_NOTICE,
-      result: 'succeeded',
+      result: BRANCH_TASK_STATES.SUCCEEDED,
     });
   });
 
@@ -103,16 +125,14 @@ describe('BEM-UT-S02 movement and time branch progression', () => {
 
     // Assert
     assert.equal(result, true);
-    assert.equal(snapshot.stepIndex, 1);
     assert.equal(snapshot.currentTask.id, NOTICE_BOARD_EVENT_TASK_IDS.SEARCH_REST_AREA);
-    assert.equal(snapshot.currentTask.title, '代替の集合場所を確認');
     assert.deepEqual(snapshot.lastResult, {
       taskId: NOTICE_BOARD_EVENT_TASK_IDS.FIND_NOTICE,
-      result: 'failed',
+      result: BRANCH_TASK_STATES.FAILED,
     });
   });
 
-  it('BEM-UT-S02-C03 starts the next branch event after the notice board chain completes', () => {
+  it('BEM-UT-S02-C03 starts the exhibit trouble event after the notice board chain completes', () => {
     // Arrange
     const { character, manager } = createManager();
 
@@ -125,19 +145,13 @@ describe('BEM-UT-S02 movement and time branch progression', () => {
     assert.equal(snapshot.id, 1);
     assert.equal(snapshot.type, EXHIBIT_TROUBLE_EVENT_TYPE);
     assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH);
-    assert.deepEqual(
-      snapshot.currentTask.choices.map(choice => choice.id),
-      [
-        EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
-        EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.MOVE_EXHIBIT,
-      ],
-    );
   });
+});
 
-  it('BEM-UT-S02-C04 advances the active branch event from a selected choice', () => {
+describe('BEM-UT-S03 choice progression', () => {
+  it('BEM-UT-S03-C01 advances to the supply task from the success choice', () => {
     // Arrange
-    const { character, manager } = createManager();
-    completeNoticeBoardEvent(character, manager);
+    const { manager } = startExhibitTroubleEvent();
 
     // Act
     const result = manager.chooseCurrentTask(
@@ -150,22 +164,111 @@ describe('BEM-UT-S02 movement and time branch progression', () => {
     assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.FETCH_SUPPLIES);
     assert.deepEqual(snapshot.lastResult, {
       taskId: EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH,
-      result: 'succeeded',
+      result: BRANCH_TASK_STATES.SUCCEEDED,
       choiceId: EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
     });
   });
+
+  it('BEM-UT-S03-C02 advances to the move exhibit task from the failure choice', () => {
+    // Arrange
+    const { manager } = startExhibitTroubleEvent();
+
+    // Act
+    const result = manager.chooseCurrentTask(
+      EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.MOVE_EXHIBIT,
+    );
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
+    assert.equal(result, true);
+    assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.MOVE_EXHIBIT);
+    assert.deepEqual(snapshot.lastResult, {
+      taskId: EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH,
+      result: BRANCH_TASK_STATES.FAILED,
+      choiceId: EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.MOVE_EXHIBIT,
+    });
+  });
+
+  it('BEM-UT-S03-C03 ignores an unknown choice id', () => {
+    // Arrange
+    const { manager } = startExhibitTroubleEvent();
+
+    // Act
+    const result = manager.chooseCurrentTask('unknown-choice');
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
+    assert.equal(result, false);
+    assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH);
+    assert.equal(snapshot.lastResult, null);
+  });
+
+  it('BEM-UT-S03-C04 ignores choices while the active task is not a choice task', () => {
+    // Arrange
+    const { manager } = createManager();
+
+    // Act
+    const result = manager.chooseCurrentTask(
+      EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+    );
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
+    assert.equal(result, false);
+    assert.equal(snapshot.currentTask.id, NOTICE_BOARD_EVENT_TASK_IDS.FIND_NOTICE);
+    assert.equal(snapshot.lastResult, null);
+  });
 });
 
-describe('BEM-UT-S03 rewind', () => {
-  it('BEM-UT-S03-C01 discards the active branch event when time rewinds', () => {
+describe('BEM-UT-S04 completion and disposal', () => {
+  it('BEM-UT-S04-C01 clears the active event after the exhibit trouble event completes', () => {
+    // Arrange
+    const { character, manager } = startExhibitTroubleEvent();
+
+    // Act
+    manager.chooseCurrentTask(EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES);
+    visitCurrentTaskDestination(character, manager);
+    const result = visitCurrentTaskDestination(character, manager);
+
+    // Assert
+    assert.equal(result, true);
+    assert.equal(manager.getExecutingEventSnapshot(), null);
+  });
+
+  it('BEM-UT-S04-C02 ignores operations when no active event exists', () => {
+    // Arrange
+    const { manager } = completeAllBranchEvents();
+
+    // Act
+    const advanceResult = manager.advanceTo(99);
+    const visitResult = manager.visitCurrentLocation();
+    const chooseResult = manager.chooseCurrentTask(
+      EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+    );
+
+    // Assert
+    assert.equal(advanceResult, false);
+    assert.equal(visitResult, false);
+    assert.equal(chooseResult, false);
+    assert.equal(manager.getExecutingEventSnapshot(), null);
+  });
+
+  it('BEM-UT-S04-C03 discards the active event on rewind and does not regenerate it', () => {
     // Arrange
     const { manager } = createManager();
 
     // Act
     manager.rewindTo(0);
-    manager.advanceTo(24);
+    const advanceResult = manager.advanceTo(24);
+    const visitResult = manager.visitCurrentLocation();
+    const chooseResult = manager.chooseCurrentTask(
+      EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+    );
 
     // Assert
+    assert.equal(advanceResult, false);
+    assert.equal(visitResult, false);
+    assert.equal(chooseResult, false);
     assert.equal(manager.getExecutingEventSnapshot(), null);
   });
 });

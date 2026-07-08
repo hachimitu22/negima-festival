@@ -141,6 +141,18 @@ export default withMermaid({
               {
                 text: 'PatrolTask',
                 link: '/テスト設計/単体テスト/ドメイン/イベント/PatrolTask'
+              },
+              {
+                text: 'BranchEventManager',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/BranchEventManager'
+              },
+              {
+                text: 'BranchEvent',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/BranchEvent'
+              },
+              {
+                text: 'BranchTask',
+                link: '/テスト設計/単体テスト/ドメイン/イベント/BranchTask'
               }
             ]
           }
