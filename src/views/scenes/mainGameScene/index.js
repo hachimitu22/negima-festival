@@ -1,3 +1,4 @@
+import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 import { createStatusView } from '../../statusView.js';
 import { createMapView } from './mapView.js';
 
@@ -13,10 +14,12 @@ function createMainGameSceneView(rootElement, options) {
   let mapView = null;
   let root = null;
   let elements = null;
+  let enqueueInput = null;
 
   mount(rootElement, options);
 
   function mount(rootElement, options) {
+    enqueueInput = options.enqueueInput;
     root = document.createElement('section');
     root.id = 'main-game-scene';
 
@@ -77,6 +80,7 @@ function createMainGameSceneView(rootElement, options) {
     root.remove();
     root = null;
     elements = null;
+    enqueueInput = null;
   }
 
   function updateExecutingEvents(events) {
@@ -91,6 +95,11 @@ function createMainGameSceneView(rootElement, options) {
     events.forEach(event => {
       const eventItem = getOrCreateExecutingEventItem(event);
       eventItem.querySelector('[data-event-label]').textContent = formatExecutingEvent(event);
+      updateEventChoices(
+        eventItem.querySelector('[data-event-choices]'),
+        event.currentTask?.choices ?? [],
+        enqueueInput,
+      );
 
       if (!eventItem.isConnected) {
         elements.eventList.appendChild(eventItem);
@@ -106,12 +115,14 @@ function createMainGameSceneView(rootElement, options) {
 
     const eventItem = document.createElement('li');
     const label = document.createElement('span');
+    const choices = document.createElement('menu');
 
     eventItem.id = `event-${event.id}`;
     eventItem.dataset.eventId = String(event.id);
 
     label.dataset.eventLabel = '';
-    eventItem.appendChild(label);
+    choices.dataset.eventChoices = '';
+    eventItem.append(label, choices);
 
     return eventItem;
   }
@@ -121,6 +132,53 @@ function createMainGameSceneView(rootElement, options) {
     init,
     update,
   };
+}
+
+function updateEventChoices(choiceList, choices, enqueueInput) {
+  const choiceIds = new Set(choices.map(choice => choice.id));
+
+  Array.from(choiceList.children).forEach(choiceItem => {
+    if (!choiceIds.has(choiceItem.dataset.choiceId)) {
+      choiceItem.remove();
+    }
+  });
+
+  choices.forEach(choice => {
+    const choiceItem = getOrCreateChoiceItem(choiceList, choice, enqueueInput);
+    const button = choiceItem.querySelector('[data-event-choice-button]');
+
+    if (button.textContent !== choice.title) {
+      button.textContent = choice.title;
+    }
+    if (!choiceItem.isConnected) {
+      choiceList.appendChild(choiceItem);
+    }
+  });
+
+  choiceList.hidden = choices.length === 0;
+}
+
+function getOrCreateChoiceItem(choiceList, choice, enqueueInput) {
+  const existingItem = choiceList.querySelector(`[data-choice-id="${choice.id}"]`);
+  if (existingItem) {
+    return existingItem;
+  }
+
+  const choiceItem = document.createElement('li');
+  const button = document.createElement('button');
+
+  choiceItem.dataset.choiceId = choice.id;
+  button.type = 'button';
+  button.dataset.eventChoiceButton = '';
+  button.addEventListener('click', () => {
+    enqueueInput({
+      type: INPUT_TYPES.TARGET_ACTIVATE,
+      targetId: createTargetId(TARGET_PREFIXES.BRANCH_CHOICE, choice.id),
+    });
+  });
+  choiceItem.appendChild(button);
+
+  return choiceItem;
 }
 
 function createRegion(element) {
@@ -152,6 +210,10 @@ function createHeading(id, text) {
 
 function formatExecutingEvent(event) {
   return `${event.id}: ${event.name}: ${event.description}`;
+}
+
+function createTargetId(prefix, id) {
+  return `${prefix}:${id}`;
 }
 
 export {

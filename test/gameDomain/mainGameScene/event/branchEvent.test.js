@@ -13,6 +13,12 @@ const TASK_IDS = Object.freeze({
   SUCCESS: 'success',
   FAILURE: 'failure',
   FINAL: 'final',
+  DECIDE: 'decide',
+});
+
+const CHOICE_IDS = Object.freeze({
+  SUCCESS: 'success-choice',
+  FAILURE: 'failure-choice',
 });
 
 function createLocation(id, name) {
@@ -78,6 +84,49 @@ function createEvent() {
     name: 'Test branch event',
     tasks: createTasks(),
     startTaskId: TASK_IDS.ROOT,
+    startHours: 0,
+  });
+}
+
+function createChoiceEvent() {
+  return new BranchEvent(8, {
+    type: 'test-choice-branch',
+    name: 'Test choice branch event',
+    tasks: [
+      {
+        id: TASK_IDS.DECIDE,
+        title: 'Decide task',
+        choices: [
+          {
+            id: CHOICE_IDS.SUCCESS,
+            title: 'Choose success',
+            result: BRANCH_TASK_STATES.SUCCEEDED,
+          },
+          {
+            id: CHOICE_IDS.FAILURE,
+            title: 'Choose failure',
+            result: BRANCH_TASK_STATES.FAILED,
+          },
+        ],
+        branches: {
+          succeeded: TASK_IDS.SUCCESS,
+          failed: TASK_IDS.FAILURE,
+        },
+      },
+      {
+        id: TASK_IDS.SUCCESS,
+        title: 'Success task',
+        destination: createLocationB(),
+        durationHours: 3,
+      },
+      {
+        id: TASK_IDS.FAILURE,
+        title: 'Failure task',
+        destination: createLocationC(),
+        durationHours: 4,
+      },
+    ],
+    startTaskId: TASK_IDS.DECIDE,
     startHours: 0,
   });
 }
@@ -172,5 +221,61 @@ describe('BE-UT-S02 multi-step chain', () => {
       taskId: TASK_IDS.SUCCESS,
       result: BRANCH_TASK_STATES.FAILED,
     });
+  });
+});
+
+describe('BE-UT-S03 choice branches', () => {
+  it('BE-UT-S03-C01 exposes choices in the current task snapshot', () => {
+    // Arrange
+    const event = createChoiceEvent();
+
+    // Act
+    const snapshot = event.getSnapshot(0);
+
+    // Assert
+    assert.equal(snapshot.currentTask.id, TASK_IDS.DECIDE);
+    assert.deepEqual(snapshot.currentTask.choices, [
+      {
+        id: CHOICE_IDS.SUCCESS,
+        title: 'Choose success',
+      },
+      {
+        id: CHOICE_IDS.FAILURE,
+        title: 'Choose failure',
+      },
+    ]);
+  });
+
+  it('BE-UT-S03-C02 advances to the selected success branch', () => {
+    // Arrange
+    const event = createChoiceEvent();
+
+    // Act
+    const result = event.choose(CHOICE_IDS.SUCCESS, 1);
+    const snapshot = event.getSnapshot(1);
+
+    // Assert
+    assert.equal(result, true);
+    assert.equal(snapshot.currentTask.id, TASK_IDS.SUCCESS);
+    assert.deepEqual(snapshot.lastResult, {
+      taskId: TASK_IDS.DECIDE,
+      result: BRANCH_TASK_STATES.SUCCEEDED,
+      choiceId: CHOICE_IDS.SUCCESS,
+    });
+  });
+
+  it('BE-UT-S03-C03 ignores an unknown choice id', () => {
+    // Arrange
+    const event = createChoiceEvent();
+
+    // Act
+    const result = event.choose('unknown-choice', 1);
+    const snapshot = event.getSnapshot(1);
+
+    // Assert
+    assert.equal(result, false);
+    assert.equal(snapshot.currentTask.id, TASK_IDS.DECIDE);
+    assert.equal(snapshot.stepIndex, 0);
+    assert.equal(snapshot.lastResult, null);
   });
 });

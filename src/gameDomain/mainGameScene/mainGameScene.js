@@ -361,6 +361,12 @@ class MainGameScene {
       return;
     }
 
+    const branchChoiceId = getTargetValue(targetId, TARGET_PREFIXES.BRANCH_CHOICE);
+    if (branchChoiceId !== null) {
+      this.#branchEventManager.chooseCurrentTask(branchChoiceId);
+      return;
+    }
+
     if (targetId === TARGET_PREFIXES.CASSIOPEIA) {
       const result = this.#useCassiopeia();
       if (result) {

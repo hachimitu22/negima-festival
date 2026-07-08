@@ -8,12 +8,14 @@ export default withMermaid({
     nav: [
       { text: 'ホーム', link: '/' },
       { text: '文書索引', link: '/README' },
+      { text: '開発ルール', link: '/開発ルール' },
       { text: '実装状況', link: '/実装状況' },
       { text: 'ゲーム概要', link: '/ゲーム概要' }
     ],
 
     sidebar: [
       { text: '文書索引', link: '/README' },
+      { text: '開発ルール', link: '/開発ルール' },
       { text: '実装状況', link: '/実装状況' },
       { text: 'ゲーム概要', link: '/ゲーム概要' },
       {
@@ -52,6 +54,7 @@ export default withMermaid({
               { text: '同行イベント', link: '/基本設計/イベント/同行イベント' },
               { text: '見回りイベント', link: '/基本設計/イベント/見回りイベント' },
               { text: '連絡掲示イベント', link: '/基本設計/イベント/連絡掲示イベント' },
+              { text: '展示トラブル対応イベント', link: '/基本設計/イベント/展示トラブル対応イベント' },
             ],
           },
         ],
@@ -107,6 +110,7 @@ export default withMermaid({
                   { text: 'BranchEvent', link: '/詳細設計/ドメイン/イベント/BranchEvent' },
                   { text: 'BranchTask', link: '/詳細設計/ドメイン/イベント/BranchTask' },
                   { text: 'NoticeBoardEvent', link: '/詳細設計/ドメイン/イベント/NoticeBoardEvent' },
+                  { text: 'ExhibitTroubleEvent', link: '/詳細設計/ドメイン/イベント/ExhibitTroubleEvent' },
                 ],
               },
             ],

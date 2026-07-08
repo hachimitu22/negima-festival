@@ -10,6 +10,10 @@ const BRANCH_EVENT_STATES = Object.freeze({
 
 const BRANCH_EVENT_TYPE = 'branch';
 const BRANCH_EVENT_NAME = 'Branch task';
+const BRANCH_TASK_KINDS = Object.freeze({
+  LOCATION: 'location',
+  CHOICE: 'choice',
+});
 
 /**
  * 成功または失敗に応じて次のタスクへ進む分岐イベント。
@@ -80,6 +84,9 @@ class BranchEvent {
     if (!this.isExecuting()) {
       return false;
     }
+    if (!this.#currentTask) {
+      return false;
+    }
 
     const didVisit = this.#currentTask.visitLocation(locationId, currentHours);
     if (!didVisit) {
@@ -101,6 +108,9 @@ class BranchEvent {
     if (!this.isExecuting()) {
       return false;
     }
+    if (!this.#currentTask) {
+      return false;
+    }
 
     const didFail = this.#currentTask.advanceTo(currentHours);
     if (!didFail) {
@@ -108,6 +118,37 @@ class BranchEvent {
     }
 
     this.#advanceFromResolvedTask(BRANCH_TASK_STATES.FAILED, currentHours);
+    return true;
+  }
+
+  /**
+   * 現在タスクの選択肢を選び、対応する分岐へ進める。
+   *
+   * @public
+   * @param {string} choiceId - 選択肢ID。
+   * @param {number} currentHours - 現在のゲーム時刻。
+   * @returns {boolean} 選択によって分岐が進んだ場合はtrue。
+   */
+  choose(choiceId, currentHours) {
+    if (!this.isExecuting()) {
+      return false;
+    }
+
+    const currentDefinition = this.#getCurrentTaskDefinition();
+    if (currentDefinition?.kind !== BRANCH_TASK_KINDS.CHOICE) {
+      return false;
+    }
+
+    const choice = currentDefinition.choices.find(candidate => (
+      candidate.id === choiceId
+    ));
+    if (!choice) {
+      return false;
+    }
+
+    this.#advanceFromResolvedTask(choice.result, currentHours, {
+      choiceId: choice.id,
+    });
     return true;
   }
 
@@ -139,11 +180,12 @@ class BranchEvent {
    * @returns {Object} イベント状態snapshot。
    */
   getSnapshot(currentHours) {
-    const currentTaskSnapshot = this.#currentTask
+    const currentDefinition = this.#getCurrentTaskDefinition();
+    const currentTaskSnapshot = currentDefinition
       ? createCurrentTaskSnapshot(
         this.#currentTaskId,
-        this.#getCurrentTaskDefinition(),
-        this.#currentTask.getSnapshot(currentHours),
+        currentDefinition,
+        this.#createCurrentTaskSnapshot(currentDefinition, currentHours),
       )
       : null;
 
@@ -174,7 +216,7 @@ class BranchEvent {
    * @param {number} currentHours - 次タスクの開始時刻。
    * @returns {void}
    */
-  #advanceFromResolvedTask(result, currentHours) {
+  #advanceFromResolvedTask(result, currentHours, lastResultMetadata = {}) {
     const completedTaskId = this.#currentTaskId;
     const currentDefinition = this.#getCurrentTaskDefinition();
     const nextTaskId = currentDefinition.branches[result] ?? null;
@@ -183,6 +225,7 @@ class BranchEvent {
     this.#lastResult = {
       taskId: completedTaskId,
       result,
+      ...lastResultMetadata,
     };
 
     if (nextTaskId) {
@@ -206,6 +249,10 @@ class BranchEvent {
    */
   #createTask(taskId, startHours) {
     const definition = this.#taskDefinitions.get(taskId);
+    if (definition.kind === BRANCH_TASK_KINDS.CHOICE) {
+      return null;
+    }
+
     return new BranchTask({
       destination: definition.destination,
       durationHours: definition.durationHours,
@@ -221,6 +268,28 @@ class BranchEvent {
    */
   #getCurrentTaskDefinition() {
     return this.#taskDefinitions.get(this.#currentTaskId) ?? null;
+  }
+
+  /**
+   * 現在タスク定義からsnapshotに公開するタスク状態を作る。
+   *
+   * @private
+   * @param {Object} definition - 現在タスク定義。
+   * @param {number} currentHours - 現在のゲーム時刻。
+   * @returns {Object} タスクsnapshot。
+   */
+  #createCurrentTaskSnapshot(definition, currentHours) {
+    if (definition.kind === BRANCH_TASK_KINDS.CHOICE) {
+      return {
+        state: BRANCH_TASK_STATES.EXECUTING,
+        choices: definition.choices.map(choice => ({
+          id: choice.id,
+          title: choice.title,
+        })),
+      };
+    }
+
+    return this.#currentTask.getSnapshot(currentHours);
   }
 }
 
@@ -277,6 +346,17 @@ function createTaskDefinition(task) {
   if (typeof task.title !== 'string' || task.title.length === 0) {
     throw new TypeError('Branch event task must have a title.');
   }
+  const choices = createChoices(task.choices);
+  if (choices.length > 0) {
+    return {
+      id: task.id,
+      title: task.title,
+      kind: BRANCH_TASK_KINDS.CHOICE,
+      choices,
+      branches: createBranches(task.branches),
+    };
+  }
+
   if (!Number.isFinite(task.durationHours) || task.durationHours <= 0) {
     throw new RangeError('Branch event task durationHours must be greater than zero.');
   }
@@ -291,6 +371,7 @@ function createTaskDefinition(task) {
   return {
     id: task.id,
     title: task.title,
+    kind: BRANCH_TASK_KINDS.LOCATION,
     destination: {
       id: task.destination.id,
       name: task.destination.name,
@@ -298,6 +379,45 @@ function createTaskDefinition(task) {
     durationHours: task.durationHours,
     branches: createBranches(task.branches),
   };
+}
+
+/**
+ * 外部から渡された選択肢定義を検証し、内部保持用の定義へ変換する。
+ *
+ * @private
+ * @param {Array<Object>} [choices] - 選択肢定義配列。
+ * @returns {Array<Object>} 検証済みの選択肢定義。
+ */
+function createChoices(choices = []) {
+  if (choices === undefined || choices === null) {
+    return [];
+  }
+  if (!Array.isArray(choices)) {
+    throw new TypeError('Branch event task choices must be an array.');
+  }
+
+  const choiceIds = new Set();
+  return choices.map(choice => {
+    if (!choice || typeof choice.id !== 'string' || choice.id.length === 0) {
+      throw new TypeError('Branch event choice must have an id.');
+    }
+    if (choiceIds.has(choice.id)) {
+      throw new Error(`Duplicate branch choice id: ${choice.id}`);
+    }
+    if (typeof choice.title !== 'string' || choice.title.length === 0) {
+      throw new TypeError('Branch event choice must have a title.');
+    }
+    if (!isResolvableBranchResult(choice.result)) {
+      throw new TypeError('Branch event choice result must be succeeded or failed.');
+    }
+
+    choiceIds.add(choice.id);
+    return {
+      id: choice.id,
+      title: choice.title,
+      result: choice.result,
+    };
+  });
 }
 
 /**
@@ -335,6 +455,18 @@ function normalizeBranchTaskId(taskId) {
   }
 
   return taskId;
+}
+
+/**
+ * 分岐結果として扱える値かどうかを返す。
+ *
+ * @private
+ * @param {string} result - 検証対象の分岐結果。
+ * @returns {boolean} 分岐結果の場合はtrue。
+ */
+function isResolvableBranchResult(result) {
+  return result === BRANCH_TASK_STATES.SUCCEEDED
+    || result === BRANCH_TASK_STATES.FAILED;
 }
 
 /**
@@ -429,6 +561,16 @@ function createBranchDescription({
   }
 
   const stepNumber = stepIndex + 1;
+  if (currentTask.choices) {
+    return [
+      `Step ${stepNumber}/${stepCount}: ${currentTask.title}.`,
+      'Choose an option.',
+      lastResultDescription.trimStart(),
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
   return [
     `Step ${stepNumber}/${stepCount}: ${currentTask.title}.`,
     `Go to ${currentTask.destination.name}`,

@@ -1,4 +1,10 @@
 import { createNoticeBoardEvent } from './noticeBoardEvent.js';
+import { createExhibitTroubleEvent } from './exhibitTroubleEvent.js';
+
+const BRANCH_EVENT_FACTORIES = [
+  createNoticeBoardEvent,
+  createExhibitTroubleEvent,
+];
 
 /**
  * メインゲームシーンと実行中の分岐イベントを接続する管理クラス。
@@ -10,6 +16,7 @@ class BranchEventManager {
   #eventIdSequence;
   #activeEvent;
   #currentHours;
+  #nextEventIndex;
 
   /**
    * 分岐イベント管理を初期化する。
@@ -23,7 +30,8 @@ class BranchEventManager {
     this.#character = character;
     this.#eventIdSequence = eventIdSequence;
     this.#currentHours = 0;
-    this.#activeEvent = this.#createEvent(this.#currentHours);
+    this.#nextEventIndex = 0;
+    this.#activeEvent = this.#createNextEvent(this.#currentHours);
   }
 
   /**
@@ -64,6 +72,23 @@ class BranchEventManager {
   }
 
   /**
+   * 実行中の分岐イベントへ選択肢の選択を通知する。
+   *
+   * @public
+   * @param {string} choiceId - 選択肢ID。
+   * @returns {boolean} 選択によって分岐が進んだ場合はtrue。
+   */
+  chooseCurrentTask(choiceId) {
+    if (!this.#activeEvent) {
+      return false;
+    }
+
+    const didChoose = this.#activeEvent.choose(choiceId, this.#currentHours);
+    this.#clearCompletedEvent();
+    return didChoose;
+  }
+
+  /**
    * 時間巻き戻しに伴い、実行中の分岐イベントを破棄する。
    *
    * @public
@@ -93,7 +118,7 @@ class BranchEventManager {
    */
   #clearCompletedEvent() {
     if (this.#activeEvent?.isCompleted()) {
-      this.#activeEvent = null;
+      this.#activeEvent = this.#createNextEvent(this.#currentHours);
     }
   }
 
@@ -102,10 +127,16 @@ class BranchEventManager {
    *
    * @private
    * @param {number} startHours - イベント開始時刻。
-   * @returns {BranchEvent} 生成した分岐イベント。
+   * @returns {BranchEvent|null} 生成した分岐イベント。後続がない場合はnull。
    */
-  #createEvent(startHours) {
-    return createNoticeBoardEvent(this.#eventIdSequence.next(), {
+  #createNextEvent(startHours) {
+    const createEvent = BRANCH_EVENT_FACTORIES[this.#nextEventIndex];
+    if (!createEvent) {
+      return null;
+    }
+
+    this.#nextEventIndex += 1;
+    return createEvent(this.#eventIdSequence.next(), {
       currentLocationId: this.#character.locationId,
       startHours,
     });

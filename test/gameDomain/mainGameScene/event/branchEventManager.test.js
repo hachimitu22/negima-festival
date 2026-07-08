@@ -15,6 +15,11 @@ import {
   NOTICE_BOARD_EVENT_TASK_IDS,
   NOTICE_BOARD_EVENT_TYPE,
 } from '../../../../src/gameDomain/mainGameScene/event/noticeBoardEvent.js';
+import {
+  EXHIBIT_TROUBLE_EVENT_CHOICE_IDS,
+  EXHIBIT_TROUBLE_EVENT_TASK_IDS,
+  EXHIBIT_TROUBLE_EVENT_TYPE,
+} from '../../../../src/gameDomain/mainGameScene/event/exhibitTroubleEvent.js';
 
 function createCharacter(locationId = LOCATION_IDS.GYM_FRONT_PARKING) {
   return new Character(locationId, {
@@ -40,6 +45,12 @@ function visitCurrentTaskDestination(character, manager) {
   const snapshot = manager.getExecutingEventSnapshot();
   character.moveToLocation(snapshot.currentTask.destination.id);
   return manager.visitCurrentLocation();
+}
+
+function completeNoticeBoardEvent(character, manager) {
+  visitCurrentTaskDestination(character, manager);
+  visitCurrentTaskDestination(character, manager);
+  return visitCurrentTaskDestination(character, manager);
 }
 
 describe('BEM-UT-S01 initial event', () => {
@@ -101,18 +112,47 @@ describe('BEM-UT-S02 movement and time branch progression', () => {
     });
   });
 
-  it('BEM-UT-S02-C03 removes the event after the chain completes', () => {
+  it('BEM-UT-S02-C03 starts the next branch event after the notice board chain completes', () => {
     // Arrange
     const { character, manager } = createManager();
 
     // Act
-    visitCurrentTaskDestination(character, manager);
-    visitCurrentTaskDestination(character, manager);
-    const result = visitCurrentTaskDestination(character, manager);
+    const result = completeNoticeBoardEvent(character, manager);
+    const snapshot = manager.getExecutingEventSnapshot();
 
     // Assert
     assert.equal(result, true);
-    assert.equal(manager.getExecutingEventSnapshot(), null);
+    assert.equal(snapshot.id, 1);
+    assert.equal(snapshot.type, EXHIBIT_TROUBLE_EVENT_TYPE);
+    assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH);
+    assert.deepEqual(
+      snapshot.currentTask.choices.map(choice => choice.id),
+      [
+        EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+        EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.MOVE_EXHIBIT,
+      ],
+    );
+  });
+
+  it('BEM-UT-S02-C04 advances the active branch event from a selected choice', () => {
+    // Arrange
+    const { character, manager } = createManager();
+    completeNoticeBoardEvent(character, manager);
+
+    // Act
+    const result = manager.chooseCurrentTask(
+      EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+    );
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
+    assert.equal(result, true);
+    assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.FETCH_SUPPLIES);
+    assert.deepEqual(snapshot.lastResult, {
+      taskId: EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH,
+      result: 'succeeded',
+      choiceId: EXHIBIT_TROUBLE_EVENT_CHOICE_IDS.FETCH_SUPPLIES,
+    });
   });
 });
 

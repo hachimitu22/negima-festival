@@ -10,6 +10,7 @@
 - [BranchEventManager（分岐イベント管理）](BranchEventManager.md)
 - [BranchTask（分岐タスク）](BranchTask.md)
 - [NoticeBoardEvent（連絡掲示イベント定義）](NoticeBoardEvent.md)
+- [ExhibitTroubleEvent](ExhibitTroubleEvent.md)
 - [PatrolEvent（見回りイベント）](PatrolEvent.md)
 - [PatrolEventManager（見回りイベント管理）](PatrolEventManager.md)
 - [PatrolTask（見回りタスク）](PatrolTask.md)
