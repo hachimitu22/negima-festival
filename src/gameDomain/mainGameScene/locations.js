@@ -1,4 +1,16 @@
 /**
+ * マップの横マス数。
+ * @public
+ */
+const MAP_GRID_WIDTH = 32;
+
+/**
+ * マップの縦マス数。
+ * @public
+ */
+const MAP_GRID_HEIGHT = 32;
+
+/**
  * 位置 ID 定数。
  * @public
  */
@@ -39,33 +51,35 @@ const LOCATION_GROUPS = {
   OUTDOOR: '屋外',
 };
 
+const L = LOCATION_IDS;
+
 /**
  * 全位置データ。
  * @public
  */
 const LOCATIONS = [
-  { id: LOCATION_IDS.LIBRARY_ROOM                 , name: '図書室'         , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室前廊下'] },
-  { id: LOCATION_IDS.LIBRARY_ROOM_FRONT_CORRIDOR  , name: '図書室前廊下'   , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室', '職員室', 'ホール'] },
-  { id: LOCATION_IDS.STAFF_ROOM                   , name: '職員室'         , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室前廊下'] },
-  { id: LOCATION_IDS.HALL                         , name: 'ホール'         , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['図書室前廊下', '女子トイレ', '保健室前廊下', '3-A前廊下', '別クラス廊下', '体育館前広場'] },
-  { id: LOCATION_IDS.GIRLS_BATHROOM               , name: '女子トイレ'     , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['ホール'] },
-  { id: LOCATION_IDS.HEALTH_ROOM_FRONT_CORRIDOR   , name: '保健室前廊下'   , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['ホール', '保健室', '別クラス廊下'] },
-  { id: LOCATION_IDS.HEALTH_ROOM                  , name: '保健室'         , group: LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, destinations: ['保健室前廊下'] },
-  { id: LOCATION_IDS.CLASSROOM_3A_FRONT_CORRIDOR  , name: '3-A前廊下'      , group: LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, destinations: ['ホール', '3-A教室', '別クラス廊下'] },
-  { id: LOCATION_IDS.CLASSROOM_3A                 , name: '3-A教室'        , group: LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, destinations: ['3-A前廊下'] },
-  { id: LOCATION_IDS.OTHER_CLASS_CORRIDOR         , name: '別クラス廊下'   , group: LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, destinations: ['ホール', '3-A前廊下', '保健室前廊下', '屋上'] },
-  { id: LOCATION_IDS.ROOF                         , name: '屋上'           , group: LOCATION_GROUPS.ROOFTOP, destinations: ['別クラス廊下'] },
-  { id: LOCATION_IDS.GYM_ARENA                    , name: '体育館アリーナ' , group: LOCATION_GROUPS.GYM, destinations: ['体育用具室', '更衣室', '体育館前広場'] },
-  { id: LOCATION_IDS.GYM_EQUIPMENT_ROOM           , name: '体育用具室'     , group: LOCATION_GROUPS.GYM, destinations: ['体育館アリーナ'] },
-  { id: LOCATION_IDS.GYM_CHANGING_ROOM            , name: '更衣室'         , group: LOCATION_GROUPS.GYM, destinations: ['体育館アリーナ'] },
-  { id: LOCATION_IDS.GYM_FRONT_PARKING            , name: '体育館前広場'   , group: LOCATION_GROUPS.OUTDOOR, destinations: ['ホール', '体育館アリーナ', '休憩所', 'グラウンド'] },
-  { id: LOCATION_IDS.SCHOOL_GROUND                , name: 'グラウンド'     , group: LOCATION_GROUPS.OUTDOOR, destinations: ['体育館前広場', '食堂街'] },
-  { id: LOCATION_IDS.FOOD_STREET                  , name: '食堂街'         , group: LOCATION_GROUPS.OUTDOOR, destinations: ['グラウンド', 'クラブ棟', '教会前'] },
-  { id: LOCATION_IDS.CLUB_BUILDING                , name: 'クラブ棟'       , group: LOCATION_GROUPS.OUTDOOR, destinations: ['食堂街', '世界樹', 'ダビデ広場'] },
-  { id: LOCATION_IDS.WORLD_TREE                   , name: '世界樹'         , group: LOCATION_GROUPS.OUTDOOR, destinations: ['クラブ棟'] },
-  { id: LOCATION_IDS.REST_AREA                    , name: '休憩所'         , group: LOCATION_GROUPS.OUTDOOR, destinations: ['体育館前広場', '教会前'] },
-  { id: LOCATION_IDS.CHURCH_FRONT                 , name: '教会前'         , group: LOCATION_GROUPS.OUTDOOR, destinations: ['食堂街', '休憩所', 'ダビデ広場'] },
-  { id: LOCATION_IDS.DAVID_PLAZA                  , name: 'ダビデ広場'     , group: LOCATION_GROUPS.OUTDOOR, destinations: ['クラブ棟', '教会前'] },
+  createLocation(L.ROOF, '屋上', LOCATION_GROUPS.ROOFTOP, [L.OTHER_CLASS_CORRIDOR], { x: 12, y: 0, width: 4, height: 3 }),
+  createLocation(L.OTHER_CLASS_CORRIDOR, '別クラス廊下', LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, [L.HALL, L.CLASSROOM_3A_FRONT_CORRIDOR, L.HEALTH_ROOM_FRONT_CORRIDOR, L.ROOF], { x: 12, y: 3, width: 6, height: 4 }),
+  createLocation(L.CLASSROOM_3A_FRONT_CORRIDOR, '3-A前廊下', LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, [L.HALL, L.CLASSROOM_3A, L.OTHER_CLASS_CORRIDOR], { x: 18, y: 4, width: 4, height: 4 }),
+  createLocation(L.CLASSROOM_3A, '3-A教室', LOCATION_GROUPS.SCHOOL_SECOND_FLOOR, [L.CLASSROOM_3A_FRONT_CORRIDOR], { x: 22, y: 4, width: 4, height: 4 }),
+  createLocation(L.HEALTH_ROOM, '保健室', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.HEALTH_ROOM_FRONT_CORRIDOR], { x: 4, y: 4, width: 4, height: 4 }),
+  createLocation(L.HEALTH_ROOM_FRONT_CORRIDOR, '保健室前廊下', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.HALL, L.HEALTH_ROOM, L.OTHER_CLASS_CORRIDOR], { x: 8, y: 4, width: 4, height: 4 }),
+  createLocation(L.HALL, 'ホール', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.LIBRARY_ROOM_FRONT_CORRIDOR, L.GIRLS_BATHROOM, L.HEALTH_ROOM_FRONT_CORRIDOR, L.CLASSROOM_3A_FRONT_CORRIDOR, L.OTHER_CLASS_CORRIDOR, L.GYM_FRONT_PARKING], { x: 12, y: 7, width: 6, height: 5 }),
+  createLocation(L.LIBRARY_ROOM_FRONT_CORRIDOR, '図書室前廊下', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.LIBRARY_ROOM, L.STAFF_ROOM, L.HALL], { x: 18, y: 8, width: 5, height: 3 }),
+  createLocation(L.LIBRARY_ROOM, '図書室', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.LIBRARY_ROOM_FRONT_CORRIDOR], { x: 23, y: 8, width: 4, height: 3 }),
+  createLocation(L.GIRLS_BATHROOM, '女子トイレ', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.HALL], { x: 8, y: 10, width: 4, height: 3 }),
+  createLocation(L.STAFF_ROOM, '職員室', LOCATION_GROUPS.SCHOOL_FIRST_FLOOR, [L.LIBRARY_ROOM_FRONT_CORRIDOR], { x: 18, y: 11, width: 4, height: 3 }),
+  createLocation(L.GYM_ARENA, '体育館アリーナ', LOCATION_GROUPS.GYM, [L.GYM_EQUIPMENT_ROOM, L.GYM_CHANGING_ROOM, L.GYM_FRONT_PARKING], { x: 7, y: 14, width: 6, height: 5 }),
+  createLocation(L.GYM_FRONT_PARKING, '体育館前広場', LOCATION_GROUPS.OUTDOOR, [L.HALL, L.GYM_ARENA, L.REST_AREA, L.SCHOOL_GROUND], { x: 13, y: 12, width: 5, height: 4 }),
+  createLocation(L.SCHOOL_GROUND, 'グラウンド', LOCATION_GROUPS.OUTDOOR, [L.GYM_FRONT_PARKING, L.FOOD_STREET], { x: 18, y: 14, width: 5, height: 3 }),
+  createLocation(L.GYM_EQUIPMENT_ROOM, '体育用具室', LOCATION_GROUPS.GYM, [L.GYM_ARENA], { x: 7, y: 19, width: 3, height: 3 }),
+  createLocation(L.GYM_CHANGING_ROOM, '更衣室', LOCATION_GROUPS.GYM, [L.GYM_ARENA], { x: 10, y: 19, width: 3, height: 3 }),
+  createLocation(L.REST_AREA, '休憩所', LOCATION_GROUPS.OUTDOOR, [L.GYM_FRONT_PARKING, L.CHURCH_FRONT], { x: 13, y: 16, width: 4, height: 5 }),
+  createLocation(L.FOOD_STREET, '食堂街', LOCATION_GROUPS.OUTDOOR, [L.SCHOOL_GROUND, L.CLUB_BUILDING, L.CHURCH_FRONT], { x: 21, y: 17, width: 4, height: 7 }),
+  createLocation(L.CHURCH_FRONT, '教会前', LOCATION_GROUPS.OUTDOOR, [L.FOOD_STREET, L.REST_AREA, L.DAVID_PLAZA], { x: 17, y: 20, width: 4, height: 4 }),
+  createLocation(L.DAVID_PLAZA, 'ダビデ広場', LOCATION_GROUPS.OUTDOOR, [L.CLUB_BUILDING, L.CHURCH_FRONT], { x: 17, y: 24, width: 4, height: 4 }),
+  createLocation(L.CLUB_BUILDING, 'クラブ棟', LOCATION_GROUPS.OUTDOOR, [L.FOOD_STREET, L.WORLD_TREE, L.DAVID_PLAZA], { x: 21, y: 24, width: 4, height: 4 }),
+  createLocation(L.WORLD_TREE, '世界樹', LOCATION_GROUPS.OUTDOOR, [L.CLUB_BUILDING], { x: 25, y: 24, width: 3, height: 4 }),
 ];
 
 /**
@@ -88,10 +102,31 @@ function findLocationByName(locationName) {
   return LOCATIONS.find(location => location.name === locationName) ?? null;
 }
 
+/**
+ * 場所定義オブジェクトを作成する。
+ * @param {string} id - 場所ID。
+ * @param {string} name - 表示名。
+ * @param {string} group - 場所グループ。
+ * @param {Array<string>} destinations - 移動先場所ID配列。
+ * @param {Object} area - マップ上の矩形範囲。
+ * @returns {Object} 場所定義。
+ */
+function createLocation(id, name, group, destinations, area) {
+  return {
+    id,
+    name,
+    group,
+    destinations,
+    area,
+  };
+}
+
 export {
   LOCATION_IDS,
   LOCATION_GROUPS,
   LOCATIONS,
+  MAP_GRID_HEIGHT,
+  MAP_GRID_WIDTH,
   findLocation,
   findLocationByName,
 };

@@ -70,6 +70,8 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 - [BranchTask（分岐タスク）](単体テスト/ドメイン/イベント/BranchTask.md)
 - [BranchEvent（分岐イベント）](単体テスト/ドメイン/イベント/BranchEvent.md)
 - [BranchEventManager（分岐イベント管理）](単体テスト/ドメイン/イベント/BranchEventManager.md)
+- [Actor（登場人物）](単体テスト/ドメイン/シーン/Actor.md)
+- [GridMap（グリッドマップ）](単体テスト/ドメイン/マップ/GridMap.md)
 
 ## 統合テスト
 

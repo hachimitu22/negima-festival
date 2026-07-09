@@ -12,7 +12,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 ## 目的
 
-麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、マップ、継続イベントを更新する。
+麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
 会話の開始条件を判定し、一時的な`ConversationScene`を生成する。
 
 ## 所有する状態
@@ -21,8 +21,8 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | ------------------------- | ------------------------------------------------ |
 | `gameTime`                | 現在時間、終了時間、時間倍率、終了状態           |
 | `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
-| `character`               | プレイヤーの現在地、MP、MahoPayポイント          |
-| `actors`                  | 生徒31人と教師2人                                |
+| `character`               | プレイヤーの現在地、マップ座標、移動状態、MP、MahoPayポイント |
+| `actors`                  | 生徒31人と教師2人の現在地、マップ座標、移動状態 |
 | `activeLayerId`           | メインゲーム内で表示するlayer                    |
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
 | `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
@@ -45,12 +45,12 @@ class MainGameScene {
 
 1. input全体から会話開始を成立させるactor入力を探す。
 2. 成立した場合は`ConversationScene`を生成してpushし、直ちに終了する。
-3. 会話へ遷移しなかった場合だけ、場所移動とカシオペア入力を処理する。
-4. 場所移動が成立した場合は、`PatrolEventManager`へ現在地の訪問を通知する。
-5. frame経過量からゲーム時間を進める。
-6. 更新後のゲーム時間を`PatrolEventManager`へ通知する。
-7. 経過ゲーム時間を含むcontextで`Character`を更新する。
-8. 同じcontextで全`Actor`を更新する。
+3. 会話へ遷移しなかった場合だけ、マップ座標クリック、イベント選択、カシオペア入力を処理する。
+4. frame経過量からゲーム時間を進める。
+5. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
+6. 経過ゲーム時間と実時間deltaを含むcontextで`Character`を更新する。
+7. 同じcontextで全`Actor`を更新する。
+8. `Character`が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -61,11 +61,25 @@ class MainGameScene {
 | target                  | 処理                             |
 | ----------------------- | -------------------------------- |
 | `actor:<actorId>`       | 会話開始条件を判定する           |
-| `location:<locationId>` | 有効な場所へプレイヤーを移動する |
+| `map-position:<x>,<y>`  | マップ座標へプレイヤーを移動する |
 | `cassiopeia`            | MP条件を満たす場合に時間を戻す   |
 
-同行中に場所移動が成立した場合は、同伴者も同じlocationへ移動する。
-見回り中に場所移動が成立した場合は、`PatrolEventManager.visitCurrentLocation()`を呼ぶ。
+`map-position`の`x`と`y`は32x32グリッド上の連続座標とする。
+目的地が場所に属さない、または壁で到達できない場合は移動を開始しない。
+移動中に別の`map-position`入力を受けた場合は、現在座標から目的地まで経路を引き直す。
+同行中にプレイヤーの移動経路が変わった場合は、同伴者も同じ目的地へ移動させる。
+
+## グリッドマップ移動
+
+- マップは32x32マスで、場所定義が矩形領域を持つ。
+- 通行可能マスは場所領域だけとし、場所に属さないマスは通行不可とする。
+- 同一場所内の隣接マス間は通行できる。
+- 異なる場所間の隣接マスは、双方が接続済みの場合だけ通行できる。
+- 経路探索はA*で行い、探索後に通行可能な直線へ圧縮したwaypoint列へ変換する。
+- 移動速度は4マス/秒相当の固定値で、ゲーム内時間倍率には連動しない。
+- 現在地はキャラクター座標が所属する場所に入った時点で更新する。
+- 訪問判定はプレイヤーの現在地が変わった時点で行う。
+- Actorの自動移動は、選ばれた移動先場所内のランダムなセル中心を目的地として経路を作成する。
 
 ## 会話シーンの生成
 
@@ -135,16 +149,23 @@ class MainGameScene {
   },
   character: {
     location,
+    position,
+    movement,
     magicPower,
     mahoPayPoints,
   },
   actors,
   companion,
+  map,
   mapLocations,
   executingEvents,
 }
 ```
 
+- `map`には`width`、`height`、場所定義、壁描画用境界を含める。
+- `mapLocations`は互換用に場所配列を保持する。
+- `character.position`と`actors[].position`は32x32グリッド上の連続座標とする。
+- `movement`は移動中だけ目的地、waypoint、速度を含み、停止中は`null`とする。
 - `actors`には各actorのsnapshotと`isTalkable`を含める。
 - `companion`は同行中だけ同伴者snapshot、それ以外は`null`とする。
 - `executingEvents`は見回り、配達または同行の順で実行中イベントを格納し、0件から2件とする。

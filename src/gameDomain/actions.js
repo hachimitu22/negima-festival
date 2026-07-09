@@ -20,6 +20,7 @@ const INPUT_TYPES = {
  * @property {string} CASSIOPEIA - カシオペア操作パネル用プレフィックス
  * @property {string} CONVERSATION_SCENE - 会話シーン遷移用プレフィックス
  * @property {string} LOCATION - ロケーション移動用プレフィックス
+ * @property {string} MAP_POSITION - マップ座標移動用プレフィックス
  * @property {string} ACTOR - キャラクターアクター用プレフィックス
  * @property {string} BRANCH_CHOICE - 分岐イベント選択肢用プレフィックス
  */
@@ -27,6 +28,7 @@ const TARGET_PREFIXES = {
   CASSIOPEIA: 'cassiopeia',
   CONVERSATION_SCENE: 'conversation',
   LOCATION: 'location',
+  MAP_POSITION: 'map-position',
   ACTOR: 'actor',
   BRANCH_CHOICE: 'branch-choice',
 };

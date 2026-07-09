@@ -183,7 +183,6 @@
   height: 42px;
   padding: 2px;
   border: 2px solid var(--map-group-border, #64748b);
-  border-radius: 6px;
   background: var(--map-group-background, #f8fafc);
   box-shadow: 0 1px 3px rgb(15 23 42 / 18%);
 }
@@ -330,9 +329,196 @@
   content: "♥ ";
 }
 
+#main-game-scene {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+}
+
+#map-list {
+  grid-column: 2;
+  justify-self: stretch;
+}
+
+[data-map-stage] {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  width: min(100%, 420px);
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  margin: 8px auto 12px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  background-color: #e2e8f0;
+  background-image:
+    linear-gradient(to right, rgb(15 23 42 / 12%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 23 42 / 12%) 1px, transparent 1px);
+  background-size:
+    calc(100% / var(--map-grid-width, 32))
+    calc(100% / var(--map-grid-height, 32));
+  cursor: crosshair;
+}
+
+[data-map-location-layer],
+[data-map-actor-layer],
+[data-map-walls] {
+  position: absolute;
+  inset: 0;
+}
+
+[data-map-location-layer] {
+  z-index: 1;
+}
+
+[data-map-walls] {
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+[data-map-walls] line {
+  stroke: #000000;
+  stroke-width: 0.12;
+  stroke-linecap: square;
+}
+
+[data-map-actor-layer] {
+  z-index: 3;
+  pointer-events: none;
+}
+
+[data-map-location-area] {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  padding: 2px;
+  overflow: hidden;
+  border: 1px solid rgb(15 23 42 / 18%);
+  background: var(--map-group-background, #f8fafc);
+}
+
+[data-map-location-label] {
+  max-width: 100%;
+  color: #0f172a;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+[data-character-marker],
+[data-actor-marker] {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: 4px;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  color: transparent;
+  font-size: 0;
+  line-height: 1;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 90%),
+    0 1px 3px rgb(15 23 42 / 35%);
+}
+
+[data-character-marker] {
+  z-index: 2;
+  background: #dc2626;
+  pointer-events: none;
+}
+
+[data-actor-marker] {
+  z-index: 1;
+  padding: 0;
+  background: #2563eb;
+  cursor: pointer;
+  appearance: none;
+  pointer-events: auto;
+}
+
+[data-actor-marker]::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+}
+
+[data-actor-marker]:disabled {
+  background: #64748b;
+  cursor: default;
+  opacity: 0.72;
+}
+
+[data-actor-marker][data-tracked-actor] {
+  outline: 2px solid #db2777;
+  outline-offset: 2px;
+}
+
+[data-map-legend-group="school-first-floor"],
+[data-location-group="school-first-floor"] {
+  --map-group-border: #c2410c;
+  --map-group-background: #fff7ed;
+}
+
+[data-map-legend-group="school-second-floor"],
+[data-location-group="school-second-floor"] {
+  --map-group-border: #1d4ed8;
+  --map-group-background: #eff6ff;
+}
+
+[data-map-legend-group="school-rooftop"],
+[data-location-group="school-rooftop"] {
+  --map-group-border: #7e22ce;
+  --map-group-background: #faf5ff;
+}
+
+[data-map-legend-group="gym"],
+[data-location-group="gym"] {
+  --map-group-border: #be123c;
+  --map-group-background: #fff1f2;
+}
+
+[data-map-legend-group="outdoor"],
+[data-location-group="outdoor"] {
+  --map-group-border: #15803d;
+  --map-group-background: #f0fdf4;
+}
+
+@media (max-width: 760px) {
+  #main-game-scene {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #event-panel,
+  #map-list {
+    grid-column: 1;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   [data-map-connections] line {
     stroke: #94a3b8;
+  }
+
+  [data-map-stage] {
+    background-color: #1e293b;
+  }
+
+  [data-map-location-label] {
+    color: #e2e8f0;
+  }
+
+  [data-map-walls] line {
+    stroke: #000000;
   }
 }
 

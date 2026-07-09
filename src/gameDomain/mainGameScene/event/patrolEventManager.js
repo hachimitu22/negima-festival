@@ -51,16 +51,26 @@ class PatrolEventManager {
 
   /**
    * 現在位置を訪問。
-   * @private
+   * @public
    * @returns {boolean} 訪問の成功判定
    */
   visitCurrentLocation() {
+    return this.visitLocation(this.#character.locationId);
+  }
+
+  /**
+   * 指定位置を訪問。
+   * @public
+   * @param {string} locationId - 訪問した場所ID。
+   * @returns {boolean} 訪問の成功判定
+   */
+  visitLocation(locationId) {
     if (!this.#activeEvent) {
       return false;
     }
 
     const didVisit = this.#activeEvent.visitLocation(
-      this.#character.locationId,
+      locationId,
     );
     if (!didVisit || !this.#activeEvent.isSucceeded()) {
       return didVisit;
@@ -76,7 +86,7 @@ class PatrolEventManager {
 
   /**
    * 時間を巻き戻してイベントをリセット。
-   * @private
+   * @public
    * @param {number} currentHours - 現在ゲーム時刻
    * @returns {void}
    */
@@ -89,7 +99,7 @@ class PatrolEventManager {
 
   /**
    * 実行中の往訪イベントを取得。
-   * @private
+   * @public
    * @returns {Object|null} イベントスナップショット、実行中のイベントがない場合は null
    */
   getExecutingEventSnapshot() {

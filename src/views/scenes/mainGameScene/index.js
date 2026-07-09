@@ -55,8 +55,8 @@ function createMainGameSceneView(rootElement, options) {
 
   function updateSceneContent(snapshot) {
     mapView.update(
-      snapshot.mapLocations,
-      snapshot.character.location,
+      snapshot.map,
+      snapshot.character,
       snapshot.actors,
     );
     updateExecutingEvents(snapshot.executingEvents);

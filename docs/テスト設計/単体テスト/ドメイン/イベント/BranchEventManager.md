@@ -34,7 +34,7 @@ caseごとに実物の `Character`、`EventIdSequence`、`BranchEventManager` �
 
 ## BEM-UT-S02 時刻と移動による進行
 
-- 対象: `visitCurrentLocation()`、`advanceTo()`、`getExecutingEventSnapshot()`
+- 対象: `visitCurrentLocation()`、`visitLocation(locationId)`、`advanceTo()`、`getExecutingEventSnapshot()`
 - 目的: 現在地訪問と期限到達で、実行中eventが分岐することを検証する。
 
 ### BEM-UT-S02-C01 現在タスクの目的地訪問で成功分岐へ進む
@@ -57,6 +57,13 @@ caseごとに実物の `Character`、`EventIdSequence`、`BranchEventManager` �
 - 入力: 各現在タスクの目的地。
 - 操作: 目的地訪問を繰り返して掲示板イベントを完了し、snapshotを取得する。
 - 期待結果: ID 1、種別`exhibit-trouble`、現在タスク`decide-approach`のeventを返す。
+
+### BEM-UT-S02-C04 指定した場所IDの訪問で成功分岐へ進む
+
+- 前提: 掲示板イベントを実行中のmanagerを生成する。
+- 入力: 現在タスクの目的地ID。
+- 操作: `visitLocation(locationId)`を呼び、snapshotを取得する。
+- 期待結果: `true`を返し、現在タスクは`deliver-notice`、`lastResult`は`find-notice`の`succeeded`になる。
 
 ## BEM-UT-S03 選択肢による進行
 

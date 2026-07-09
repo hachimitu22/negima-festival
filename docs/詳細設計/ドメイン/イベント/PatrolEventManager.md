@@ -28,6 +28,7 @@ class PatrolEventManager {
   constructor({ character, eventIdSequence, durationHours })
   advanceTo(currentHours)
   visitCurrentLocation()
+  visitLocation(locationId)
   rewindTo(currentHours)
   getExecutingEventSnapshot()
 }
@@ -45,6 +46,11 @@ class PatrolEventManager {
 ### visitCurrentLocation
 
 実行中の見回りへ`character.locationId`を通知する。
+内部では`visitLocation(character.locationId)`を呼ぶ。
+
+### visitLocation
+
+実行中の見回りへ指定された`locationId`を通知する。
 未訪問の見回り先を訪問した場合は`true`、それ以外は`false`を返す。
 
 訪問によって見回りが成功した場合は、`PatrolEvent.claimRewardPoints()`で報酬を一度だけ請求し、`Character.addMahoPayPoints()`で反映してから`activeEvent`を破棄する。
@@ -74,6 +80,7 @@ class PatrolEventManager {
 
 - `MainGameScene`は生成時に実物の`Character`、共有`EventIdSequence`、祭終了時刻を渡す。
 - `MainGameScene`は時間更新、成立した場所移動、カシオペアによる巻き戻しを公開APIへ接続する。
+- 座標移動中に入った場所を通知する場合は`visitLocation(locationId)`を使う。
 - [`PatrolEvent`](PatrolEvent.md)が訪問状態、成功状態、報酬請求、event snapshotを管理する。
 - rendererは`MainGameScene`のscene snapshotへ格納されたevent snapshotだけを参照する。
 

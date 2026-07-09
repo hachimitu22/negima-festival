@@ -89,6 +89,13 @@ caseごとに実物の`Character`、`EventIdSequence`、`PatrolEventManager`を�
 - 操作: `visitCurrentLocation()`を再度呼ぶ。
 - 期待結果: `false`を返し、MahoPay残高を変更しない。
 
+### PEM-UT-S02-C05 指定した場所IDを訪問する
+
+- 前提: Managerを生成し、snapshotに含まれる見回り先を取得する。
+- 入力: 見回り先の場所ID。
+- 操作: `visitLocation(locationId)`を呼ぶ。
+- 期待結果: `true`を返す。
+
 ## PEM-UT-S03 定期発生
 
 - 対象: `advanceTo()`

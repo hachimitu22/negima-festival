@@ -146,6 +146,24 @@ describe('BEM-UT-S02 movement and time progression', () => {
     assert.equal(snapshot.type, EXHIBIT_TROUBLE_EVENT_TYPE);
     assert.equal(snapshot.currentTask.id, EXHIBIT_TROUBLE_EVENT_TASK_IDS.DECIDE_APPROACH);
   });
+
+  it('BEM-UT-S02-C04 advances to the success branch after visiting a location id', () => {
+    // Arrange
+    const { manager } = createManager();
+    const initialSnapshot = manager.getExecutingEventSnapshot();
+
+    // Act
+    const result = manager.visitLocation(initialSnapshot.currentTask.destination.id);
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Assert
+    assert.equal(result, true);
+    assert.equal(snapshot.currentTask.id, NOTICE_BOARD_EVENT_TASK_IDS.DELIVER_NOTICE);
+    assert.deepEqual(snapshot.lastResult, {
+      taskId: NOTICE_BOARD_EVENT_TASK_IDS.FIND_NOTICE,
+      result: BRANCH_TASK_STATES.SUCCEEDED,
+    });
+  });
 });
 
 describe('BEM-UT-S03 choice progression', () => {

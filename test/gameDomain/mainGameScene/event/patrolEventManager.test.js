@@ -190,6 +190,18 @@ describe('PEM-UT-S02 場所の訪問と報酬', () => {
     assert.equal(result, false);
     assert.equal(character.mahoPayPoints, completedRewardPoints);
   });
+
+  it('PEM-UT-S02-C05 指定した場所IDを訪問する', () => {
+    // Arrange
+    const { manager } = createManager();
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Act
+    const result = manager.visitLocation(snapshot.destinations[0].id);
+
+    // Assert
+    assert.equal(result, true);
+  });
 });
 
 describe('PEM-UT-S03 定期発生', () => {

@@ -14,6 +14,7 @@ import {
 } from './event/deliveryConversationSceneScripts.js';
 import { DeliveryEvent } from './event/deliveryEvent.js';
 import { EventIdSequence } from './event/eventIdSequence.js';
+import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS, findLocation } from './locations.js';
 import { PatrolEventManager } from './event/patrolEventManager.js';
 import { Student } from './student.js';
@@ -51,6 +52,7 @@ class MainGameScene {
   #eventIdSequence;
   #branchEventManager;
   #patrolEventManager;
+  #gridMap;
 
   /**
    * メインゲームシーンをインスタンス化する。
@@ -131,6 +133,7 @@ class MainGameScene {
       ),
     ];
     this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+    this.#gridMap = getDefaultGridMap();
     this.#eventIdSequence = new EventIdSequence();
     this.#activeConversationEvent = null;
     this.#patrolEventManager = new PatrolEventManager({
@@ -180,6 +183,7 @@ class MainGameScene {
     };
 
     this.#character.update(context);
+    this.#visitCharacterLocationChanges();
     this.#actors.forEach(actor => {
       actor.update(context);
     });
@@ -222,14 +226,57 @@ class MainGameScene {
     };
   }
 
+  /**
+   * 場所IDを目的地として主人公の移動を開始する。
+   * @private
+   * @param {string} locationId - 目的地の場所ID。
+   * @returns {boolean} 移動開始できた場合はtrue。
+   */
   #moveCharacterToLocation(locationId) {
     const location = findLocation(locationId);
     if (!location) {
       return false;
     }
 
-    this.#character.moveToLocation(location.id);
-    return true;
+    const path = this.#gridMap.findPathToLocation(
+      this.#character.position,
+      location.id,
+    );
+    return this.#startCharacterMovement(path);
+  }
+
+  /**
+   * マップ座標を目的地として主人公の移動を開始する。
+   * @private
+   * @param {Object} position - 目的地座標。
+   * @returns {boolean} 移動開始できた場合はtrue。
+   */
+  #moveCharacterToMapPosition(position) {
+    const path = this.#gridMap.findPath(this.#character.position, position);
+    return this.#startCharacterMovement(path);
+  }
+
+  /**
+   * 主人公の経路移動を開始し、同行中アクターも同じ目的地へ追従させる。
+   * @private
+   * @param {Array<Object>|null} path - 主人公の移動waypoint配列。
+   * @returns {boolean} 移動開始できた場合はtrue。
+   */
+  #startCharacterMovement(path) {
+    const didMove = this.#character.startMovement(path);
+    const companionActorId = this.#getActiveCompanionActorId();
+    if (didMove && companionActorId) {
+      const companion = this.#actors.find(actor => actor.id === companionActorId);
+      const destination = path.at(-1);
+      const companionPath = companion && destination
+        ? this.#gridMap.findPath(companion.position, destination)
+        : null;
+      if (companionPath) {
+        companion.startMovement(companionPath);
+      }
+    }
+
+    return didMove;
   }
 
   #moveActorToLocation(actorId, locationId) {
@@ -324,6 +371,7 @@ class MainGameScene {
       frameCount: getFrameCount(frame),
       targetFrameTimeMs,
       deltaFrames: deltaTimeMs / targetFrameTimeMs,
+      gridMap: this.#gridMap,
       gameTimeHours: this.#gameTime.currentHours,
       isFestivalEnded: this.#gameTime.isEnded,
     };
@@ -342,17 +390,18 @@ class MainGameScene {
   }
 
   #handleTargetActivate(targetId) {
+    const mapPosition = getMapPositionTargetValue(
+      targetId,
+      TARGET_PREFIXES.MAP_POSITION,
+    );
+    if (mapPosition) {
+      this.#moveCharacterToMapPosition(mapPosition);
+      return;
+    }
+
     const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
     if (locationId) {
-      const didMove = this.#moveCharacterToLocation(locationId);
-      const companionActorId = this.#getActiveCompanionActorId();
-      if (didMove && companionActorId) {
-        this.#moveActorToLocation(companionActorId, locationId);
-      }
-      if (didMove) {
-        this.#patrolEventManager.visitCurrentLocation();
-        this.#branchEventManager.visitCurrentLocation();
-      }
+      this.#moveCharacterToLocation(locationId);
       return;
     }
 
@@ -387,6 +436,7 @@ class MainGameScene {
       ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.#activeLayerId,
+      map: this.#gridMap.createSnapshot(),
       mapLocations: LOCATIONS,
       executingEvents: [
         this.#patrolEventManager.getExecutingEventSnapshot(),
@@ -653,6 +703,21 @@ class MainGameScene {
       })),
     };
   }
+
+  /**
+   * 主人公が移動中に通過した場所をイベント管理へ通知する。
+   * @private
+   * @returns {void}
+   */
+  #visitCharacterLocationChanges() {
+    const visitedLocationIds = this.#character.consumeVisitedLocationIds();
+    const uniqueLocationIds = Array.from(new Set(visitedLocationIds));
+
+    uniqueLocationIds.forEach(locationId => {
+      this.#patrolEventManager.visitLocation(locationId);
+      this.#branchEventManager.visitLocation(locationId);
+    });
+  }
 }
 
 function createEventCandidate(event, scriptId) {
@@ -675,6 +740,26 @@ function getTargetValue(targetId, prefix) {
   }
 
   return targetId.slice(expectedPrefix.length);
+}
+
+/**
+ * ターゲットIDからマップ座標を取得する。
+ * @param {string} targetId - ターゲットID。
+ * @param {string} prefix - 期待するprefix。
+ * @returns {Object|null} マップ座標。形式不正の場合はnull。
+ */
+function getMapPositionTargetValue(targetId, prefix) {
+  const value = getTargetValue(targetId, prefix);
+  if (value === null) {
+    return null;
+  }
+
+  const [x, y] = value.split(',').map(Number);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return { x, y };
 }
 
 function getFrameDeltaTimeMs(frame) {

@@ -59,12 +59,23 @@ class BranchEventManager {
    * @returns {boolean} 訪問によって分岐が進んだ場合はtrue。
    */
   visitCurrentLocation() {
+    return this.visitLocation(this.#character.locationId);
+  }
+
+  /**
+   * 指定場所を実行中の分岐イベントへ訪問先として通知する。
+   *
+   * @public
+   * @param {string} locationId - 訪問した場所ID。
+   * @returns {boolean} 訪問によって分岐が進んだ場合はtrue。
+   */
+  visitLocation(locationId) {
     if (!this.#activeEvent) {
       return false;
     }
 
     const didVisit = this.#activeEvent.visitLocation(
-      this.#character.locationId,
+      locationId,
       this.#currentHours,
     );
     this.#clearCompletedEvent();

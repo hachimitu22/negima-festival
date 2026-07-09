@@ -24,6 +24,7 @@ class BranchEventManager {
   constructor({ character, eventIdSequence })
   advanceTo(currentHours)
   visitCurrentLocation()
+  visitLocation(locationId)
   rewindTo(currentHours)
   getExecutingEventSnapshot()
 }
@@ -38,7 +39,8 @@ constructorで生成対象の分岐イベントを1件生成する。
 ### MainGameSceneとの接続
 
 - 時間更新後に`advanceTo(currentHours)`を呼び、期限切れによる失敗分岐を進める。
-- 場所移動が成功した後に`visitCurrentLocation()`を呼び、目的地到達による成功分岐を進める。
+- 場所移動が成功した後に`visitCurrentLocation()`または`visitLocation(locationId)`を呼び、目的地到達による成功分岐を進める。
+- 座標移動中に入った場所を通知する場合は`visitLocation(locationId)`を使う。
 - `getExecutingEventSnapshot()`は実行中イベントがある場合だけ`BranchEvent.getSnapshot(currentHours)`を返す。
 
 ## 分岐イベント定義との境界

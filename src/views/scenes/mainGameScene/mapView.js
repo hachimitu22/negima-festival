@@ -1,35 +1,6 @@
 import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
 
-/**
- * マップレイアウト定数。
- * @private
- */
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-const MAP_COLUMN_COUNT = 5;
-const MAP_LAYOUT = Object.freeze({
-  roof: { column: 2, row: 1 },
-  other_class_corridor: { column: 2, row: 2 },
-  classroom_3a_front_corridor: { column: 3, row: 2 },
-  classroom_3a: { column: 4, row: 2 },
-  health_room: { column: 1, row: 3 },
-  health_room_front_corridor: { column: 2, row: 3 },
-  hall: { column: 3, row: 3 },
-  library_room_front_corridor: { column: 4, row: 3 },
-  library_room: { column: 5, row: 3 },
-  girls_bathroom: { column: 2, row: 4 },
-  staff_room: { column: 4, row: 4 },
-  gym_arena: { column: 1, row: 5 },
-  gym_front_parking: { column: 3, row: 5 },
-  school_ground: { column: 4, row: 5 },
-  gym_changing_room: { column: 1, row: 6 },
-  gym_equipment_room: { column: 2, row: 6 },
-  rest_area: { column: 3, row: 6 },
-  church_front: { column: 3, row: 7 },
-  food_street: { column: 4, row: 7 },
-  david_plaza: { column: 3, row: 8 },
-  club_building: { column: 4, row: 8 },
-  world_tree: { column: 5, row: 8 },
-});
 const GROUP_KEYS = new Map([
   ['校舎1階', 'school-first-floor'],
   ['校舎2階', 'school-second-floor'],
@@ -39,11 +10,11 @@ const GROUP_KEYS = new Map([
 ]);
 
 /**
- * マップビューを作成。複数位置・キャラクター配置を表示。
+ * グリッドマップビューを作成する。
  * @public
- * @param {HTMLElement} rootElement - 描画対象的要素
- * @param {Object} options - オプション設定
- * @returns {Object} マップビュー API
+ * @param {HTMLElement} rootElement - 描画対象要素。
+ * @param {Object} options - view設定。
+ * @returns {Object} マップビューAPI。
  */
 function createMapView(rootElement, options) {
   const enqueueInput = options.enqueueInput;
@@ -54,15 +25,14 @@ function createMapView(rootElement, options) {
   const actorSelect = document.createElement('select');
   const clearActorOption = document.createElement('option');
   const legend = document.createElement('ul');
-  const scrollContainer = document.createElement('div');
   const stage = document.createElement('div');
-  const connectionLayer = document.createElementNS(SVG_NAMESPACE, 'svg');
-  let resizeObserver = null;
-  let drawFrameId = null;
-  let lastConnectionSignature = null;
+  const wallLayer = document.createElementNS(SVG_NAMESPACE, 'svg');
+  const locationLayer = document.createElement('div');
+  const actorLayer = document.createElement('div');
+  let lastMapSignature = null;
   let lastActorOptionSignature = null;
   let latestActors = [];
-  let isDestroyed = false;
+  let latestMap = null;
 
   rootElement.setAttribute('aria-labelledby', title.id);
   actorTracker.dataset.actorTracker = '';
@@ -75,161 +45,262 @@ function createMapView(rootElement, options) {
   actorTracker.append(actorTrackerLabel, actorSelect);
   legend.dataset.mapLegend = '';
   legend.setAttribute('aria-label', 'マップのエリア');
-  scrollContainer.dataset.mapScroll = '';
   stage.dataset.mapStage = '';
-  connectionLayer.dataset.mapConnections = '';
-  connectionLayer.setAttribute('aria-hidden', 'true');
-  connectionLayer.setAttribute('focusable', 'false');
+  stage.tabIndex = 0;
+  wallLayer.dataset.mapWalls = '';
+  wallLayer.setAttribute('aria-hidden', 'true');
+  locationLayer.dataset.mapLocationLayer = '';
+  actorLayer.dataset.mapActorLayer = '';
+  stage.append(locationLayer, wallLayer, actorLayer);
+  rootElement.append(title, actorTracker, legend, stage);
 
-  stage.appendChild(connectionLayer);
-  scrollContainer.appendChild(stage);
-  rootElement.append(title, actorTracker, legend, scrollContainer);
   actorSelect.addEventListener('change', handleTrackedActorChange);
+  stage.addEventListener('click', handleStageClick);
 
-  if (typeof ResizeObserver === 'function') {
-    resizeObserver = new ResizeObserver(scheduleConnectionDraw);
-    resizeObserver.observe(stage);
-  }
-
-  function update(locations, currentLocation, actors = []) {
+  /**
+   * マップ表示を最新snapshotで更新する。
+   * @param {Object} map - マップsnapshot。
+   * @param {Object} character - 主人公snapshot。
+   * @param {Array<Object>} [actors=[]] - アクターsnapshot配列。
+   * @returns {void}
+   */
+  function update(map, character, actors = []) {
     latestActors = actors;
+    latestMap = map;
     updateActorTracker(actors);
-    const locationIds = new Set(locations.map(location => location.id));
-    const actorsByLocationId = groupActorsByLocationId(actors);
-    const connectionSignature = createConnectionSignature(locations);
-    let fallbackIndex = 0;
 
-    Array.from(stage.querySelectorAll('[data-location-id]')).forEach(locationItem => {
-      if (!locationIds.has(locationItem.dataset.locationId)) {
-        locationItem.remove();
-      }
+    const mapSignature = JSON.stringify({
+      width: map.width,
+      height: map.height,
+      locations: map.locations,
+      walls: map.walls,
     });
-
-    locations.forEach(location => {
-      const locationItem = getOrCreateLocationItem(location);
-      const layout = MAP_LAYOUT[location.id]
-        ?? createFallbackLayout(fallbackIndex++);
-
-      locationItem.style.gridColumn = String(layout.column);
-      locationItem.style.gridRow = String(layout.row);
-      updateActorPopoverPlacement(locationItem, layout);
-      updateLocationItem(
-        locationItem,
-        location,
-        currentLocation,
-        actorsByLocationId.get(location.id) ?? [],
-      );
-
-      if (!locationItem.isConnected) {
-        stage.appendChild(locationItem);
-      }
-    });
-
-    if (connectionSignature !== lastConnectionSignature) {
-      updateLegend(locations);
-      updateConnections(locations);
-      scheduleConnectionDraw();
-      lastConnectionSignature = connectionSignature;
+    if (mapSignature !== lastMapSignature) {
+      updateLegend(map.locations);
+      updateMapGeometry(map);
+      lastMapSignature = mapSignature;
     }
+
+    updateCharacterMarker(character, map);
+    updateActorMarkers(actors, map);
   }
 
+  /**
+   * マップviewのイベント購読とDOMを破棄する。
+   * @returns {void}
+   */
   function destroy() {
-    isDestroyed = true;
     actorSelect.removeEventListener('change', handleTrackedActorChange);
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-      resizeObserver = null;
-    }
-    if (drawFrameId !== null) {
-      cancelAnimationFrame(drawFrameId);
-      drawFrameId = null;
-    }
-    lastConnectionSignature = null;
+    stage.removeEventListener('click', handleStageClick);
+    lastMapSignature = null;
     lastActorOptionSignature = null;
     latestActors = [];
+    latestMap = null;
     rootElement.replaceChildren();
   }
 
-  function getOrCreateLocationItem(location) {
-    const existingItem = stage.querySelector(`[data-location-id="${location.id}"]`);
-    return existingItem ?? createLocationItem(location);
+  /**
+   * マップのグリッド寸法と静的レイヤーを更新する。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function updateMapGeometry(map) {
+    stage.style.setProperty('--map-grid-width', String(map.width));
+    stage.style.setProperty('--map-grid-height', String(map.height));
+    updateLocationAreas(map);
+    updateWalls(map);
   }
 
-  function createLocationItem(location) {
-    const locationItem = document.createElement('div');
-    const locationButton = document.createElement('button');
-    const actorSummary = document.createElement('div');
-    const trackedActorMarker = document.createElement('span');
-    const actorCount = document.createElement('span');
-    const actorList = document.createElement('menu');
+  /**
+   * 場所領域レイヤーをマップsnapshotに合わせて更新する。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function updateLocationAreas(map) {
+    const locationIds = new Set(map.locations.map(location => location.id));
 
-    locationItem.dataset.locationId = location.id;
-    locationButton.type = 'button';
-    locationButton.value = location.name;
-    locationButton.dataset.locationButton = '';
-    locationButton.addEventListener('click', () => {
+    Array.from(locationLayer.children).forEach(area => {
+      if (!locationIds.has(area.dataset.locationId)) {
+        area.remove();
+      }
+    });
+
+    map.locations.forEach(location => {
+      const area = getOrCreateLocationArea(location);
+      const { x, y, width, height } = location.area;
+      area.dataset.locationGroup = getGroupKey(location.group);
+      area.style.left = `${(x / map.width) * 100}%`;
+      area.style.top = `${(y / map.height) * 100}%`;
+      area.style.width = `${(width / map.width) * 100}%`;
+      area.style.height = `${(height / map.height) * 100}%`;
+      area.querySelector('[data-map-location-label]').textContent = location.name;
+
+      if (!area.isConnected) {
+        locationLayer.appendChild(area);
+      }
+    });
+  }
+
+  /**
+   * 場所領域DOMを取得または作成する。
+   * @param {Object} location - 場所snapshot。
+   * @returns {HTMLElement} 場所領域DOM。
+   */
+  function getOrCreateLocationArea(location) {
+    const existingArea = locationLayer.querySelector(`[data-location-id="${location.id}"]`);
+    if (existingArea) {
+      return existingArea;
+    }
+
+    const area = document.createElement('div');
+    const label = document.createElement('span');
+    area.dataset.mapLocationArea = '';
+    area.dataset.locationId = location.id;
+    label.dataset.mapLocationLabel = '';
+    area.appendChild(label);
+    return area;
+  }
+
+  /**
+   * 壁レイヤーをマップsnapshotに合わせて更新する。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function updateWalls(map) {
+    wallLayer.setAttribute('viewBox', `0 0 ${map.width} ${map.height}`);
+    wallLayer.setAttribute('preserveAspectRatio', 'none');
+
+    const wallIds = new Set(map.walls.map(wall => wall.id));
+    Array.from(wallLayer.children).forEach(line => {
+      if (!wallIds.has(line.dataset.wallId)) {
+        line.remove();
+      }
+    });
+
+    map.walls.forEach(wall => {
+      const line = getOrCreateWallLine(wall);
+      line.setAttribute('x1', String(wall.x1));
+      line.setAttribute('y1', String(wall.y1));
+      line.setAttribute('x2', String(wall.x2));
+      line.setAttribute('y2', String(wall.y2));
+      if (!line.isConnected) {
+        wallLayer.appendChild(line);
+      }
+    });
+  }
+
+  /**
+   * 壁線分DOMを取得または作成する。
+   * @param {Object} wall - 壁snapshot。
+   * @returns {SVGLineElement} 壁線分DOM。
+   */
+  function getOrCreateWallLine(wall) {
+    const existingLine = wallLayer.querySelector(`[data-wall-id="${wall.id}"]`);
+    if (existingLine) {
+      return existingLine;
+    }
+
+    const line = document.createElementNS(SVG_NAMESPACE, 'line');
+    line.dataset.wallId = wall.id;
+    return line;
+  }
+
+  /**
+   * 主人公マーカーを更新する。
+   * @param {Object} character - 主人公snapshot。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function updateCharacterMarker(character, map) {
+    let marker = actorLayer.querySelector('[data-character-marker]');
+    if (!marker) {
+      marker = document.createElement('div');
+      marker.dataset.characterMarker = '';
+      actorLayer.appendChild(marker);
+    }
+
+    marker.textContent = '';
+    setMarkerPosition(marker, character.position, map);
+    marker.title = `ネギ: ${character.location.name}`;
+    marker.setAttribute('aria-label', marker.title);
+  }
+
+  /**
+   * アクターマーカーを更新する。
+   * @param {Array<Object>} actors - アクターsnapshot配列。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function updateActorMarkers(actors, map) {
+    const actorIds = new Set(actors.map(actor => actor.id));
+    Array.from(actorLayer.querySelectorAll('[data-actor-id]')).forEach(marker => {
+      if (!actorIds.has(marker.dataset.actorId)) {
+        marker.remove();
+      }
+    });
+
+    const actorsByLocationId = groupActorsByLocationId(actors);
+    actors.forEach(actor => {
+      const marker = getOrCreateActorMarker(actor);
+      const locationActors = actorsByLocationId.get(actor.location?.id) ?? [];
+      const locationIndex = locationActors.findIndex(candidate => candidate.id === actor.id);
+      const position = offsetActorPosition(actor.position, locationIndex);
+
+      marker.textContent = '';
+      marker.disabled = !actor.isTalkable;
+      marker.toggleAttribute('data-tracked-actor', actor.id === viewState.trackedActorId);
+      marker.title = `${actor.name}: ${actor.location?.name ?? ''}`;
+      marker.setAttribute('aria-label', marker.title);
+      setMarkerPosition(marker, position, map);
+
+      if (!marker.isConnected) {
+        actorLayer.appendChild(marker);
+      }
+    });
+  }
+
+  /**
+   * アクターマーカーDOMを取得または作成する。
+   * @param {Object} actor - アクターsnapshot。
+   * @returns {HTMLButtonElement} アクターマーカーDOM。
+   */
+  function getOrCreateActorMarker(actor) {
+    const existingMarker = actorLayer.querySelector(`[data-actor-id="${actor.id}"]`);
+    if (existingMarker) {
+      return existingMarker;
+    }
+
+    const marker = document.createElement('button');
+    marker.type = 'button';
+    marker.dataset.actorMarker = '';
+    marker.dataset.actorId = actor.id;
+    marker.addEventListener('click', event => {
+      event.stopPropagation();
       enqueueInput({
         type: INPUT_TYPES.TARGET_ACTIVATE,
-        targetId: createTargetId(TARGET_PREFIXES.LOCATION, location.id),
+        targetId: createTargetId(TARGET_PREFIXES.ACTOR, actor.id),
       });
     });
-    actorSummary.dataset.locationActorSummary = '';
-    trackedActorMarker.dataset.trackedActorMarker = '';
-    trackedActorMarker.textContent = '♥';
-    trackedActorMarker.hidden = true;
-    actorCount.dataset.locationActorCount = '';
-    actorList.dataset.locationActors = '';
-    actorList.setAttribute('aria-label', `${location.name}にいるアクター`);
-
-    actorSummary.append(trackedActorMarker, actorCount);
-    locationItem.append(locationButton, actorSummary, actorList);
-    return locationItem;
+    return marker;
   }
 
-  function updateLocationItem(locationItem, location, currentLocation, actors) {
-    const locationButton = locationItem.querySelector('[data-location-button]');
-    const actorCount = locationItem.querySelector('[data-location-actor-count]');
-    const actorList = locationItem.querySelector('[data-location-actors]');
-    const trackedActor = actors.find(actor => actor.id === viewState.trackedActorId)
-      ?? null;
-    const isCurrentLocation = currentLocation.id === location.id;
-    const isMovable = currentLocation.destinations.includes(location.name);
-    const locationName = location.name;
-    const disabled = isCurrentLocation || !isMovable;
-
-    locationItem.dataset.locationGroup = getGroupKey(location.group);
-    locationItem.toggleAttribute('data-current-location', isCurrentLocation);
-    locationItem.toggleAttribute('data-movable-location', isMovable);
-    locationItem.toggleAttribute('data-has-actors', actors.length > 0);
-
-    if (locationButton.value !== location.name) {
-      locationButton.value = location.name;
-    }
-    if (locationButton.textContent !== locationName) {
-      locationButton.textContent = locationName;
-    }
-    if (locationButton.disabled !== disabled) {
-      locationButton.disabled = disabled;
-    }
-    if (isCurrentLocation) {
-      locationButton.setAttribute('aria-current', 'location');
-    } else {
-      locationButton.removeAttribute('aria-current');
-    }
-
-    const actorListLabel = `${location.name}にいるアクター`;
-    const actorCountText = `${actors.length}人`;
-    if (actorCount.textContent !== actorCountText) {
-      actorCount.textContent = actorCountText;
-    }
-    if (actorList.getAttribute('aria-label') !== actorListLabel) {
-      actorList.setAttribute('aria-label', actorListLabel);
-    }
-    actorList.hidden = actors.length === 0;
-    updateTrackedActorMarker(locationItem, trackedActor);
-    updateLocationActors(actorList, actors, enqueueInput);
+  /**
+   * マーカーDOMをマップ座標に配置する。
+   * @param {HTMLElement} marker - マーカーDOM。
+   * @param {Object} position - マップ座標。
+   * @param {Object} map - マップsnapshot。
+   * @returns {void}
+   */
+  function setMarkerPosition(marker, position, map) {
+    marker.style.left = `${(position.x / map.width) * 100}%`;
+    marker.style.top = `${(position.y / map.height) * 100}%`;
   }
 
+  /**
+   * 追跡対象アクター選択UIを更新する。
+   * @param {Array<Object>} actors - アクターsnapshot配列。
+   * @returns {void}
+   */
   function updateActorTracker(actors) {
     const optionSignature = JSON.stringify(
       actors.map(actor => ({ id: actor.id, name: actor.name })),
@@ -256,25 +327,11 @@ function createMapView(rootElement, options) {
     }
   }
 
-  function handleTrackedActorChange() {
-    viewState.trackedActorId = actorSelect.value || null;
-    updateTrackedActorMarkers(latestActors);
-  }
-
-  function updateTrackedActorMarkers(actors) {
-    const trackedActor = actors.find(actor => actor.id === viewState.trackedActorId)
-      ?? null;
-
-    Array.from(stage.querySelectorAll('[data-location-id]')).forEach(locationItem => {
-      const isTrackedLocation = trackedActor?.location?.id
-        === locationItem.dataset.locationId;
-      updateTrackedActorMarker(
-        locationItem,
-        isTrackedLocation ? trackedActor : null,
-      );
-    });
-  }
-
+  /**
+   * 場所グループ凡例を更新する。
+   * @param {Array<Object>} locations - 場所snapshot配列。
+   * @returns {void}
+   */
   function updateLegend(locations) {
     const groups = [];
     const knownGroups = new Set();
@@ -313,73 +370,47 @@ function createMapView(rootElement, options) {
     });
   }
 
-  function updateConnections(locations) {
-    const connections = createConnections(locations);
-    const connectionIds = new Set(connections.map(connection => connection.id));
-
-    Array.from(connectionLayer.children).forEach(line => {
-      if (!connectionIds.has(line.dataset.connectionId)) {
-        line.remove();
-      }
-    });
-
-    connections.forEach(connection => {
-      let line = Array.from(connectionLayer.children)
-        .find(candidate => candidate.dataset.connectionId === connection.id);
-      if (!line) {
-        line = document.createElementNS(SVG_NAMESPACE, 'line');
-        line.dataset.connectionId = connection.id;
-        connectionLayer.appendChild(line);
-      }
-      line.dataset.sourceLocationId = connection.sourceId;
-      line.dataset.targetLocationId = connection.targetId;
-    });
-  }
-
-  function scheduleConnectionDraw() {
-    if (isDestroyed || drawFrameId !== null) {
+  /**
+   * 追跡対象アクター選択の変更を反映する。
+   * @returns {void}
+   */
+  function handleTrackedActorChange() {
+    viewState.trackedActorId = actorSelect.value || null;
+    if (!latestMap) {
       return;
     }
-    drawFrameId = requestAnimationFrame(() => {
-      drawFrameId = null;
-      drawConnections();
-    });
+    updateActorMarkers(latestActors, latestMap);
   }
 
-  function drawConnections() {
-    const stageRect = stage.getBoundingClientRect();
-    const width = stage.clientWidth;
-    const height = stage.clientHeight;
+  /**
+   * マップクリック位置をマップ座標入力に変換してenqueueする。
+   * @param {MouseEvent} event - clickイベント。
+   * @returns {void}
+   */
+  function handleStageClick(event) {
+    if (!latestMap || event.target.closest('[data-actor-marker]')) {
+      return;
+    }
 
-    connectionLayer.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    connectionLayer.setAttribute('width', String(width));
-    connectionLayer.setAttribute('height', String(height));
-
-    Array.from(connectionLayer.children).forEach(line => {
-      const sourceButton = findLocationButton(line.dataset.sourceLocationId);
-      const targetButton = findLocationButton(line.dataset.targetLocationId);
-      if (!sourceButton || !targetButton) {
-        line.hidden = true;
-        return;
-      }
-
-      const endpoints = calculateConnectionEndpoints(
-        sourceButton.getBoundingClientRect(),
-        targetButton.getBoundingClientRect(),
-        stageRect,
-      );
-      line.hidden = false;
-      line.setAttribute('x1', String(endpoints.x1));
-      line.setAttribute('y1', String(endpoints.y1));
-      line.setAttribute('x2', String(endpoints.x2));
-      line.setAttribute('y2', String(endpoints.y2));
-    });
-  }
-
-  function findLocationButton(locationId) {
-    return stage.querySelector(
-      `[data-location-id="${locationId}"] [data-location-button]`,
+    const rect = stage.getBoundingClientRect();
+    const x = clamp(
+      ((event.clientX - rect.left) / rect.width) * latestMap.width,
+      0,
+      latestMap.width - Number.EPSILON,
     );
+    const y = clamp(
+      ((event.clientY - rect.top) / rect.height) * latestMap.height,
+      0,
+      latestMap.height - Number.EPSILON,
+    );
+
+    enqueueInput({
+      type: INPUT_TYPES.TARGET_ACTIVATE,
+      targetId: createTargetId(
+        TARGET_PREFIXES.MAP_POSITION,
+        `${formatPositionValue(x)},${formatPositionValue(y)}`,
+      ),
+    });
   }
 
   return {
@@ -388,126 +419,30 @@ function createMapView(rootElement, options) {
   };
 }
 
-function createConnections(locations) {
-  const locationsByName = new Map(
-    locations.map(location => [location.name, location]),
-  );
-  const knownConnections = new Set();
-  const connections = [];
-
-  locations.forEach(location => {
-    location.destinations.forEach(destinationName => {
-      const destination = locationsByName.get(destinationName);
-      if (!destination) {
-        return;
-      }
-
-      const ids = [location.id, destination.id].sort();
-      const id = ids.join('--');
-      if (knownConnections.has(id)) {
-        return;
-      }
-
-      knownConnections.add(id);
-      connections.push({
-        id,
-        sourceId: location.id,
-        targetId: destination.id,
-      });
-    });
-  });
-
-  return connections;
-}
-
-function createConnectionSignature(locations) {
-  return JSON.stringify(locations.map(location => ({
-    id: location.id,
-    name: location.name,
-    group: location.group,
-    destinations: location.destinations,
-  })));
-}
-
-function calculateConnectionEndpoints(sourceRect, targetRect, stageRect) {
-  const sourceCenter = getRelativeCenter(sourceRect, stageRect);
-  const targetCenter = getRelativeCenter(targetRect, stageRect);
-  const deltaX = targetCenter.x - sourceCenter.x;
-  const deltaY = targetCenter.y - sourceCenter.y;
-  const sourceScale = getRectangleBoundaryScale(
-    deltaX,
-    deltaY,
-    sourceRect.width,
-    sourceRect.height,
-  );
-  const targetScale = getRectangleBoundaryScale(
-    deltaX,
-    deltaY,
-    targetRect.width,
-    targetRect.height,
-  );
-
-  return {
-    x1: sourceCenter.x + (deltaX * sourceScale),
-    y1: sourceCenter.y + (deltaY * sourceScale),
-    x2: targetCenter.x - (deltaX * targetScale),
-    y2: targetCenter.y - (deltaY * targetScale),
-  };
-}
-
-function getRelativeCenter(rect, containerRect) {
-  return {
-    x: rect.left - containerRect.left + (rect.width / 2),
-    y: rect.top - containerRect.top + (rect.height / 2),
-  };
-}
-
-function getRectangleBoundaryScale(deltaX, deltaY, width, height) {
-  const horizontalScale = deltaX === 0
-    ? Number.POSITIVE_INFINITY
-    : (width / 2) / Math.abs(deltaX);
-  const verticalScale = deltaY === 0
-    ? Number.POSITIVE_INFINITY
-    : (height / 2) / Math.abs(deltaY);
-  return Math.min(horizontalScale, verticalScale);
-}
-
-function createFallbackLayout(index) {
-  return {
-    column: (index % MAP_COLUMN_COUNT) + 1,
-    row: 9 + Math.floor(index / MAP_COLUMN_COUNT),
-  };
-}
-
-function updateActorPopoverPlacement(locationItem, layout) {
-  locationItem.dataset.actorPopoverHorizontal = layout.column >= 4
-    ? 'left'
-    : 'right';
-  locationItem.dataset.actorPopoverVertical = layout.row >= 7
-    ? 'above'
-    : 'below';
-}
-
-function updateTrackedActorMarker(locationItem, actor) {
-  const marker = locationItem.querySelector('[data-tracked-actor-marker]');
-  const isTrackedLocation = actor !== null;
-
-  locationItem.toggleAttribute(
-    'data-tracked-actor-location',
-    isTrackedLocation,
-  );
-  marker.hidden = !isTrackedLocation;
-
-  if (actor) {
-    const label = `${actor.name}を追跡中`;
-    marker.title = label;
-    marker.setAttribute('aria-label', label);
-  } else {
-    marker.removeAttribute('title');
-    marker.removeAttribute('aria-label');
+/**
+ * 同じ場所にいるアクターのマーカー表示位置を少しずらす。
+ * @param {Object} position - 元のマップ座標。
+ * @param {number} index - 同一場所内の表示順。
+ * @returns {Object} 表示用座標。
+ */
+function offsetActorPosition(position, index) {
+  if (index <= 0) {
+    return position;
   }
+
+  const angle = index * 1.7;
+  const radius = 0.22 + ((index % 3) * 0.05);
+  return {
+    x: position.x + (Math.cos(angle) * radius),
+    y: position.y + (Math.sin(angle) * radius),
+  };
 }
 
+/**
+ * アクターを現在地IDごとにまとめる。
+ * @param {Array<Object>} actors - アクターsnapshot配列。
+ * @returns {Map<string, Array<Object>>} 場所ID別アクターMap。
+ */
 function groupActorsByLocationId(actors) {
   const actorsByLocationId = new Map();
 
@@ -525,68 +460,11 @@ function groupActorsByLocationId(actors) {
   return actorsByLocationId;
 }
 
-function updateLocationActors(actorList, actors, enqueueInput) {
-  const actorIds = new Set(actors.map(actor => actor.id));
-
-  Array.from(actorList.children).forEach(actorItem => {
-    if (!actorIds.has(actorItem.dataset.actorId)) {
-      actorItem.remove();
-    }
-  });
-
-  actors.forEach(actor => {
-    const actorItem = getOrCreateActorItem(actorList, actor, enqueueInput);
-    const actorButton = actorItem.querySelector('[data-actor-button]');
-    const actorAffection = actorItem.querySelector('[data-actor-affection]');
-    const hasAffection = typeof actor.affection === 'number';
-    const affectionText = hasAffection ? `${actor.affection}` : '';
-    const disabled = !actor.isTalkable;
-
-    if (actorButton.textContent !== actor.name) {
-      actorButton.textContent = actor.name;
-    }
-    if (actorButton.disabled !== disabled) {
-      actorButton.disabled = disabled;
-    }
-    if (actorAffection.textContent !== affectionText) {
-      actorAffection.textContent = affectionText;
-    }
-    if (actorAffection.hidden !== !hasAffection) {
-      actorAffection.hidden = !hasAffection;
-    }
-    if (!actorItem.isConnected) {
-      actorList.appendChild(actorItem);
-    }
-  });
-}
-
-function getOrCreateActorItem(actorList, actor, enqueueInput) {
-  const existingItem = actorList.querySelector(`[data-actor-id="${actor.id}"]`);
-  if (existingItem) {
-    return existingItem;
-  }
-
-  const actorItem = document.createElement('li');
-  const actorButton = document.createElement('button');
-  const actorAffection = document.createElement('span');
-
-  actorButton.type = 'button';
-  actorButton.textContent = actor.name;
-  actorButton.dataset.actorButton = '';
-  actorButton.setAttribute('compact', '');
-  actorButton.addEventListener('click', () => {
-    enqueueInput({
-      type: INPUT_TYPES.TARGET_ACTIVATE,
-      targetId: createTargetId(TARGET_PREFIXES.ACTOR, actor.id),
-    });
-  });
-  actorAffection.dataset.actorAffection = '';
-  actorAffection.setAttribute('aria-label', '好感度');
-  actorItem.dataset.actorId = actor.id;
-  actorItem.append(actorButton, actorAffection);
-  return actorItem;
-}
-
+/**
+ * 場所グループ名からCSS用の安定キーを作成する。
+ * @param {string} groupName - 場所グループ名。
+ * @returns {string} グループキー。
+ */
 function getGroupKey(groupName) {
   const knownKey = GROUP_KEYS.get(groupName);
   if (knownKey) {
@@ -600,15 +478,47 @@ function getGroupKey(groupName) {
   return `other-${Math.abs(hash)}`;
 }
 
+/**
+ * 入力用ターゲットIDを作成する。
+ * @param {string} prefix - ターゲットprefix。
+ * @param {string} id - ターゲット値。
+ * @returns {string} ターゲットID。
+ */
 function createTargetId(prefix, id) {
   return `${prefix}:${id}`;
 }
 
+/**
+ * 見出し要素を作成する。
+ * @param {string} id - 要素ID。
+ * @param {string} text - 表示テキスト。
+ * @returns {HTMLHeadingElement} 見出し要素。
+ */
 function createHeading(id, text) {
   const element = document.createElement('h2');
   element.id = id;
   element.textContent = text;
   return element;
+}
+
+/**
+ * 数値を指定範囲に丸める。
+ * @param {number} value - 対象値。
+ * @param {number} min - 最小値。
+ * @param {number} max - 最大値。
+ * @returns {number} 範囲内に丸めた値。
+ */
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * ターゲットIDに入れる座標値文字列を整形する。
+ * @param {number} value - 座標値。
+ * @returns {string} 整形後の座標値。
+ */
+function formatPositionValue(value) {
+  return value.toFixed(3).replace(/\.?0+$/, '');
 }
 
 export {
