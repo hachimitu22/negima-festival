@@ -13,7 +13,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 ## 目的
 
 麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
-会話の開始条件を判定し、メインシーン内の進行中会話として`ConversationSceneSession`を保持する。
+会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
 
 ## 所有する状態
 
@@ -23,8 +23,8 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
 | `character`               | プレイヤーの現在地、マップ座標、移動状態、MP、MahoPayポイント |
 | `actors`                  | 生徒31人と教師2人の現在地、マップ座標、移動状態 |
-| `activeLayerId`           | メインゲーム内で表示するlayer                    |
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
+| `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
 | `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
 | `patrolEventManager`      | 見回りの生成、進行、報酬、保持を管理するManager  |
 
@@ -43,15 +43,17 @@ class MainGameScene {
 
 ## 更新順序
 
-1. 進行中会話がある場合は`conversation:*`入力だけを処理し、直ちに終了する。
-2. input全体から会話開始を成立させるactor入力を探す。
-3. 成立した場合は`ConversationSceneSession`を生成して`activeLayerId`を`conversation`にし、直ちに終了する。
-4. 会話へ遷移しなかった場合だけ、マップ座標クリック、イベント選択、カシオペア入力を処理する。
-5. frame経過量からゲーム時間を進める。
-6. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
-7. 経過ゲーム時間と実時間deltaを含むcontextで`Character`を更新する。
-8. 同じcontextで全`Actor`を更新する。
-9. `Character`が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
+1. `DialogueSystem.beginFrame()`を呼び出す。
+2. `DialogueSystem.processInput(inputs)`で進行中会話の入力を処理する。
+3. 会話中でなければ、input全体から会話開始を成立させるactor入力を探す。
+4. 成立した場合は`DialogueSystem.requestStart()`へscriptと完了callbackを渡す。
+5. `DialogueSystem.getFrameControlState()`で会話による停止状態を確認する。
+6. 停止中でなければ、マップ座標クリック、イベント選択、カシオペア入力を処理する。
+7. 停止中でなければ、frame経過量からゲーム時間を進める。
+8. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
+9. 経過ゲーム時間と実時間deltaを含むcontextで`Character`を更新する。
+10. 同じcontextで全`Actor`を更新する。
+11. `Character`が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -92,7 +94,7 @@ class MainGameScene {
 1. 通常会話、配達依頼、同行開始の候補を作る。
 2. 会話scriptを選出する。
 3. イベントscriptが選ばれた場合だけ`EventIdSequence`のevent IDを進める。
-4. 台本と完了callbackから`ConversationSceneSession`を生成し、メインシーン内の進行中会話として保持する。
+4. 台本と完了callbackを`DialogueSystem.requestStart()`へ渡し、メインシーン内の進行中会話として保持させる。
 
 ### 実行中の配達または同行がある場合
 
@@ -170,7 +172,8 @@ class MainGameScene {
 - `movement`は移動中だけ目的地、waypoint、速度を含み、停止中は`null`とする。
 - `actors`には各actorのsnapshotと`isTalkable`を含める。
 - `companion`は同行中だけ同伴者snapshot、それ以外は`null`とする。
-- `conversation`は会話中だけ`ConversationSceneSession.getSnapshot()`、それ以外は`null`とする。
+- `activeLayerId`は`DialogueSystem`が進行中会話を持つ場合に`conversation`、それ以外は`map`とする。
+- `conversation`は会話中だけ`DialogueSystem.createSnapshotFragment()`の結果、それ以外は`null`とする。
 - `executingEvents`は見回り、配達または同行の順で実行中イベントを格納し、0件から2件とする。
 - actorやeventの内部オブジェクトを直接公開しない。
 
@@ -179,21 +182,21 @@ class MainGameScene {
 ## 依存先
 
 - `Character`、`Student`、`Teacher`
+- [`DialogueSystem`](../会話/DialogueSystem.md)
 - location定義と乱数
 - 好感度計算
 - `DeliveryEvent`、`AccompanimentEvent`
 - [`EventIdSequence`](../イベント/EventIdSequence.md)
 - [`PatrolEventManager`](../イベント/PatrolEventManager.md)
 - 会話台本生成
-- `ConversationSceneSession`
 
 ## フィールド会話パネル
 
 メインゲーム中の通常会話・イベント会話は、scene stackへ`ConversationScene`をpushせず、`MainGameScene`内の進行中会話として扱う。
 
-- 会話中のsnapshotは`sceneId: SCENE_IDS.MAIN_GAME`を維持し、`conversation: session.getSnapshot()`を含める。
-- 会話中は`conversation:*`入力だけ処理し、ゲーム内時間、主人公移動、actor自動移動、map入力、event選択、カシオペア入力は進めない。
-- 会話完了時は通常会話の好感度反映、イベント会話の`completeInteraction()`、同行者制御など既存の完了callback相当処理を実行し、`conversation`を`null`へ戻す。
+- 会話中のsnapshotは`sceneId: SCENE_IDS.MAIN_GAME`を維持し、`conversation: dialogueSystem.createSnapshotFragment()`を含める。
+- 会話中は`DialogueSystem`が`conversation:*`入力だけ処理し、ゲーム内時間、主人公移動、actor自動移動、map入力、event選択、カシオペア入力は進めない。
+- 会話完了時は`DialogueSystem`の完了callbackを通して、通常会話の好感度反映、イベント会話の`completeInteraction()`、同行者制御など既存の完了callback相当処理を実行し、`conversation`を`null`へ戻す。
 
 独立した`ConversationScene`は互換用に残すが、メインゲーム中のフィールド会話表示には使わない。
 

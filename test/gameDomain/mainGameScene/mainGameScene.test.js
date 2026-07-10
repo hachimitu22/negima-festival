@@ -30,6 +30,27 @@ describe('MG-UT-S01 embedded conversation', () => {
     assert.ok(snapshot.conversation);
   });
 
+  it('MG-UT-S01-C04 stops game time on the conversation start frame', () => {
+    // Arrange
+    const scene = new MainGameScene();
+    moveCharacterToGymArena(scene);
+    const beforeSnapshot = scene.createSnapshot();
+
+    // Act
+    updateScene(scene, {
+      deltaTimeMs: 5000,
+      inputs: [createTargetInput(TARGET_PREFIXES.ACTOR, 'student-02')],
+    });
+    const afterSnapshot = scene.createSnapshot();
+
+    // Assert
+    assert.equal(
+      afterSnapshot.gameTime.currentHours,
+      beforeSnapshot.gameTime.currentHours,
+    );
+    assert.ok(afterSnapshot.conversation);
+  });
+
   it('MG-UT-S01-C02 stops game time and ignores map input during a conversation', () => {
     // Arrange
     const scene = new MainGameScene();
@@ -74,6 +95,33 @@ describe('MG-UT-S01 embedded conversation', () => {
     assert.equal(snapshot.conversation, null);
     assert.equal(snapshot.activeLayerId, MAIN_GAME_LAYER_IDS.MAP);
   });
+
+  it('MG-UT-S01-C05 resumes game time on the frame after conversation completion', () => {
+    // Arrange
+    const scene = new MainGameScene();
+    moveCharacterToGymArena(scene);
+    updateScene(scene, {
+      inputs: [createTargetInput(TARGET_PREFIXES.ACTOR, 'student-02')],
+    });
+    const beforeCompletionSnapshot = scene.createSnapshot();
+
+    // Act
+    completeConversation(scene, { deltaTimeMs: 5000 });
+    const completionFrameSnapshot = scene.createSnapshot();
+    updateScene(scene, { deltaTimeMs: 1000 });
+    const resumedFrameSnapshot = scene.createSnapshot();
+
+    // Assert
+    assert.equal(completionFrameSnapshot.conversation, null);
+    assert.equal(
+      completionFrameSnapshot.gameTime.currentHours,
+      beforeCompletionSnapshot.gameTime.currentHours,
+    );
+    assert.ok(
+      resumedFrameSnapshot.gameTime.currentHours
+        > completionFrameSnapshot.gameTime.currentHours,
+    );
+  });
 });
 
 function moveCharacterToGymArena(scene) {
@@ -90,7 +138,7 @@ function moveCharacterToGymArena(scene) {
   );
 }
 
-function completeConversation(scene) {
+function completeConversation(scene, { deltaTimeMs = 0 } = {}) {
   for (let count = 0; count < 30; count += 1) {
     const conversation = scene.createSnapshot().conversation;
     if (!conversation) {
@@ -101,6 +149,7 @@ function completeConversation(scene) {
       ? `choice:${conversation.choices[0].id}`
       : 'next';
     updateScene(scene, {
+      deltaTimeMs,
       inputs: [createTargetInput(TARGET_PREFIXES.CONVERSATION_SCENE, action)],
     });
   }

@@ -9,9 +9,9 @@ import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
 import { createConversationSceneScript } from '../conversationScene/conversationSceneScripts.js';
 import {
-  CONVERSATION_SCENE_SESSION_RESULTS,
-  ConversationSceneSession,
-} from '../conversationScene/conversationSceneSession.js';
+  DIALOGUE_REQUEST_ACCEPTANCE,
+  DialogueSystem,
+} from '../conversationScene/dialogueSystem.js';
 import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/deliveryConversationSceneScripts.js';
@@ -50,12 +50,8 @@ class MainGameScene {
   #loop;
   #character;
   #actors;
-  #activeLayerId;
   #activeConversationEvent;
-  #activeConversationSession;
-  #activeConversationResult;
-  #activeConversationOnComplete;
-  #isActiveConversationCompleted;
+  #dialogueSystem;
   #eventIdSequence;
   #branchEventManager;
   #patrolEventManager;
@@ -139,14 +135,10 @@ class MainGameScene {
         LOCATION_IDS.STAFF_ROOM,
       ),
     ];
-    this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
     this.#gridMap = getDefaultGridMap();
     this.#eventIdSequence = new EventIdSequence();
     this.#activeConversationEvent = null;
-    this.#activeConversationSession = null;
-    this.#activeConversationResult = null;
-    this.#activeConversationOnComplete = null;
-    this.#isActiveConversationCompleted = false;
+    this.#dialogueSystem = new DialogueSystem();
     this.#patrolEventManager = new PatrolEventManager({
       character: this.#character,
       eventIdSequence: this.#eventIdSequence,
@@ -172,12 +164,15 @@ class MainGameScene {
     context,
   }) {
     const inputs = context.inputs ?? [];
-    if (this.#activeConversationSession) {
-      this.#processActiveConversationInputs(inputs);
+    this.#dialogueSystem.beginFrame();
+    const wasConversationActive = this.#dialogueSystem.hasActiveSession();
+    this.#dialogueSystem.processInput(inputs);
+    if (wasConversationActive) {
       return;
     }
 
-    if (this.#startConversationFromInputs(inputs)) {
+    this.#startConversationFromInputs(inputs);
+    if (this.#isGameplaySimulationBlocked()) {
       return;
     }
 
@@ -447,7 +442,7 @@ class MainGameScene {
     return {
       ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
-      activeLayerId: this.#activeLayerId,
+      activeLayerId: this.#createActiveLayerId(),
       conversation: this.#createActiveConversationSnapshot(),
       map: this.#gridMap.createSnapshot(),
       mapLocations: LOCATIONS,
@@ -460,10 +455,21 @@ class MainGameScene {
     };
   }
 
+  #createActiveLayerId() {
+    return this.#dialogueSystem.hasActiveSession()
+      ? MAIN_GAME_LAYER_IDS.CONVERSATION
+      : MAIN_GAME_LAYER_IDS.MAP;
+  }
+
+  #isGameplaySimulationBlocked() {
+    return this.#dialogueSystem.getFrameControlState()
+      .gameplaySimulationBlocked;
+  }
+
   #rewind() {
     this.#releaseActiveCompanion({ resetNextMoveTime: false });
     this.#activeConversationEvent = null;
-    this.#clearActiveConversation();
+    this.#dialogueSystem.dispose();
     this.#patrolEventManager.rewindTo(this.#gameTime.currentHours);
     this.#branchEventManager.rewindTo(this.#gameTime.currentHours);
   }
@@ -638,128 +644,15 @@ class MainGameScene {
    * @returns {boolean} True when active conversation state was created.
    */
   #startConversation({ script, onComplete }) {
-    if (
-      this.#activeConversationSession
-      || !script
-      || script.messages.length === 0
-    ) {
-      return false;
-    }
-
-    this.#activeConversationSession = new ConversationSceneSession(script);
-    this.#activeConversationResult = {
-      scriptId: script.id,
-      choiceId: null,
-    };
-    this.#activeConversationOnComplete = onComplete;
-    this.#isActiveConversationCompleted = false;
-    this.#activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
-    return true;
-  }
-
-  /**
-   * Processes only conversation inputs while an embedded conversation is active.
-   * @private
-   * @param {Array<Object>} inputs - Frame input events.
-   * @returns {void}
-   */
-  #processActiveConversationInputs(inputs = []) {
-    for (const input of inputs) {
-      if (this.#processActiveConversationInput(input)) {
-        break;
-      }
-    }
-  }
-
-  /**
-   * Processes one input for the active embedded conversation.
-   * @private
-   * @param {Object} input - Input event.
-   * @returns {boolean} True when the conversation completed and further inputs should stop.
-   */
-  #processActiveConversationInput(input) {
-    if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
-      return false;
-    }
-
-    const action = getTargetValue(
-      input.targetId,
-      TARGET_PREFIXES.CONVERSATION_SCENE,
-    );
-    if (!action) {
-      return false;
-    }
-
-    return this.#handleActiveConversationAction(action);
-  }
-
-  /**
-   * Applies a conversation action to the active embedded conversation.
-   * @private
-   * @param {string} action - Conversation action ID.
-   * @returns {boolean} True when the conversation completed.
-   */
-  #handleActiveConversationAction(action) {
-    if (!this.#activeConversationSession) {
-      return false;
-    }
-
-    const choiceId = getTargetValue(action, 'choice');
-    if (choiceId) {
-      const result = this.#activeConversationSession.selectChoice(choiceId);
-      if (result) {
-        this.#activeConversationResult = result;
-      }
-      return false;
-    }
-
-    if (action !== 'next') {
-      return false;
-    }
-
-    const result = this.#activeConversationSession.next();
-    if (
-      result !== CONVERSATION_SCENE_SESSION_RESULTS.COMPLETED
-      || this.#isActiveConversationCompleted
-    ) {
-      return false;
-    }
-
-    this.#completeActiveConversation();
-    return true;
-  }
-
-  /**
-   * Completes the active embedded conversation and runs its callback.
-   * @private
-   * @returns {void}
-   */
-  #completeActiveConversation() {
-    if (!this.#activeConversationSession || this.#isActiveConversationCompleted) {
-      return;
-    }
-
-    this.#isActiveConversationCompleted = true;
-    const result = this.#activeConversationResult;
-    const onComplete = this.#activeConversationOnComplete;
-    this.#clearActiveConversation();
-
-    if (typeof onComplete === 'function') {
-      onComplete(result);
-    }
-  }
-
-  /**
-   * Clears the active embedded conversation state.
-   * @private
-   * @returns {void}
-   */
-  #clearActiveConversation() {
-    this.#activeConversationSession = null;
-    this.#activeConversationResult = null;
-    this.#activeConversationOnComplete = null;
-    this.#isActiveConversationCompleted = false;
-    this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+    const result = this.#dialogueSystem.requestStart({
+      script,
+      owner: {
+        type: 'mainGameScene',
+        id: SCENE_IDS.MAIN_GAME,
+      },
+      onComplete,
+    });
+    return result.acceptance === DIALOGUE_REQUEST_ACCEPTANCE.ACCEPTED;
   }
 
   /**
@@ -768,7 +661,7 @@ class MainGameScene {
    * @returns {Object|null} Active conversation snapshot, or null when inactive.
    */
   #createActiveConversationSnapshot() {
-    return this.#activeConversationSession?.getSnapshot() ?? null;
+    return this.#dialogueSystem.createSnapshotFragment();
   }
 
   #createDeliveryEventCandidate(sender) {

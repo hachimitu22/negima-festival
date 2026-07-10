@@ -20,9 +20,10 @@
 - `targetId` などrenderer由来の入力解析
 - `ConversationScene`のpushとpop / `MainGameScene`内会話状態の開始と解除
 - ゲーム時間やイベント進行の停止
+- 会話開始requestの受付とblocking状態の管理
 - DOMを含むrenderer固有の表示処理
 
-これらは`ConversationSceneScript`の生成処理、`MainGameScene`、`ConversationScene`、rendererがそれぞれ担当する。
+これらは`ConversationSceneScript`の生成処理、`DialogueSystem`、`MainGameScene`、`ConversationScene`、rendererがそれぞれ担当する。
 
 ## GameObjectとの関係
 
@@ -152,6 +153,7 @@ snapshotは状態参照用であり、呼び出し側からsessionの状態を�
 
 `ConversationSceneSession`は、メインゲーム中の左下会話パネルでも利用する。
 
-- `MainGameScene`が会話開始時にsessionを生成し、`conversation:*`入力を`next()`または`selectChoice(choiceId)`へ変換する。
+- `MainGameScene`が会話scriptを選出し、`DialogueSystem`へ会話開始requestを送る。
+- `DialogueSystem`がsessionを生成し、`conversation:*`入力を`next()`または`selectChoice(choiceId)`へ変換する。
 - この場合は`ConversationScene`をpushせず、`MainGameScene.createSnapshot()`が`sceneId: SCENE_IDS.MAIN_GAME`のまま`conversation` snapshotを返す。
-- sessionが`COMPLETED`を返した時点で、`MainGameScene`が完了callback相当の処理を実行し、会話状態を解除する。
+- sessionが`COMPLETED`を返した時点で、`DialogueSystem`が会話状態を解除し、完了callbackを通して`MainGameScene`へ結果を返す。
