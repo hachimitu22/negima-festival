@@ -21,6 +21,7 @@ import { EventIdSequence } from './event/eventIdSequence.js';
 import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS } from './locations.js';
 import { PatrolEventManager } from './event/patrolEventManager.js';
+import { PlayerControlSystem } from './playerControlSystem.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
 import { getRandomInt } from '../random.js';
@@ -52,6 +53,7 @@ class MainGameScene {
   #characterSystem;
   #activeConversationEvent;
   #dialogueSystem;
+  #playerControlSystem;
   #eventIdSequence;
   #branchEventManager;
   #patrolEventManager;
@@ -153,6 +155,24 @@ class MainGameScene {
       character: this.#characterSystem.getPlayerCharacter(),
       eventIdSequence: this.#eventIdSequence,
     });
+    this.#playerControlSystem = new PlayerControlSystem({
+      characterRequests: {
+        movePlayerToMapPosition: position => (
+          this.#moveCharacterToMapPosition(position)
+        ),
+        movePlayerToLocation: locationId => (
+          this.#moveCharacterToLocation(locationId)
+        ),
+      },
+      branchRequests: {
+        chooseCurrentTask: branchChoiceId => (
+          this.#branchEventManager.chooseCurrentTask(branchChoiceId)
+        ),
+      },
+      cassiopeiaRequests: {
+        requestUseCassiopeia: () => this.#requestUseCassiopeia(),
+      },
+    });
   }
 
   /**
@@ -181,7 +201,9 @@ class MainGameScene {
       return;
     }
 
-    this.#handleInputs(inputs);
+    this.#playerControlSystem.update(inputs, {
+      gameplayInputEnabled: true,
+    });
     this.#updateGameState(context);
   }
 
@@ -233,6 +255,16 @@ class MainGameScene {
     return {
       currentHours: this.#gameTime.currentHours,
     };
+  }
+
+  #requestUseCassiopeia() {
+    const result = this.#useCassiopeia();
+    if (!result) {
+      return false;
+    }
+
+    this.#rewind();
+    return true;
   }
 
   /**
@@ -329,53 +361,6 @@ class MainGameScene {
       gameTimeHours: this.#gameTime.currentHours,
       isFestivalEnded: this.#gameTime.isEnded,
     };
-  }
-
-  #handleInputs(inputs = []) {
-    inputs.forEach(input => {
-      this.#processInput(input);
-    });
-  }
-
-  #processInput(input) {
-    if (input.type === INPUT_TYPES.TARGET_ACTIVATE) {
-      this.#handleTargetActivate(input.targetId);
-    }
-  }
-
-  #handleTargetActivate(targetId) {
-    const mapPosition = getMapPositionTargetValue(
-      targetId,
-      TARGET_PREFIXES.MAP_POSITION,
-    );
-    if (mapPosition) {
-      this.#moveCharacterToMapPosition(mapPosition);
-      return;
-    }
-
-    const locationId = getTargetValue(targetId, TARGET_PREFIXES.LOCATION);
-    if (locationId) {
-      this.#moveCharacterToLocation(locationId);
-      return;
-    }
-
-    const actorId = getTargetValue(targetId, TARGET_PREFIXES.ACTOR);
-    if (actorId !== null) {
-      return;
-    }
-
-    const branchChoiceId = getTargetValue(targetId, TARGET_PREFIXES.BRANCH_CHOICE);
-    if (branchChoiceId !== null) {
-      this.#branchEventManager.chooseCurrentTask(branchChoiceId);
-      return;
-    }
-
-    if (targetId === TARGET_PREFIXES.CASSIOPEIA) {
-      const result = this.#useCassiopeia();
-      if (result) {
-        this.#rewind();
-      }
-    }
   }
 
   /**
@@ -770,26 +755,6 @@ function getTargetValue(targetId, prefix) {
   }
 
   return targetId.slice(expectedPrefix.length);
-}
-
-/**
- * ターゲットIDからマップ座標を取得する。
- * @param {string} targetId - ターゲットID。
- * @param {string} prefix - 期待するprefix。
- * @returns {Object|null} マップ座標。形式不正の場合はnull。
- */
-function getMapPositionTargetValue(targetId, prefix) {
-  const value = getTargetValue(targetId, prefix);
-  if (value === null) {
-    return null;
-  }
-
-  const [x, y] = value.split(',').map(Number);
-  if (!Number.isFinite(x) || !Number.isFinite(y)) {
-    return null;
-  }
-
-  return { x, y };
 }
 
 function getFrameDeltaTimeMs(frame) {

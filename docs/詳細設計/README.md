@@ -36,6 +36,7 @@
 
 - [シーン索引](ドメイン/シーン/README.md)
 - [CharacterSystem（キャラクター位置・移動System）](ドメイン/シーン/CharacterSystem.md)
+- [PlayerControlSystem（プレイヤー操作System）](ドメイン/シーン/PlayerControlSystem.md)
 - [TitleScene（タイトルシーン）](ドメイン/シーン/TitleScene.md)
 - [MainGameScene（メインゲームシーン）](ドメイン/シーン/MainGameScene.md)
 - [ConversationScene（会話シーン）](ドメイン/シーン/ConversationScene.md)

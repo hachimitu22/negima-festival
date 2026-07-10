@@ -124,6 +124,34 @@ describe('MG-UT-S01 embedded conversation', () => {
   });
 });
 
+describe('MG-UT-S02 normal input routing', () => {
+  it('MG-UT-S02-C01 applies cassiopeia input through player control routing', () => {
+    // Arrange
+    const scene = new MainGameScene();
+    updateScene(scene, { deltaTimeMs: 60000 });
+    const beforeSnapshot = scene.createSnapshot();
+
+    // Act
+    updateScene(scene, {
+      inputs: [{
+        type: INPUT_TYPES.TARGET_ACTIVATE,
+        targetId: TARGET_PREFIXES.CASSIOPEIA,
+      }],
+    });
+    const afterSnapshot = scene.createSnapshot();
+
+    // Assert
+    assert.equal(beforeSnapshot.gameTime.currentHours, 30);
+    assert.equal(afterSnapshot.gameTime.currentHours, 6);
+    assert.equal(afterSnapshot.loop.count, beforeSnapshot.loop.count + 1);
+    assert.equal(
+      afterSnapshot.character.magicPower.current,
+      beforeSnapshot.character.magicPower.current
+        - afterSnapshot.loop.cassiopeiaMagicPowerCost,
+    );
+  });
+});
+
 function moveCharacterToGymArena(scene) {
   const gymArenaCenter = getDefaultGridMap().getLocationCenter(
     LOCATION_IDS.GYM_ARENA,

@@ -15,6 +15,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
 主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
+通常入力のtarget解釈は`PlayerControlSystem`へ委譲する。
 
 ## 所有する状態
 
@@ -25,6 +26,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
+| `playerControlSystem`     | 通常入力の解釈とrequest発行                 |
 | `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
 | `patrolEventManager`      | 見回りの生成、進行、報酬、保持を管理するManager  |
 
@@ -48,7 +50,7 @@ class MainGameScene {
 3. 会話中でなければ、input全体から会話開始を成立させるactor入力を探す。
 4. 成立した場合は`DialogueSystem.requestStart()`へscriptと完了callbackを渡す。
 5. `DialogueSystem.getFrameControlState()`で会話による停止状態を確認する。
-6. 停止中でなければ、マップ座標クリック、イベント選択、カシオペア入力を処理する。
+6. 停止中でなければ、`PlayerControlSystem.update()`で通常入力をrequestへ変換する。
 7. 停止中でなければ、frame経過量からゲーム時間を進める。
 8. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
 9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
@@ -58,7 +60,10 @@ class MainGameScene {
 
 ## input
 
-`INPUT_TYPES.TARGET_ACTIVATE`だけを解釈する。
+`MainGameScene`は会話開始用のactor入力だけを直接確認する。
+それ以外の通常入力解釈は`PlayerControlSystem`が担当する。
+
+`INPUT_TYPES.TARGET_ACTIVATE`だけを対象にする。
 
 | target                  | 処理                             |
 | ----------------------- | -------------------------------- |
@@ -183,6 +188,7 @@ class MainGameScene {
 - `Character`、`Student`、`Teacher`
 - [`CharacterSystem`](CharacterSystem.md)
 - [`DialogueSystem`](../会話/DialogueSystem.md)
+- [`PlayerControlSystem`](PlayerControlSystem.md)
 - location定義と乱数
 - 好感度計算
 - `DeliveryEvent`、`AccompanimentEvent`

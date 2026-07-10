@@ -72,6 +72,7 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 - [BranchEventManager（分岐イベント管理）](単体テスト/ドメイン/イベント/BranchEventManager.md)
 - [Actor（登場人物）](単体テスト/ドメイン/シーン/Actor.md)
 - [CharacterSystem（キャラクター位置・移動System）](単体テスト/ドメイン/シーン/CharacterSystem.md)
+- [PlayerControlSystem（プレイヤー操作System）](単体テスト/ドメイン/シーン/PlayerControlSystem.md)
 - [GridMap（グリッドマップ）](単体テスト/ドメイン/マップ/GridMap.md)
 
 ## 統合テスト
