@@ -16,11 +16,11 @@
 ```mermaid
 flowchart TB
   TitleScene --> MainGameScene
-  MainGameScene --> ConversationScene
+  MainGameScene --> ConversationSceneSession
   ConversationScene --> ConversationSceneSession
 ```
 
 - `TitleScene`はゲーム開始時に`MainGameScene`を生成する。
-- `MainGameScene`は会話条件を判定して`ConversationScene`を生成する。
-- `ConversationScene`は会話台本から`ConversationSceneSession`を生成する。
+- `MainGameScene`はフィールド会話条件を判定して`ConversationSceneSession`を生成し、メインシーン内の会話レイヤーとして保持する。
+- `ConversationScene`は独立会話シーン用に残り、会話台本から`ConversationSceneSession`を生成する。
 - 下位のsessionやeventからscene controlを呼び出さない。

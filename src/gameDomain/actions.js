@@ -40,9 +40,11 @@ const TARGET_PREFIXES = {
  * 
  * @public
  * @type {Object}
+ * @property {string} CONVERSATION - 会話表示レイヤー
  * @property {string} MAP - マップ表示レイヤー
  */
 const MAIN_GAME_LAYER_IDS = {
+  CONVERSATION: 'conversation',
   MAP: 'map',
 };
 

@@ -1,4 +1,5 @@
 import { INPUT_TYPES, TARGET_PREFIXES } from '../../../gameDomain/actions.js';
+import { createConversationView } from '../../conversationView.js';
 import { createStatusView } from '../../statusView.js';
 import { createMapView } from './mapView.js';
 
@@ -12,6 +13,7 @@ import { createMapView } from './mapView.js';
 function createMainGameSceneView(rootElement, options) {
   const statusView = createStatusView();
   let mapView = null;
+  let conversationView = null;
   let root = null;
   let elements = null;
   let enqueueInput = null;
@@ -24,6 +26,9 @@ function createMainGameSceneView(rootElement, options) {
     root.id = 'main-game-scene';
 
     elements = {
+      conversationPanel: createRegion(createDiv('conversation-panel')),
+      conversationTitle: createHeading('conversation-title', '会話'),
+      conversationBody: createDiv('conversation'),
       eventPanel: createRegion(createDiv('event-panel')),
       eventTitle: createHeading('executing-events-title', '実行中イベント'),
       mapList: createRegion(createDiv('map-list')),
@@ -32,10 +37,17 @@ function createMainGameSceneView(rootElement, options) {
 
     statusView.mount(root, options);
     mapView = createMapView(elements.mapList.element, options);
+    conversationView = createConversationView(elements.conversationBody, options);
+    elements.conversationPanel.element.setAttribute('aria-labelledby', elements.conversationTitle.id);
+    elements.conversationPanel.element.append(
+      elements.conversationTitle,
+      elements.conversationBody,
+    );
     elements.eventPanel.element.setAttribute('aria-labelledby', elements.eventTitle.id);
     elements.eventPanel.element.append(elements.eventTitle, elements.eventList);
     [
       elements.eventPanel,
+      elements.conversationPanel,
       elements.mapList,
     ].forEach(region => {
       root.append(region.anchor, region.element);
@@ -54,12 +66,15 @@ function createMainGameSceneView(rootElement, options) {
   }
 
   function updateSceneContent(snapshot) {
+    const isConversationActive = Boolean(snapshot.conversation);
     mapView.update(
       snapshot.map,
       snapshot.character,
       snapshot.actors,
+      { isInputDisabled: isConversationActive },
     );
-    updateExecutingEvents(snapshot.executingEvents);
+    updateConversation(snapshot.conversation);
+    updateExecutingEvents(snapshot.executingEvents, isConversationActive);
   }
 
   function destroy() {
@@ -68,9 +83,12 @@ function createMainGameSceneView(rootElement, options) {
     }
 
     mapView.destroy();
+    conversationView.destroy();
     mapView = null;
+    conversationView = null;
     [
       elements.eventPanel,
+      elements.conversationPanel,
       elements.mapList,
     ].forEach(region => {
       region.element.remove();
@@ -83,7 +101,16 @@ function createMainGameSceneView(rootElement, options) {
     enqueueInput = null;
   }
 
-  function updateExecutingEvents(events) {
+  /**
+   * Updates the embedded conversation panel.
+   * @param {Object|null} conversation - Conversation snapshot.
+   * @returns {void}
+   */
+  function updateConversation(conversation) {
+    conversationView.update(conversation);
+  }
+
+  function updateExecutingEvents(events, isInputDisabled) {
     const eventIds = new Set(events.map(event => String(event.id)));
 
     Array.from(elements.eventList.children).forEach(eventItem => {
@@ -99,6 +126,7 @@ function createMainGameSceneView(rootElement, options) {
         eventItem.querySelector('[data-event-choices]'),
         event.currentTask?.choices ?? [],
         enqueueInput,
+        isInputDisabled,
       );
 
       if (!eventItem.isConnected) {
@@ -134,7 +162,15 @@ function createMainGameSceneView(rootElement, options) {
   };
 }
 
-function updateEventChoices(choiceList, choices, enqueueInput) {
+/**
+ * Updates event choice buttons.
+ * @param {HTMLElement} choiceList - Choice list element.
+ * @param {Array<Object>} choices - Event choice snapshots.
+ * @param {Function} enqueueInput - Input queue function.
+ * @param {boolean} isInputDisabled - Whether event choice input is disabled.
+ * @returns {void}
+ */
+function updateEventChoices(choiceList, choices, enqueueInput, isInputDisabled) {
   const choiceIds = new Set(choices.map(choice => choice.id));
 
   Array.from(choiceList.children).forEach(choiceItem => {
@@ -150,6 +186,7 @@ function updateEventChoices(choiceList, choices, enqueueInput) {
     if (button.textContent !== choice.title) {
       button.textContent = choice.title;
     }
+    button.disabled = isInputDisabled;
     if (!choiceItem.isConnected) {
       choiceList.appendChild(choiceItem);
     }

@@ -33,6 +33,7 @@ function createMapView(rootElement, options) {
   let lastActorOptionSignature = null;
   let latestActors = [];
   let latestMap = null;
+  let isInputDisabled = false;
 
   rootElement.setAttribute('aria-labelledby', title.id);
   actorTracker.dataset.actorTracker = '';
@@ -62,11 +63,16 @@ function createMapView(rootElement, options) {
    * @param {Object} map - マップsnapshot。
    * @param {Object} character - 主人公snapshot。
    * @param {Array<Object>} [actors=[]] - アクターsnapshot配列。
+   * @param {Object} [options={}] - Update options.
+   * @param {boolean} [options.isInputDisabled=false] - Whether map input is disabled.
    * @returns {void}
    */
-  function update(map, character, actors = []) {
+  function update(map, character, actors = [], { isInputDisabled: nextIsInputDisabled = false } = {}) {
     latestActors = actors;
     latestMap = map;
+    isInputDisabled = nextIsInputDisabled;
+    actorSelect.disabled = isInputDisabled;
+    stage.toggleAttribute('data-map-input-disabled', isInputDisabled);
     updateActorTracker(actors);
 
     const mapSignature = JSON.stringify({
@@ -96,6 +102,7 @@ function createMapView(rootElement, options) {
     lastActorOptionSignature = null;
     latestActors = [];
     latestMap = null;
+    isInputDisabled = false;
     rootElement.replaceChildren();
   }
 
@@ -247,7 +254,7 @@ function createMapView(rootElement, options) {
       const position = offsetActorPosition(actor.position, locationIndex);
 
       marker.textContent = '';
-      marker.disabled = !actor.isTalkable;
+      marker.disabled = isInputDisabled || !actor.isTalkable;
       marker.toggleAttribute('data-tracked-actor', actor.id === viewState.trackedActorId);
       marker.title = `${actor.name}: ${actor.location?.name ?? ''}`;
       marker.setAttribute('aria-label', marker.title);
@@ -388,7 +395,11 @@ function createMapView(rootElement, options) {
    * @returns {void}
    */
   function handleStageClick(event) {
-    if (!latestMap || event.target.closest('[data-actor-marker]')) {
+    if (
+      isInputDisabled
+      || !latestMap
+      || event.target.closest('[data-actor-marker]')
+    ) {
       return;
     }
 

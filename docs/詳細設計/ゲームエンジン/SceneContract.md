@@ -101,7 +101,7 @@ scene viewの生成と破棄はrendererが`sceneId`の変化を見て行う。
 | scene               | 遷移方法                               |
 | ------------------- | -------------------------------------- |
 | `TitleScene`        | ゲーム開始時に`MainGameScene`へreplace |
-| `MainGameScene`     | 会話開始時に`ConversationScene`をpush  |
-| `ConversationScene` | 会話完了時に自身をpop                  |
+| `MainGameScene`     | フィールド会話はscene遷移せず会話layerを表示 |
+| `ConversationScene` | 独立会話シーンとして使う場合は完了時に自身をpop |
 
 個別の責務は[ドメインのシーン設計](../ドメイン/シーン/README.md)を参照する。

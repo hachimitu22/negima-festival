@@ -14,6 +14,10 @@
   grid-column: 2;
 }
 
+#conversation-panel {
+  grid-column: 1;
+}
+
 #map-list,
 #conversation {
   grid-column: 1 / -1;
@@ -30,6 +34,7 @@
 
 #main-game-scene #status,
 #event-panel,
+#conversation-panel,
 #map-list {
   box-sizing: border-box;
   border: 2px solid var(--panel-border, #475569);
@@ -42,9 +47,23 @@
   --panel-header-background: #eff6ff;
 }
 
+#main-game-scene #status[data-conversation-active="true"] {
+  opacity: 0.72;
+}
+
+#main-game-scene #status[data-conversation-active="true"] #cassiopeia {
+  cursor: default;
+}
+
 #event-panel {
   --panel-border: #c2410c;
   --panel-header-background: #fff7ed;
+}
+
+#conversation-panel {
+  --panel-border: #0f766e;
+  --panel-header-background: #f0fdfa;
+  min-height: 180px;
 }
 
 #map-list {
@@ -54,12 +73,14 @@
 
 #status-title,
 #executing-events-title,
+#conversation-title,
 #map-title {
   margin: 0;
 }
 
 #main-game-scene #status-title,
 #executing-events-title,
+#conversation-title,
 #map-title {
   padding: 7px 12px;
   border-bottom: 2px solid var(--panel-border, #475569);
@@ -93,6 +114,11 @@
 #event-list {
   margin: 0;
   padding: 10px 18px 12px 34px;
+}
+
+#conversation-panel #conversation {
+  padding: 10px 14px 12px;
+  min-height: 96px;
 }
 
 #event-list > li {
@@ -499,6 +525,7 @@
   }
 
   #event-panel,
+  #conversation-panel,
   #map-list {
     grid-column: 1;
   }

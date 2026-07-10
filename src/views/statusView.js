@@ -54,8 +54,12 @@ function createStatusView() {
   }
 
   function renderStatus(snapshot) {
-    const isConversationActive = snapshot.sceneId === SCENE_IDS.CONVERSATION;
+    const isConversationActive = (
+      snapshot.sceneId === SCENE_IDS.CONVERSATION
+      || Boolean(snapshot.conversation)
+    );
 
+    root.dataset.conversationActive = String(isConversationActive);
     elements.gameTime.textContent = `麻帆良祭 ${formatGameTime(snapshot.gameTime.currentHours)} / ${snapshot.gameTime.durationHours}:00`;
     elements.loopCount.textContent = `${snapshot.loop.count}周目`;
     elements.location.textContent = `現在地: ${snapshot.character.location.name}`;
@@ -70,12 +74,7 @@ function createStatusView() {
     elements.cassiopeia.textContent = `カシオペアを使う (${snapshot.loop.timeTravelHours}時間戻る / MP ${snapshot.loop.cassiopeiaMagicPowerCost})`;
     elements.cassiopeia.disabled = isConversationActive
       || snapshot.character.magicPower.current < snapshot.loop.cassiopeiaMagicPowerCost;
-
-    elements.loopCount.hidden = isConversationActive;
-    elements.location.hidden = isConversationActive;
     elements.companion.hidden = !snapshot.companion;
-    elements.festivalState.hidden = isConversationActive;
-    elements.cassiopeia.hidden = isConversationActive;
   }
 
   function destroy() {

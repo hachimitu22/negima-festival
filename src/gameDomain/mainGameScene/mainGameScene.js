@@ -7,8 +7,11 @@ import { ACTOR_MOVEMENT_MODES } from './actor.js';
 import { BranchEventManager } from './event/branchEventManager.js';
 import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
-import { ConversationScene } from '../conversationScene/conversationScene.js';
 import { createConversationSceneScript } from '../conversationScene/conversationSceneScripts.js';
+import {
+  CONVERSATION_SCENE_SESSION_RESULTS,
+  ConversationSceneSession,
+} from '../conversationScene/conversationSceneSession.js';
 import {
   DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
 } from './event/deliveryConversationSceneScripts.js';
@@ -49,6 +52,10 @@ class MainGameScene {
   #actors;
   #activeLayerId;
   #activeConversationEvent;
+  #activeConversationSession;
+  #activeConversationResult;
+  #activeConversationOnComplete;
+  #isActiveConversationCompleted;
   #eventIdSequence;
   #branchEventManager;
   #patrolEventManager;
@@ -136,6 +143,10 @@ class MainGameScene {
     this.#gridMap = getDefaultGridMap();
     this.#eventIdSequence = new EventIdSequence();
     this.#activeConversationEvent = null;
+    this.#activeConversationSession = null;
+    this.#activeConversationResult = null;
+    this.#activeConversationOnComplete = null;
+    this.#isActiveConversationCompleted = false;
     this.#patrolEventManager = new PatrolEventManager({
       character: this.#character,
       eventIdSequence: this.#eventIdSequence,
@@ -149,23 +160,24 @@ class MainGameScene {
 
   /**
    * ゲームエンジンから毎フレーム呼び出される。入力処理、ゲーム時間管理、アクター更新を実行。
-   * 
-   * 会話シーン遷移が必要な場合は新しいシーンを push する。
+   *
+   * 会話中は会話入力だけを処理し、ゲーム時間とメインゲーム操作を停止する。
    * 
    * @public
    * @param {Object} options - 更新オプション
    * @param {Object} options.context - 更新コンテキスト
-   * @param {Object} options.sceneControl - シーン制御オブジェクト
    * @returns {void}
    */
   update({
     context,
-    sceneControl: { pushScene },
   }) {
     const inputs = context.inputs ?? [];
-    const conversationScene = this.#createConversationSceneFromInputs(inputs);
-    if (conversationScene) {
-      pushScene(conversationScene);
+    if (this.#activeConversationSession) {
+      this.#processActiveConversationInputs(inputs);
+      return;
+    }
+
+    if (this.#startConversationFromInputs(inputs)) {
       return;
     }
 
@@ -436,6 +448,7 @@ class MainGameScene {
       ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
       activeLayerId: this.#activeLayerId,
+      conversation: this.#createActiveConversationSnapshot(),
       map: this.#gridMap.createSnapshot(),
       mapLocations: LOCATIONS,
       executingEvents: [
@@ -450,11 +463,18 @@ class MainGameScene {
   #rewind() {
     this.#releaseActiveCompanion({ resetNextMoveTime: false });
     this.#activeConversationEvent = null;
+    this.#clearActiveConversation();
     this.#patrolEventManager.rewindTo(this.#gameTime.currentHours);
     this.#branchEventManager.rewindTo(this.#gameTime.currentHours);
   }
 
-  #createConversationSceneFromInputs(inputs = []) {
+  /**
+   * Starts an embedded conversation when the current input targets a talkable actor.
+   * @private
+   * @param {Array<Object>} inputs - Frame input events.
+   * @returns {boolean} True when a conversation was started.
+   */
+  #startConversationFromInputs(inputs = []) {
     for (const input of inputs) {
       if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
         continue;
@@ -465,19 +485,24 @@ class MainGameScene {
         continue;
       }
 
-      const conversationScene = this.#createConversationScene(actorId);
-      if (conversationScene) {
-        return conversationScene;
+      if (this.#startActorConversation(actorId)) {
+        return true;
       }
     }
 
-    return null;
+    return false;
   }
 
-  #createConversationScene(actorId) {
+  /**
+   * Starts the correct embedded conversation for an actor.
+   * @private
+   * @param {string} actorId - Talk target actor ID.
+   * @returns {boolean} True when a conversation was started.
+   */
+  #startActorConversation(actorId) {
     const actor = this.#findTalkableActor(actorId);
     if (!actor) {
-      return null;
+      return false;
     }
 
     if (this.#activeConversationEvent) {
@@ -487,23 +512,29 @@ class MainGameScene {
         currentLocationId,
       );
       if (interaction) {
-        return this.#createEventConversationScene(
+        return this.#startEventConversation(
           this.#activeConversationEvent,
           interaction,
         );
       }
 
       if (this.#isActorInteractionBlocked(actor.id, currentLocationId)) {
-        return null;
+        return false;
       }
 
-      return this.#createNormalConversationScene(actor);
+      return this.#startNormalConversation(actor);
     }
 
-    return this.#createConversationSceneWithEventCandidates(actor);
+    return this.#startConversationWithEventCandidates(actor);
   }
 
-  #createConversationSceneWithEventCandidates(actor) {
+  /**
+   * Starts a normal or event-request conversation after event candidates are selected.
+   * @private
+   * @param {Object} actor - Talk target actor.
+   * @returns {boolean} True when a conversation was started.
+   */
+  #startConversationWithEventCandidates(actor) {
     const deliveryEvent = this.#createDeliveryEventCandidate(actor);
     const accompanimentEvent = this.#createAccompanimentEventCandidate(actor);
     const eventCandidates = [
@@ -522,7 +553,7 @@ class MainGameScene {
       )),
     });
     if (script.messages.length === 0) {
-      return null;
+      return false;
     }
 
     const selectedCandidate = eventCandidates.find(candidate => (
@@ -530,7 +561,7 @@ class MainGameScene {
     ));
     if (selectedCandidate) {
       this.#eventIdSequence.next();
-      return this.#createEventConversationScene(
+      return this.#startEventConversation(
         selectedCandidate.event,
         selectedCandidate.interaction,
         {
@@ -539,20 +570,26 @@ class MainGameScene {
       );
     }
 
-    return this.#createNormalConversationScene(actor, script);
+    return this.#startNormalConversation(actor, script);
   }
 
-  #createNormalConversationScene(
+  /**
+   * Starts an embedded normal conversation.
+   * @private
+   * @param {Object} actor - Talk target actor.
+   * @param {Object} [script] - Conversation script.
+   * @returns {boolean} True when a conversation was started.
+   */
+  #startNormalConversation(
     actor,
     script = createConversationSceneScript(actor),
   ) {
     if (script.messages.length === 0) {
-      return null;
+      return false;
     }
 
-    return new ConversationScene({
+    return this.#startConversation({
       script,
-      statusSnapshot: this.#createStatusSnapshot(),
       onComplete: conversationSceneResult => {
         this.#applyStudentConversationSceneResult(
           actor.id,
@@ -562,14 +599,22 @@ class MainGameScene {
     });
   }
 
-  #createEventConversationScene(
+  /**
+   * Starts an embedded event conversation.
+   * @private
+   * @param {Object} event - Conversation-backed game event.
+   * @param {Object} interaction - Event interaction data.
+   * @param {Object} [options={}] - Event conversation options.
+   * @param {boolean} [options.activateOnComplete=false] - Whether to activate the event after the request conversation.
+   * @returns {boolean} True when a conversation was started.
+   */
+  #startEventConversation(
     event,
     interaction,
     { activateOnComplete = false } = {},
   ) {
-    return new ConversationScene({
+    return this.#startConversation({
       script: interaction.conversationSceneScript,
-      statusSnapshot: this.#createStatusSnapshot(),
       onComplete: conversationSceneResult => {
         event.completeInteraction(interaction.kind, conversationSceneResult);
 
@@ -582,6 +627,148 @@ class MainGameScene {
         this.#finishActiveConversationEvent(event);
       },
     });
+  }
+
+  /**
+   * Creates active conversation state inside the main game scene.
+   * @private
+   * @param {Object} config - Conversation configuration.
+   * @param {Object} config.script - Conversation script.
+   * @param {Function} [config.onComplete] - Completion callback.
+   * @returns {boolean} True when active conversation state was created.
+   */
+  #startConversation({ script, onComplete }) {
+    if (
+      this.#activeConversationSession
+      || !script
+      || script.messages.length === 0
+    ) {
+      return false;
+    }
+
+    this.#activeConversationSession = new ConversationSceneSession(script);
+    this.#activeConversationResult = {
+      scriptId: script.id,
+      choiceId: null,
+    };
+    this.#activeConversationOnComplete = onComplete;
+    this.#isActiveConversationCompleted = false;
+    this.#activeLayerId = MAIN_GAME_LAYER_IDS.CONVERSATION;
+    return true;
+  }
+
+  /**
+   * Processes only conversation inputs while an embedded conversation is active.
+   * @private
+   * @param {Array<Object>} inputs - Frame input events.
+   * @returns {void}
+   */
+  #processActiveConversationInputs(inputs = []) {
+    for (const input of inputs) {
+      if (this.#processActiveConversationInput(input)) {
+        break;
+      }
+    }
+  }
+
+  /**
+   * Processes one input for the active embedded conversation.
+   * @private
+   * @param {Object} input - Input event.
+   * @returns {boolean} True when the conversation completed and further inputs should stop.
+   */
+  #processActiveConversationInput(input) {
+    if (input.type !== INPUT_TYPES.TARGET_ACTIVATE) {
+      return false;
+    }
+
+    const action = getTargetValue(
+      input.targetId,
+      TARGET_PREFIXES.CONVERSATION_SCENE,
+    );
+    if (!action) {
+      return false;
+    }
+
+    return this.#handleActiveConversationAction(action);
+  }
+
+  /**
+   * Applies a conversation action to the active embedded conversation.
+   * @private
+   * @param {string} action - Conversation action ID.
+   * @returns {boolean} True when the conversation completed.
+   */
+  #handleActiveConversationAction(action) {
+    if (!this.#activeConversationSession) {
+      return false;
+    }
+
+    const choiceId = getTargetValue(action, 'choice');
+    if (choiceId) {
+      const result = this.#activeConversationSession.selectChoice(choiceId);
+      if (result) {
+        this.#activeConversationResult = result;
+      }
+      return false;
+    }
+
+    if (action !== 'next') {
+      return false;
+    }
+
+    const result = this.#activeConversationSession.next();
+    if (
+      result !== CONVERSATION_SCENE_SESSION_RESULTS.COMPLETED
+      || this.#isActiveConversationCompleted
+    ) {
+      return false;
+    }
+
+    this.#completeActiveConversation();
+    return true;
+  }
+
+  /**
+   * Completes the active embedded conversation and runs its callback.
+   * @private
+   * @returns {void}
+   */
+  #completeActiveConversation() {
+    if (!this.#activeConversationSession || this.#isActiveConversationCompleted) {
+      return;
+    }
+
+    this.#isActiveConversationCompleted = true;
+    const result = this.#activeConversationResult;
+    const onComplete = this.#activeConversationOnComplete;
+    this.#clearActiveConversation();
+
+    if (typeof onComplete === 'function') {
+      onComplete(result);
+    }
+  }
+
+  /**
+   * Clears the active embedded conversation state.
+   * @private
+   * @returns {void}
+   */
+  #clearActiveConversation() {
+    this.#activeConversationSession = null;
+    this.#activeConversationResult = null;
+    this.#activeConversationOnComplete = null;
+    this.#isActiveConversationCompleted = false;
+    this.#activeLayerId = MAIN_GAME_LAYER_IDS.MAP;
+  }
+
+  /**
+   * Creates a snapshot for the active embedded conversation.
+   * @private
+   * @returns {Object|null} Active conversation snapshot, or null when inactive.
+   */
+  #createActiveConversationSnapshot() {
+    return this.#activeConversationSession?.getSnapshot() ?? null;
   }
 
   #createDeliveryEventCandidate(sender) {

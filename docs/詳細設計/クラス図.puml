@@ -246,7 +246,7 @@ Scene <|.. MainGameScene
 Scene <|.. ConversationScene
 GameView <|.. DomGameView
 
-MainGameScene ..> ConversationScene : pushScene(new)
+MainGameScene *-- ConversationSession : active conversation
 ConversationScene *-- ConversationSession : session
 MainGameScene ..> DomainModules : imports
 
