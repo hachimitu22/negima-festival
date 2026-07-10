@@ -19,3 +19,11 @@
 | ケースID | 観点 | 期待結果 |
 | --- | --- | --- |
 | MG-UT-S02-C01 | カシオペア入力 | 時間が遡行し、ループ数とMP消費がsnapshotへ反映される。 |
+
+## MG-UT-S03 event system routing
+
+`EventSystem`へ移譲したイベントsnapshotが、`MainGameScene`上の公開snapshotから見て従来通り反映されることを検証する。
+
+| ケースID | 観点 | 期待結果 |
+| --- | --- | --- |
+| MG-UT-S03-C01 | 初期実行中イベント | 初期snapshotの`executingEvents`に見回りと分岐イベントが含まれる。 |

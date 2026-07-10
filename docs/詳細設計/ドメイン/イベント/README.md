@@ -5,6 +5,7 @@
 
 ## 設計一覧
 
+- [EventSystem（イベントSystem）](EventSystem.md)
 - [EventIdSequence（イベントID採番器）](EventIdSequence.md)
 - [BranchEvent（分岐イベント）](BranchEvent.md)
 - [BranchEventManager（分岐イベント管理）](BranchEventManager.md)
@@ -19,7 +20,8 @@
 
 - eventはtaskとイベント固有情報をまとめ、sceneへ状態照会とsnapshotを提供する。
 - taskは達成すべき目的と状態遷移を管理する。
-- sceneはイベント管理を呼び出す時刻や入力との接続を担当する。
+- `EventSystem`はsceneからイベント固有の状態保持と会話候補生成を切り出し、各Managerと継続イベントを束ねる。
+- sceneはactor入力の抽出、時間更新、場所訪問など、イベント管理を呼び出すタイミングとの接続を担当する。
 - 見回りでは`PatrolEventManager`が生成時期、報酬の適用、実行中イベントの保持と破棄を担当する。
 - 分岐では`BranchEventManager`が時間制限付きタスクチェーンの保持と破棄を担当し、報酬は扱わない。
 - eventとtaskは時間経過による自己更新を行わず、`GameObject`を継承しない。

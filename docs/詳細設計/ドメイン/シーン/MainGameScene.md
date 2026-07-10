@@ -16,6 +16,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
 通常入力のtarget解釈は`PlayerControlSystem`へ委譲する。
+継続イベントの保持、進行、イベント会話、実行中イベントsnapshotは`EventSystem`へ委譲する。
 
 ## 所有する状態
 
@@ -24,14 +25,12 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `gameTime`                | 現在時間、終了時間、時間倍率、終了状態           |
 | `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
 | `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
-| `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
 | `playerControlSystem`     | 通常入力の解釈とrequest発行                 |
-| `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
-| `patrolEventManager`      | 見回りの生成、進行、報酬、保持を管理するManager  |
+| `eventSystem`             | 継続イベント、イベント会話、実行中イベントsnapshot |
 
 初期layerはmap、初期の配達または同行はなしとする。
-`PatrolEventManager`が初期の見回りを生成し、最初のsnapshotから実行中イベントとして公開する。
+`EventSystem`が初期の見回りと分岐イベントを生成し、最初のsnapshotから実行中イベントとして公開する。
 キャラクター、登場人物、各数値の初期値は基本設計を正本とする。
 
 ## 公開契約
@@ -48,13 +47,13 @@ class MainGameScene {
 1. `DialogueSystem.beginFrame()`を呼び出す。
 2. `DialogueSystem.processInput(inputs)`で進行中会話の入力を処理する。
 3. 会話中でなければ、input全体から会話開始を成立させるactor入力を探す。
-4. 成立した場合は`DialogueSystem.requestStart()`へscriptと完了callbackを渡す。
+4. 成立した場合は`EventSystem.requestActorConversation()`へactorと現在地を渡す。
 5. `DialogueSystem.getFrameControlState()`で会話による停止状態を確認する。
 6. 停止中でなければ、`PlayerControlSystem.update()`で通常入力をrequestへ変換する。
 7. 停止中でなければ、frame経過量からゲーム時間を進める。
-8. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
+8. 更新後のゲーム時間を`EventSystem.advanceTo(currentHours)`へ通知する。
 9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
-10. `CharacterSystem`が保持する主人公が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
+10. `CharacterSystem`が保持する主人公が移動中に入った場所がある場合は、各場所IDを`EventSystem.visitLocations(locationIds)`へ通知する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -90,7 +89,7 @@ class MainGameScene {
 
 ## 会話シーンの生成
 
-`MainGameScene`は会話相手と`activeConversationEvent`から使用する台本を決定する。
+`EventSystem`は会話相手と実行中イベントから使用する台本を決定する。
 `PatrolEventManager`が管理する見回りは会話台本の選出に関与しない。
 
 ### 実行中の配達または同行がない場合
@@ -98,7 +97,7 @@ class MainGameScene {
 1. 通常会話、配達依頼、同行開始の候補を作る。
 2. 会話scriptを選出する。
 3. イベントscriptが選ばれた場合だけ`EventIdSequence`のevent IDを進める。
-4. 台本と完了callbackを`DialogueSystem.requestStart()`へ渡し、メインシーン内の進行中会話として保持させる。
+4. 台本と完了callbackを`DialogueSystem.requestStart()`へ渡すadapterを通して、メインシーン内の進行中会話として保持させる。
 
 ### 実行中の配達または同行がある場合
 
@@ -107,30 +106,30 @@ class MainGameScene {
 3. 同行条件によって会話が禁止されていれば生成しない。
 4. それ以外は通常会話を生成する。
 
-通常会話の完了callbackは生徒の好感度を反映する。
-イベント会話の完了callbackはeventへ結果を渡し、開始、成功、失敗に応じて`activeConversationEvent`を更新する。
+通常会話の完了callbackはadapterを通して生徒の好感度を反映する。
+イベント会話の完了callbackはeventへ結果を渡し、開始、成功、失敗に応じて`EventSystem`内の実行中イベントを更新する。
 
 ## 見回りの生成と進行
 
 - [`PatrolEventManager`](../イベント/PatrolEventManager.md)が見回り先の抽選、発生時刻、進行、報酬適用、実行中eventの保持と破棄を担当する。
-- `MainGameScene`は`Character`の生成後に、同じCharacter、共有[`EventIdSequence`](../イベント/EventIdSequence.md)、祭終了時刻からManagerを生成する。
+- `EventSystem`は`Character`、共有[`EventIdSequence`](../イベント/EventIdSequence.md)、祭終了時刻からManagerを生成する。
 - ゲーム開始時の見回りにはevent ID 0を割り当て、以後は配達、同行、見回りで共有する連番を割り当てる。
-- 時間更新後は`advanceTo(currentHours)`を呼ぶ。
-- 場所移動の成立後は`visitCurrentLocation()`を呼ぶ。
-- カシオペアによる遡行後は`rewindTo(currentHours)`を呼ぶ。
-- scene snapshotの生成時は`getExecutingEventSnapshot()`の結果を配達または同行のsnapshotより前へ格納する。
+- 時間更新後は`EventSystem.advanceTo(currentHours)`を呼ぶ。
+- 場所移動の成立後は`EventSystem.visitLocations(locationIds)`を呼ぶ。
+- カシオペアによる遡行後は`EventSystem.rewindTo(currentHours)`を呼ぶ。
+- scene snapshotの生成時は`EventSystem.createSnapshotFragment().executingEvents`を使用する。
 
 見回り固有の生成条件、抽選、完了報酬、巻き戻し時の破棄は`MainGameScene`で判定しない。
 
 ## 継続イベントとの境界
 
 - `DeliveryEvent`と`AccompanimentEvent`がtask状態と会話台本を管理する。
-- `MainGameScene`が配達または同行を1件保持し、`PatrolEventManager`が見回りを1件まで保持する。
+- `EventSystem`が配達または同行を1件保持し、`PatrolEventManager`が見回りを1件まで保持する。
 - 同行開始時は同伴者の移動modeを`external`へ変更する。
-- 同行中の場所同期は`MainGameScene`が同伴者IDを決定し、実際の移動開始は`CharacterSystem`が行う。
+- 同行中の場所同期は`EventSystem`が同伴者IDを返し、実際の移動開始は`CharacterSystem`が行う。
 - 配達または同行の完了や失敗時は報酬を適用し、同伴者を`automatic`へ戻して対象イベントを破棄する。
 - 見回り完了時は`PatrolEventManager`がMahoPayポイントを適用して対象イベントを破棄する。
-- カシオペア使用時は同伴者を解放し、Managerへ見回りの破棄を通知する。
+- カシオペア使用時は`EventSystem`が同伴者を解放し、Managerへイベント破棄を通知する。
 
 イベントのゲームルールは[基本設計のイベント仕様](../../../基本設計/イベント/README.md)を正本とする。
 
@@ -178,7 +177,7 @@ class MainGameScene {
 - `companion`は同行中だけ同伴者snapshot、それ以外は`null`とする。
 - `activeLayerId`は`DialogueSystem`が進行中会話を持つ場合に`conversation`、それ以外は`map`とする。
 - `conversation`は会話中だけ`DialogueSystem.createSnapshotFragment()`の結果、それ以外は`null`とする。
-- `executingEvents`は見回り、配達または同行の順で実行中イベントを格納し、0件から2件とする。
+- `executingEvents`は見回り、分岐、配達または同行の順で実行中イベントを格納する。
 - actorやeventの内部オブジェクトを直接公開しない。
 
 見回りのevent snapshotは[`PatrolEvent`のsnapshot契約](../イベント/PatrolEvent.md#snapshot)を使用する。
@@ -189,12 +188,9 @@ class MainGameScene {
 - [`CharacterSystem`](CharacterSystem.md)
 - [`DialogueSystem`](../会話/DialogueSystem.md)
 - [`PlayerControlSystem`](PlayerControlSystem.md)
+- [`EventSystem`](../イベント/EventSystem.md)
 - location定義と乱数
 - 好感度計算
-- `DeliveryEvent`、`AccompanimentEvent`
-- [`EventIdSequence`](../イベント/EventIdSequence.md)
-- [`PatrolEventManager`](../イベント/PatrolEventManager.md)
-- 会話台本生成
 
 ## フィールド会話パネル
 

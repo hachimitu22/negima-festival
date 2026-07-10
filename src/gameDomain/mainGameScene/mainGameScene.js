@@ -1,30 +1,17 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from '../actions.js';
-import {
-  ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS,
-} from './event/accompanimentConversationSceneScripts.js';
-import { AccompanimentEvent } from './event/accompanimentEvent.js';
-import { ACTOR_MOVEMENT_MODES } from './actor.js';
-import { BranchEventManager } from './event/branchEventManager.js';
 import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
 import { CharacterSystem } from './characterSystem.js';
-import { createConversationSceneScript } from '../conversationScene/conversationSceneScripts.js';
 import {
   DIALOGUE_REQUEST_ACCEPTANCE,
   DialogueSystem,
 } from '../conversationScene/dialogueSystem.js';
-import {
-  DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS,
-} from './event/deliveryConversationSceneScripts.js';
-import { DeliveryEvent } from './event/deliveryEvent.js';
-import { EventIdSequence } from './event/eventIdSequence.js';
+import { EventSystem } from './event/eventSystem.js';
 import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS } from './locations.js';
-import { PatrolEventManager } from './event/patrolEventManager.js';
 import { PlayerControlSystem } from './playerControlSystem.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
-import { getRandomInt } from '../random.js';
 
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
@@ -36,9 +23,6 @@ const TEACHER_IDS = {
   TAKAHATA: 'teacher-takahata',
   SHIZUNA: 'teacher-shizuna',
 };
-const DELIVERY_AFFECTION_REWARD = 5;
-const ACCOMPANIMENT_AFFECTION_REWARD = 20;
-
 /**
  * メインゲームシーン。3日間の麻帆良祭を管理するシーン（GameObject を継承）。
  * 
@@ -51,12 +35,9 @@ class MainGameScene {
   #gameTime;
   #loop;
   #characterSystem;
-  #activeConversationEvent;
   #dialogueSystem;
   #playerControlSystem;
-  #eventIdSequence;
-  #branchEventManager;
-  #patrolEventManager;
+  #eventSystem;
   #gridMap;
 
   /**
@@ -143,17 +124,43 @@ class MainGameScene {
       actors,
       gridMap: this.#gridMap,
     });
-    this.#eventIdSequence = new EventIdSequence();
-    this.#activeConversationEvent = null;
     this.#dialogueSystem = new DialogueSystem();
-    this.#patrolEventManager = new PatrolEventManager({
+    this.#eventSystem = new EventSystem({
       character: this.#characterSystem.getPlayerCharacter(),
-      eventIdSequence: this.#eventIdSequence,
       durationHours: this.#gameTime.durationHours,
-    });
-    this.#branchEventManager = new BranchEventManager({
-      character: this.#characterSystem.getPlayerCharacter(),
-      eventIdSequence: this.#eventIdSequence,
+      actorsProvider: () => this.#characterSystem.getActors(),
+      conversationRequests: {
+        start: ({ script, onComplete }) => {
+          const result = this.#dialogueSystem.requestStart({
+            script,
+            owner: {
+              type: 'mainGameScene',
+              id: SCENE_IDS.MAIN_GAME,
+            },
+            onComplete,
+          });
+          return result.acceptance === DIALOGUE_REQUEST_ACCEPTANCE.ACCEPTED;
+        },
+      },
+      rewardRequests: {
+        applyConversationResult: (actorId, conversationSceneResult) => (
+          this.#applyStudentConversationSceneResult(
+            actorId,
+            conversationSceneResult,
+          )
+        ),
+        applyAffection: (actorId, amount) => (
+          this.#applyStudentAffectionChange(actorId, amount)
+        ),
+      },
+      companionRequests: {
+        setActorMovementMode: (actorId, movementMode) => (
+          this.#setActorMovementMode(actorId, movementMode)
+        ),
+        resetActorNextMoveTime: actorId => (
+          this.#resetActorNextMoveTime(actorId)
+        ),
+      },
     });
     this.#playerControlSystem = new PlayerControlSystem({
       characterRequests: {
@@ -166,7 +173,7 @@ class MainGameScene {
       },
       branchRequests: {
         chooseCurrentTask: branchChoiceId => (
-          this.#branchEventManager.chooseCurrentTask(branchChoiceId)
+          this.#eventSystem.chooseCurrentTask(branchChoiceId)
         ),
       },
       cassiopeiaRequests: {
@@ -209,8 +216,7 @@ class MainGameScene {
 
   #updateGameState(frame) {
     const elapsedGameHours = this.#updateGameTime(frame);
-    this.#patrolEventManager.advanceTo(this.#gameTime.currentHours);
-    this.#branchEventManager.advanceTo(this.#gameTime.currentHours);
+    this.#eventSystem.advanceTo(this.#gameTime.currentHours);
     const context = {
       ...this.#createUpdateContext(frame),
       elapsedGameHours,
@@ -275,7 +281,7 @@ class MainGameScene {
    */
   #moveCharacterToLocation(locationId) {
     return this.#characterSystem.movePlayerToLocation(locationId, {
-      companionActorId: this.#getActiveCompanionActorId(),
+      companionActorId: this.#eventSystem.getActiveCompanionActorId(),
     });
   }
 
@@ -287,7 +293,7 @@ class MainGameScene {
    */
   #moveCharacterToMapPosition(position) {
     return this.#characterSystem.movePlayerToMapPosition(position, {
-      companionActorId: this.#getActiveCompanionActorId(),
+      companionActorId: this.#eventSystem.getActiveCompanionActorId(),
     });
   }
 
@@ -371,6 +377,7 @@ class MainGameScene {
    */
   createSnapshot() {
     const statusSnapshot = this.#createStatusSnapshot();
+    const eventSnapshot = this.#eventSystem.createSnapshotFragment();
     return {
       ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
@@ -378,12 +385,7 @@ class MainGameScene {
       conversation: this.#createActiveConversationSnapshot(),
       map: this.#gridMap.createSnapshot(),
       mapLocations: LOCATIONS,
-      executingEvents: [
-        this.#patrolEventManager.getExecutingEventSnapshot(),
-        this.#branchEventManager.getExecutingEventSnapshot(),
-        this.#activeConversationEvent?.getSnapshot() ?? null,
-      ]
-        .filter(Boolean),
+      executingEvents: eventSnapshot.executingEvents,
     };
   }
 
@@ -399,11 +401,8 @@ class MainGameScene {
   }
 
   #rewind() {
-    this.#releaseActiveCompanion({ resetNextMoveTime: false });
-    this.#activeConversationEvent = null;
     this.#dialogueSystem.dispose();
-    this.#patrolEventManager.rewindTo(this.#gameTime.currentHours);
-    this.#branchEventManager.rewindTo(this.#gameTime.currentHours);
+    this.#eventSystem.rewindTo(this.#gameTime.currentHours);
   }
 
   /**
@@ -443,148 +442,9 @@ class MainGameScene {
       return false;
     }
 
-    if (this.#activeConversationEvent) {
-      const currentLocationId = this.#characterSystem.getPlayerLocationId();
-      const interaction = this.#activeConversationEvent.createActorInteraction(
-        actor.id,
-        currentLocationId,
-      );
-      if (interaction) {
-        return this.#startEventConversation(
-          this.#activeConversationEvent,
-          interaction,
-        );
-      }
-
-      if (this.#isActorInteractionBlocked(actor.id, currentLocationId)) {
-        return false;
-      }
-
-      return this.#startNormalConversation(actor);
-    }
-
-    return this.#startConversationWithEventCandidates(actor);
-  }
-
-  /**
-   * Starts a normal or event-request conversation after event candidates are selected.
-   * @private
-   * @param {Object} actor - Talk target actor.
-   * @returns {boolean} True when a conversation was started.
-   */
-  #startConversationWithEventCandidates(actor) {
-    const deliveryEvent = this.#createDeliveryEventCandidate(actor);
-    const accompanimentEvent = this.#createAccompanimentEventCandidate(actor);
-    const eventCandidates = [
-      createEventCandidate(
-        deliveryEvent,
-        DELIVERY_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
-      ),
-      createEventCandidate(
-        accompanimentEvent,
-        ACCOMPANIMENT_CONVERSATION_SCENE_SCRIPT_IDS.REQUEST,
-      ),
-    ].filter(Boolean);
-    const script = createConversationSceneScript(actor, {
-      additionalScripts: eventCandidates.map(candidate => (
-        candidate.interaction.conversationSceneScript
-      )),
+    return this.#eventSystem.requestActorConversation(actor, {
+      currentLocationId: this.#characterSystem.getPlayerLocationId(),
     });
-    if (script.messages.length === 0) {
-      return false;
-    }
-
-    const selectedCandidate = eventCandidates.find(candidate => (
-      candidate.scriptId === script.id
-    ));
-    if (selectedCandidate) {
-      this.#eventIdSequence.next();
-      return this.#startEventConversation(
-        selectedCandidate.event,
-        selectedCandidate.interaction,
-        {
-          activateOnComplete: true,
-        },
-      );
-    }
-
-    return this.#startNormalConversation(actor, script);
-  }
-
-  /**
-   * Starts an embedded normal conversation.
-   * @private
-   * @param {Object} actor - Talk target actor.
-   * @param {Object} [script] - Conversation script.
-   * @returns {boolean} True when a conversation was started.
-   */
-  #startNormalConversation(
-    actor,
-    script = createConversationSceneScript(actor),
-  ) {
-    if (script.messages.length === 0) {
-      return false;
-    }
-
-    return this.#startConversation({
-      script,
-      onComplete: conversationSceneResult => {
-        this.#applyStudentConversationSceneResult(
-          actor.id,
-          conversationSceneResult,
-        );
-      },
-    });
-  }
-
-  /**
-   * Starts an embedded event conversation.
-   * @private
-   * @param {Object} event - Conversation-backed game event.
-   * @param {Object} interaction - Event interaction data.
-   * @param {Object} [options={}] - Event conversation options.
-   * @param {boolean} [options.activateOnComplete=false] - Whether to activate the event after the request conversation.
-   * @returns {boolean} True when a conversation was started.
-   */
-  #startEventConversation(
-    event,
-    interaction,
-    { activateOnComplete = false } = {},
-  ) {
-    return this.#startConversation({
-      script: interaction.conversationSceneScript,
-      onComplete: conversationSceneResult => {
-        event.completeInteraction(interaction.kind, conversationSceneResult);
-
-        if (activateOnComplete && event.isExecuting()) {
-          this.#activeConversationEvent = event;
-          this.#controlActiveCompanionExternally();
-          return;
-        }
-
-        this.#finishActiveConversationEvent(event);
-      },
-    });
-  }
-
-  /**
-   * Creates active conversation state inside the main game scene.
-   * @private
-   * @param {Object} config - Conversation configuration.
-   * @param {Object} config.script - Conversation script.
-   * @param {Function} [config.onComplete] - Completion callback.
-   * @returns {boolean} True when active conversation state was created.
-   */
-  #startConversation({ script, onComplete }) {
-    const result = this.#dialogueSystem.requestStart({
-      script,
-      owner: {
-        type: 'mainGameScene',
-        id: SCENE_IDS.MAIN_GAME,
-      },
-      onComplete,
-    });
-    return result.acceptance === DIALOGUE_REQUEST_ACCEPTANCE.ACCEPTED;
   }
 
   /**
@@ -596,123 +456,21 @@ class MainGameScene {
     return this.#dialogueSystem.createSnapshotFragment();
   }
 
-  #createDeliveryEventCandidate(sender) {
-    const recipients = this.#characterSystem
-      .getActors()
-      .filter(actor => actor.id !== sender.id);
-    if (recipients.length === 0) {
-      return null;
-    }
-
-    const recipient = recipients[getRandomInt(0, recipients.length - 1)];
-    return new DeliveryEvent(this.#eventIdSequence.peek(), {
-      sender,
-      recipient,
-    });
-  }
-
-  #createAccompanimentEventCandidate(companion) {
-    const destinationLocations = LOCATIONS.filter(location => (
-      location.id !== companion.locationId
-    ));
-    if (destinationLocations.length === 0) {
-      return null;
-    }
-
-    const destination = destinationLocations[
-      getRandomInt(0, destinationLocations.length - 1)
-    ];
-    return new AccompanimentEvent(this.#eventIdSequence.peek(), {
-      companion,
-      destination,
-    });
-  }
-
-  #finishActiveConversationEvent(event) {
-    if (event !== this.#activeConversationEvent) {
-      return;
-    }
-
-    if (event.isSucceeded()) {
-      this.#applyEventReward(event);
-      this.#releaseActiveCompanion();
-      this.#activeConversationEvent = null;
-    } else if (typeof event.isFailed === 'function' && event.isFailed()) {
-      this.#releaseActiveCompanion();
-      this.#activeConversationEvent = null;
-    }
-  }
-
-  #applyEventReward(event) {
-    if (event instanceof AccompanimentEvent) {
-      this.#applyStudentAffectionChange(
-        event.getCompanionActorId(),
-        ACCOMPANIMENT_AFFECTION_REWARD,
-      );
-      return;
-    }
-
-    event.getParticipantActorIds().forEach(actorId => {
-      this.#applyStudentAffectionChange(actorId, DELIVERY_AFFECTION_REWARD);
-    });
-  }
-
-  #getActiveCompanionActorId() {
-    return this.#activeConversationEvent instanceof AccompanimentEvent
-      ? this.#activeConversationEvent.getCompanionActorId()
-      : null;
-  }
-
-  #controlActiveCompanionExternally() {
-    const companionActorId = this.#getActiveCompanionActorId();
-    if (!companionActorId) {
-      return;
-    }
-
-    this.#setActorMovementMode(
-      companionActorId,
-      ACTOR_MOVEMENT_MODES.EXTERNAL,
-    );
-  }
-
-  #releaseActiveCompanion({ resetNextMoveTime = true } = {}) {
-    const companionActorId = this.#getActiveCompanionActorId();
-    if (!companionActorId) {
-      return;
-    }
-
-    this.#setActorMovementMode(
-      companionActorId,
-      ACTOR_MOVEMENT_MODES.AUTOMATIC,
-    );
-    if (resetNextMoveTime) {
-      this.#resetActorNextMoveTime(companionActorId);
-    }
-  }
-
-  #isActorInteractionBlocked(actorId, currentLocationId) {
-    return (
-      this.#activeConversationEvent instanceof AccompanimentEvent
-      && this.#activeConversationEvent.isActorInteractionBlocked(
-        actorId,
-        currentLocationId,
-      )
-    );
-  }
-
   #createStatusSnapshot() {
     const snapshot = this.#createGameStateSnapshot();
+    const eventSnapshot = this.#eventSystem.createSnapshotFragment();
     const currentLocationId = snapshot.character.location.id;
     return {
       ...snapshot,
-      companion: this.#activeConversationEvent instanceof AccompanimentEvent
-        ? this.#activeConversationEvent.getCompanionSnapshot()
-        : null,
+      companion: eventSnapshot.companion,
       actors: snapshot.actors.map(actor => ({
         ...actor,
         isTalkable: (
           actor.location?.id === currentLocationId
-          && !this.#isActorInteractionBlocked(actor.id, currentLocationId)
+          && !this.#eventSystem.isActorInteractionBlocked(
+            actor.id,
+            currentLocationId,
+          )
         ),
       })),
     };
@@ -726,26 +484,8 @@ class MainGameScene {
   #visitCharacterLocationChanges() {
     const visitedLocationIds = this.#characterSystem
       .consumeVisitedPlayerLocationIds();
-    const uniqueLocationIds = Array.from(new Set(visitedLocationIds));
-
-    uniqueLocationIds.forEach(locationId => {
-      this.#patrolEventManager.visitLocation(locationId);
-      this.#branchEventManager.visitLocation(locationId);
-    });
+    this.#eventSystem.visitLocations(visitedLocationIds);
   }
-}
-
-function createEventCandidate(event, scriptId) {
-  if (!event) {
-    return null;
-  }
-
-  const interaction = event.createRequestInteraction();
-  return {
-    scriptId,
-    event,
-    interaction,
-  };
 }
 
 function getTargetValue(targetId, prefix) {

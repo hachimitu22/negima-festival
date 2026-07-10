@@ -152,6 +152,22 @@ describe('MG-UT-S02 normal input routing', () => {
   });
 });
 
+describe('MG-UT-S03 event system routing', () => {
+  it('MG-UT-S03-C01 exposes initial executing events through event system routing', () => {
+    // Arrange
+    const scene = new MainGameScene();
+
+    // Act
+    const snapshot = scene.createSnapshot();
+
+    // Assert
+    assert.ok(snapshot.executingEvents.some(event => event.type === 'patrol'));
+    assert.ok(snapshot.executingEvents.some(event => (
+      event.type === 'notice-board'
+    )));
+  });
+});
+
 function moveCharacterToGymArena(scene) {
   const gymArenaCenter = getDefaultGridMap().getLocationCenter(
     LOCATION_IDS.GYM_ARENA,

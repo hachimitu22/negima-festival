@@ -63,6 +63,7 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 
 ## 単体テストケース
 
+- [EventSystem（イベントSystem）](単体テスト/ドメイン/イベント/EventSystem.md)
 - [EventIdSequence（イベントID採番器）](単体テスト/ドメイン/イベント/EventIdSequence.md)
 - [PatrolTask（見回りタスク）](単体テスト/ドメイン/イベント/PatrolTask.md)
 - [PatrolEvent（見回りイベント）](単体テスト/ドメイン/イベント/PatrolEvent.md)
