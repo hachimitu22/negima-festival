@@ -7,6 +7,7 @@ import { ACTOR_MOVEMENT_MODES } from './actor.js';
 import { BranchEventManager } from './event/branchEventManager.js';
 import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
+import { CharacterSystem } from './characterSystem.js';
 import { createConversationSceneScript } from '../conversationScene/conversationSceneScripts.js';
 import {
   DIALOGUE_REQUEST_ACCEPTANCE,
@@ -18,7 +19,7 @@ import {
 import { DeliveryEvent } from './event/deliveryEvent.js';
 import { EventIdSequence } from './event/eventIdSequence.js';
 import { getDefaultGridMap } from './gridMap.js';
-import { LOCATION_IDS, LOCATIONS, findLocation } from './locations.js';
+import { LOCATION_IDS, LOCATIONS } from './locations.js';
 import { PatrolEventManager } from './event/patrolEventManager.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
@@ -48,8 +49,7 @@ const ACCOMPANIMENT_AFFECTION_REWARD = 20;
 class MainGameScene {
   #gameTime;
   #loop;
-  #character;
-  #actors;
+  #characterSystem;
   #activeConversationEvent;
   #dialogueSystem;
   #eventIdSequence;
@@ -79,14 +79,15 @@ class MainGameScene {
       timeTravelHours: TIME_TRAVEL_HOURS,
       cassiopeiaMagicPowerCost: CASSIOPEIA_MAGIC_POWER_COST,
     };
-    this.#character = new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
+    this.#gridMap = getDefaultGridMap();
+    const character = new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
       magicPower: {
         current: MAX_MAGIC_POWER,
         max: MAX_MAGIC_POWER,
         recoveryPerGameHour: MAGIC_POWER_RECOVERY_PER_GAME_HOUR,
       },
     });
-    this.#actors = [
+    const actors = [
       new Student('相坂さよ'                              ,  1, LOCATION_IDS.CLASSROOM_3A),
       new Student('明石裕奈'                              ,  2, LOCATION_IDS.GYM_ARENA),
       new Student('朝倉和美'                              ,  3, LOCATION_IDS.CLASSROOM_3A),
@@ -135,17 +136,21 @@ class MainGameScene {
         LOCATION_IDS.STAFF_ROOM,
       ),
     ];
-    this.#gridMap = getDefaultGridMap();
+    this.#characterSystem = new CharacterSystem({
+      playerCharacter: character,
+      actors,
+      gridMap: this.#gridMap,
+    });
     this.#eventIdSequence = new EventIdSequence();
     this.#activeConversationEvent = null;
     this.#dialogueSystem = new DialogueSystem();
     this.#patrolEventManager = new PatrolEventManager({
-      character: this.#character,
+      character: this.#characterSystem.getPlayerCharacter(),
       eventIdSequence: this.#eventIdSequence,
       durationHours: this.#gameTime.durationHours,
     });
     this.#branchEventManager = new BranchEventManager({
-      character: this.#character,
+      character: this.#characterSystem.getPlayerCharacter(),
       eventIdSequence: this.#eventIdSequence,
     });
   }
@@ -189,11 +194,8 @@ class MainGameScene {
       elapsedGameHours,
     };
 
-    this.#character.update(context);
+    this.#characterSystem.update(context);
     this.#visitCharacterLocationChanges();
-    this.#actors.forEach(actor => {
-      actor.update(context);
-    });
   }
 
   #updateGameTime(frame) {
@@ -213,7 +215,7 @@ class MainGameScene {
   }
 
   #useCassiopeia() {
-    const magicPower = this.#character.magicPower;
+    const magicPower = this.#characterSystem.getPlayerCharacter().magicPower;
     if (magicPower.current < this.#loop.cassiopeiaMagicPowerCost) {
       return false;
     }
@@ -225,9 +227,9 @@ class MainGameScene {
     );
     this.#gameTime.isEnded = false;
     this.#loop.count += 1;
-    this.#actors.forEach(actor => {
-      actor.resetNextMoveTime(this.#gameTime.currentHours);
-    });
+    this.#characterSystem.resetAllActorNextMoveTimes(
+      this.#gameTime.currentHours,
+    );
     return {
       currentHours: this.#gameTime.currentHours,
     };
@@ -240,16 +242,9 @@ class MainGameScene {
    * @returns {boolean} 移動開始できた場合はtrue。
    */
   #moveCharacterToLocation(locationId) {
-    const location = findLocation(locationId);
-    if (!location) {
-      return false;
-    }
-
-    const path = this.#gridMap.findPathToLocation(
-      this.#character.position,
-      location.id,
-    );
-    return this.#startCharacterMovement(path);
+    return this.#characterSystem.movePlayerToLocation(locationId, {
+      companionActorId: this.#getActiveCompanionActorId(),
+    });
   }
 
   /**
@@ -259,69 +254,29 @@ class MainGameScene {
    * @returns {boolean} 移動開始できた場合はtrue。
    */
   #moveCharacterToMapPosition(position) {
-    const path = this.#gridMap.findPath(this.#character.position, position);
-    return this.#startCharacterMovement(path);
-  }
-
-  /**
-   * 主人公の経路移動を開始し、同行中アクターも同じ目的地へ追従させる。
-   * @private
-   * @param {Array<Object>|null} path - 主人公の移動waypoint配列。
-   * @returns {boolean} 移動開始できた場合はtrue。
-   */
-  #startCharacterMovement(path) {
-    const didMove = this.#character.startMovement(path);
-    const companionActorId = this.#getActiveCompanionActorId();
-    if (didMove && companionActorId) {
-      const companion = this.#actors.find(actor => actor.id === companionActorId);
-      const destination = path.at(-1);
-      const companionPath = companion && destination
-        ? this.#gridMap.findPath(companion.position, destination)
-        : null;
-      if (companionPath) {
-        companion.startMovement(companionPath);
-      }
-    }
-
-    return didMove;
+    return this.#characterSystem.movePlayerToMapPosition(position, {
+      companionActorId: this.#getActiveCompanionActorId(),
+    });
   }
 
   #moveActorToLocation(actorId, locationId) {
-    const actor = this.#actors.find(candidate => candidate.id === actorId);
-    const location = findLocation(locationId);
-    if (!actor || !location) {
-      return false;
-    }
-
-    actor.moveToLocation(location.id);
-    return true;
+    return this.#characterSystem.moveActorToLocation(actorId, locationId);
   }
 
   #resetActorNextMoveTime(actorId) {
-    const actor = this.#actors.find(candidate => candidate.id === actorId);
-    if (!actor) {
-      return false;
-    }
-
-    actor.resetNextMoveTime(this.#gameTime.currentHours);
-    return true;
+    return this.#characterSystem.resetActorNextMoveTime(
+      actorId,
+      this.#gameTime.currentHours,
+    );
   }
 
   #setActorMovementMode(actorId, movementMode) {
-    const actor = this.#actors.find(candidate => candidate.id === actorId);
-    if (!actor) {
-      return false;
-    }
-
-    return actor.setMovementMode(movementMode);
+    return this.#characterSystem.setActorMovementMode(actorId, movementMode);
   }
 
   #applyStudentConversationSceneResult(actorId, conversationSceneResult) {
-    const student = this.#actors.find(actor => (
-      actor instanceof Student
-      && actor.id === actorId
-    ));
-    if (!student) {
+    const student = this.#characterSystem.findActor(actorId);
+    if (!(student instanceof Student)) {
       return false;
     }
 
@@ -332,11 +287,8 @@ class MainGameScene {
   }
 
   #applyStudentAffectionChange(actorId, baseChange) {
-    const student = this.#actors.find(actor => (
-      actor instanceof Student
-      && actor.id === actorId
-    ));
-    if (!student) {
+    const student = this.#characterSystem.findActor(actorId);
+    if (!(student instanceof Student)) {
       return false;
     }
 
@@ -346,11 +298,7 @@ class MainGameScene {
   }
 
   #findTalkableActor(actorId) {
-    const actor = this.#actors.find(candidate => (
-      candidate.id === actorId
-      && candidate.locationId === this.#character.locationId
-    ));
-    return actor ?? null;
+    return this.#characterSystem.findTalkableActor(actorId);
   }
 
   #createGameStateSnapshot() {
@@ -365,8 +313,7 @@ class MainGameScene {
         timeTravelHours: this.#loop.timeTravelHours,
         cassiopeiaMagicPowerCost: this.#loop.cassiopeiaMagicPowerCost,
       },
-      character: this.#character.getSnapshot(),
-      actors: this.#actors.map(actor => actor.getSnapshot()),
+      ...this.#characterSystem.createSnapshotFragment(),
     };
   }
 
@@ -512,7 +459,7 @@ class MainGameScene {
     }
 
     if (this.#activeConversationEvent) {
-      const currentLocationId = this.#character.locationId;
+      const currentLocationId = this.#characterSystem.getPlayerLocationId();
       const interaction = this.#activeConversationEvent.createActorInteraction(
         actor.id,
         currentLocationId,
@@ -665,7 +612,9 @@ class MainGameScene {
   }
 
   #createDeliveryEventCandidate(sender) {
-    const recipients = this.#actors.filter(actor => actor.id !== sender.id);
+    const recipients = this.#characterSystem
+      .getActors()
+      .filter(actor => actor.id !== sender.id);
     if (recipients.length === 0) {
       return null;
     }
@@ -790,7 +739,8 @@ class MainGameScene {
    * @returns {void}
    */
   #visitCharacterLocationChanges() {
-    const visitedLocationIds = this.#character.consumeVisitedLocationIds();
+    const visitedLocationIds = this.#characterSystem
+      .consumeVisitedPlayerLocationIds();
     const uniqueLocationIds = Array.from(new Set(visitedLocationIds));
 
     uniqueLocationIds.forEach(locationId => {

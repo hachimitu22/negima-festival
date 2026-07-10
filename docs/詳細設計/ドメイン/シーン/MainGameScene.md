@@ -13,6 +13,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 ## 目的
 
 麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
+主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
 
 ## 所有する状態
@@ -21,8 +22,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | ------------------------- | ------------------------------------------------ |
 | `gameTime`                | 現在時間、終了時間、時間倍率、終了状態           |
 | `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
-| `character`               | プレイヤーの現在地、マップ座標、移動状態、MP、MahoPayポイント |
-| `actors`                  | 生徒31人と教師2人の現在地、マップ座標、移動状態 |
+| `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
 | `activeConversationEvent` | 実行中の配達または同行。未実行時は`null`         |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
 | `eventIdSequence`         | 配達、同行、見回りで共有するevent ID採番器       |
@@ -51,9 +51,8 @@ class MainGameScene {
 6. 停止中でなければ、マップ座標クリック、イベント選択、カシオペア入力を処理する。
 7. 停止中でなければ、frame経過量からゲーム時間を進める。
 8. 更新後のゲーム時間を`PatrolEventManager`と`BranchEventManager`へ通知する。
-9. 経過ゲーム時間と実時間deltaを含むcontextで`Character`を更新する。
-10. 同じcontextで全`Actor`を更新する。
-11. `Character`が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
+9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
+10. `CharacterSystem`が保持する主人公が移動中に入った場所がある場合は、各場所IDを`PatrolEventManager.visitLocation(locationId)`と`BranchEventManager.visitLocation(locationId)`へ通知する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -70,7 +69,7 @@ class MainGameScene {
 `map-position`の`x`と`y`は32x32グリッド上の連続座標とする。
 目的地が場所に属さない、または壁で到達できない場合は移動を開始しない。
 移動中に別の`map-position`入力を受けた場合は、現在座標から目的地まで経路を引き直す。
-同行中にプレイヤーの移動経路が変わった場合は、同伴者も同じ目的地へ移動させる。
+同行中にプレイヤーの移動経路が変わった場合は、`CharacterSystem`へ同伴者IDを渡し、同伴者も同じ目的地へ移動させる。
 
 ## グリッドマップ移動
 
@@ -123,7 +122,7 @@ class MainGameScene {
 - `DeliveryEvent`と`AccompanimentEvent`がtask状態と会話台本を管理する。
 - `MainGameScene`が配達または同行を1件保持し、`PatrolEventManager`が見回りを1件まで保持する。
 - 同行開始時は同伴者の移動modeを`external`へ変更する。
-- 同行中の場所同期は`MainGameScene`が行う。
+- 同行中の場所同期は`MainGameScene`が同伴者IDを決定し、実際の移動開始は`CharacterSystem`が行う。
 - 配達または同行の完了や失敗時は報酬を適用し、同伴者を`automatic`へ戻して対象イベントを破棄する。
 - 見回り完了時は`PatrolEventManager`がMahoPayポイントを適用して対象イベントを破棄する。
 - カシオペア使用時は同伴者を解放し、Managerへ見回りの破棄を通知する。
@@ -182,6 +181,7 @@ class MainGameScene {
 ## 依存先
 
 - `Character`、`Student`、`Teacher`
+- [`CharacterSystem`](CharacterSystem.md)
 - [`DialogueSystem`](../会話/DialogueSystem.md)
 - location定義と乱数
 - 好感度計算
