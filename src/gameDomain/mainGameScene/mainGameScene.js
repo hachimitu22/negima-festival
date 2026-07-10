@@ -9,6 +9,7 @@ import {
 import { EventSystem } from './event/eventSystem.js';
 import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS } from './locations.js';
+import { LocationSystem } from './locationSystem.js';
 import { PlayerControlSystem } from './playerControlSystem.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
@@ -38,6 +39,7 @@ class MainGameScene {
   #dialogueSystem;
   #playerControlSystem;
   #eventSystem;
+  #locationSystem;
   #gridMap;
 
   /**
@@ -162,6 +164,18 @@ class MainGameScene {
         ),
       },
     });
+    this.#locationSystem = new LocationSystem({
+      visitSources: {
+        characters: () => (
+          this.#characterSystem.consumeVisitedPlayerLocationIds()
+        ),
+      },
+      locationRequests: {
+        visitLocations: locationIds => (
+          this.#eventSystem.visitLocations(locationIds)
+        ),
+      },
+    });
     this.#playerControlSystem = new PlayerControlSystem({
       characterRequests: {
         movePlayerToMapPosition: position => (
@@ -223,7 +237,12 @@ class MainGameScene {
     };
 
     this.#characterSystem.update(context);
-    this.#visitCharacterLocationChanges();
+    this.#locationSystem.update({
+      subjects: this.#characterSystem.getSpatialSubjects(),
+      spatialVersions: {
+        characters: this.#characterSystem.getSpatialStateVersion(),
+      },
+    });
   }
 
   #updateGameTime(frame) {
@@ -476,16 +495,6 @@ class MainGameScene {
     };
   }
 
-  /**
-   * 主人公が移動中に通過した場所をイベント管理へ通知する。
-   * @private
-   * @returns {void}
-   */
-  #visitCharacterLocationChanges() {
-    const visitedLocationIds = this.#characterSystem
-      .consumeVisitedPlayerLocationIds();
-    this.#eventSystem.visitLocations(visitedLocationIds);
-  }
 }
 
 function getTargetValue(targetId, prefix) {

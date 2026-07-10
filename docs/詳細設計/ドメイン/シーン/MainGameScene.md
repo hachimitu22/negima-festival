@@ -14,6 +14,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
 主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
+主人公の場所訪問検出と訪問request発行は`LocationSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
 通常入力のtarget解釈は`PlayerControlSystem`へ委譲する。
 継続イベントの保持、進行、イベント会話、実行中イベントsnapshotは`EventSystem`へ委譲する。
@@ -25,6 +26,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `gameTime`                | 現在時間、終了時間、時間倍率、終了状態           |
 | `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
 | `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
+| `locationSystem`          | 空間状態version監視と場所訪問request発行 |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
 | `playerControlSystem`     | 通常入力の解釈とrequest発行                 |
 | `eventSystem`             | 継続イベント、イベント会話、実行中イベントsnapshot |
@@ -53,7 +55,7 @@ class MainGameScene {
 7. 停止中でなければ、frame経過量からゲーム時間を進める。
 8. 更新後のゲーム時間を`EventSystem.advanceTo(currentHours)`へ通知する。
 9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
-10. `CharacterSystem`が保持する主人公が移動中に入った場所がある場合は、各場所IDを`EventSystem.visitLocations(locationIds)`へ通知する。
+10. `LocationSystem.update()`へ`CharacterSystem`の空間対象と空間状態versionを渡し、場所訪問requestを発行する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -186,6 +188,7 @@ class MainGameScene {
 
 - `Character`、`Student`、`Teacher`
 - [`CharacterSystem`](CharacterSystem.md)
+- [`LocationSystem`](LocationSystem.md)
 - [`DialogueSystem`](../会話/DialogueSystem.md)
 - [`PlayerControlSystem`](PlayerControlSystem.md)
 - [`EventSystem`](../イベント/EventSystem.md)

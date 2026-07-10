@@ -27,3 +27,11 @@
 | ケースID | 観点 | 期待結果 |
 | --- | --- | --- |
 | MG-UT-S03-C01 | 初期実行中イベント | 初期snapshotの`executingEvents`に見回りと分岐イベントが含まれる。 |
+
+## MG-UT-S04 location system routing
+
+`LocationSystem`へ移譲した場所訪問通知が、`MainGameScene`上の公開snapshotから見て従来通りイベント進行へ反映されることを検証する。
+
+| ケースID | 観点 | 期待結果 |
+| --- | --- | --- |
+| MG-UT-S04-C01 | 分岐イベント目的地への移動 | 主人公が現在タスク目的地へ到達すると、分岐イベントのstepが進む。 |

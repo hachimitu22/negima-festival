@@ -168,6 +168,33 @@ describe('MG-UT-S03 event system routing', () => {
   });
 });
 
+describe('MG-UT-S04 location system routing', () => {
+  it('MG-UT-S04-C01 advances branch events when the player reaches the current task destination', () => {
+    // Arrange
+    const scene = new MainGameScene();
+    const beforeSnapshot = scene.createSnapshot();
+    const beforeEvent = findNoticeBoardEvent(beforeSnapshot);
+    const destinationId = beforeEvent.currentTask.destination.id;
+
+    // Act
+    updateScene(scene, {
+      inputs: [createLocationInput(destinationId)],
+    });
+    for (let count = 0; count < 4; count += 1) {
+      updateScene(scene, { deltaTimeMs: 1000 });
+      if (scene.createSnapshot().character.location.id === destinationId) {
+        break;
+      }
+    }
+    const afterSnapshot = scene.createSnapshot();
+    const afterEvent = findNoticeBoardEvent(afterSnapshot);
+
+    // Assert
+    assert.equal(afterSnapshot.character.location.id, destinationId);
+    assert.ok(afterEvent.stepIndex > beforeEvent.stepIndex);
+  });
+});
+
 function moveCharacterToGymArena(scene) {
   const gymArenaCenter = getDefaultGridMap().getLocationCenter(
     LOCATION_IDS.GYM_ARENA,
@@ -229,9 +256,21 @@ function createMapPositionInput(x, y) {
   return createTargetInput(TARGET_PREFIXES.MAP_POSITION, `${x},${y}`);
 }
 
+function createLocationInput(locationId) {
+  return createTargetInput(TARGET_PREFIXES.LOCATION, locationId);
+}
+
 function createTargetInput(prefix, value) {
   return {
     type: INPUT_TYPES.TARGET_ACTIVATE,
     targetId: `${prefix}:${value}`,
   };
+}
+
+function findNoticeBoardEvent(snapshot) {
+  const event = snapshot.executingEvents.find(candidate => (
+    candidate.type === 'notice-board'
+  ));
+  assert.ok(event);
+  return event;
 }

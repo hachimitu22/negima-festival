@@ -114,6 +114,6 @@ Scene snapshotへ集約するため、次のfragmentを返す。
 - 配達・同行イベント候補生成
 - 好感度変更
 - MahoPay報酬やカシオペア消費MP
-- 見回り・分岐managerへの場所訪問通知
+- `LocationSystem`、`EventSystem`、`RewardSystem`などの上位System接続
 
-これらは後続の`PlayerControlSystem`、`EventSystem`、`LocationSystem`、`RewardSystem`切り出し時に再配置する。
+残る報酬責務は後続の`RewardSystem`切り出し時に再配置する。
