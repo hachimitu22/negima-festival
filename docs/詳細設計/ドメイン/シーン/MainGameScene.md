@@ -18,6 +18,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
 通常入力のtarget解釈は`PlayerControlSystem`へ委譲する。
 継続イベントの保持、進行、イベント会話、実行中イベントsnapshotは`EventSystem`へ委譲する。
+会話やイベントによる好感度、MahoPayポイント報酬の反映は`RewardSystem`へ委譲する。
 
 ## 所有する状態
 
@@ -30,6 +31,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
 | `playerControlSystem`     | 通常入力の解釈とrequest発行                 |
 | `eventSystem`             | 継続イベント、イベント会話、実行中イベントsnapshot |
+| `rewardSystem`            | 好感度とMahoPayポイント報酬の反映 |
 
 初期layerはmap、初期の配達または同行はなしとする。
 `EventSystem`が初期の見回りと分岐イベントを生成し、最初のsnapshotから実行中イベントとして公開する。
@@ -108,12 +110,12 @@ class MainGameScene {
 3. 同行条件によって会話が禁止されていれば生成しない。
 4. それ以外は通常会話を生成する。
 
-通常会話の完了callbackはadapterを通して生徒の好感度を反映する。
-イベント会話の完了callbackはeventへ結果を渡し、開始、成功、失敗に応じて`EventSystem`内の実行中イベントを更新する。
+通常会話の完了callbackはadapterを通して`RewardSystem`へ好感度反映を依頼する。
+イベント会話の完了callbackはeventへ結果を渡し、開始、成功、失敗に応じて`EventSystem`内の実行中イベントを更新し、成功時は`RewardSystem`へ報酬反映を依頼する。
 
 ## 見回りの生成と進行
 
-- [`PatrolEventManager`](../イベント/PatrolEventManager.md)が見回り先の抽選、発生時刻、進行、報酬適用、実行中eventの保持と破棄を担当する。
+- [`PatrolEventManager`](../イベント/PatrolEventManager.md)が見回り先の抽選、発生時刻、進行、実行中eventの保持と破棄を担当する。
 - `EventSystem`は`Character`、共有[`EventIdSequence`](../イベント/EventIdSequence.md)、祭終了時刻からManagerを生成する。
 - ゲーム開始時の見回りにはevent ID 0を割り当て、以後は配達、同行、見回りで共有する連番を割り当てる。
 - 時間更新後は`EventSystem.advanceTo(currentHours)`を呼ぶ。
@@ -130,7 +132,7 @@ class MainGameScene {
 - 同行開始時は同伴者の移動modeを`external`へ変更する。
 - 同行中の場所同期は`EventSystem`が同伴者IDを返し、実際の移動開始は`CharacterSystem`が行う。
 - 配達または同行の完了や失敗時は報酬を適用し、同伴者を`automatic`へ戻して対象イベントを破棄する。
-- 見回り完了時は`PatrolEventManager`がMahoPayポイントを適用して対象イベントを破棄する。
+- 見回り完了時は`PatrolEventManager`が報酬ポイントを請求し、`RewardSystem`へMahoPayポイント反映を依頼して対象イベントを破棄する。
 - カシオペア使用時は`EventSystem`が同伴者を解放し、Managerへイベント破棄を通知する。
 
 イベントのゲームルールは[基本設計のイベント仕様](../../../基本設計/イベント/README.md)を正本とする。
@@ -192,8 +194,8 @@ class MainGameScene {
 - [`DialogueSystem`](../会話/DialogueSystem.md)
 - [`PlayerControlSystem`](PlayerControlSystem.md)
 - [`EventSystem`](../イベント/EventSystem.md)
+- [`RewardSystem`](RewardSystem.md)
 - location定義と乱数
-- 好感度計算
 
 ## フィールド会話パネル
 

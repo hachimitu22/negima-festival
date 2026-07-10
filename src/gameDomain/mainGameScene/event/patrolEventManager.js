@@ -14,6 +14,7 @@ class PatrolEventManager {
   #durationHours;
   #activeEvent;
   #nextPatrolTimeHours;
+  #rewardRequests;
 
   /**
    * 往訪イベントマネージャーを初期化。
@@ -22,11 +23,18 @@ class PatrolEventManager {
    * @param {Character} config.character - プレイヤーキャラクター
    * @param {EventIdSequence} config.eventIdSequence - イベント ID シークエンス
    * @param {number} config.durationHours - 整体イベント時間
+   * @param {Object} [config.rewardRequests] - 報酬request API
    */
-  constructor({ character, eventIdSequence, durationHours }) {
+  constructor({
+    character,
+    eventIdSequence,
+    durationHours,
+    rewardRequests = {},
+  }) {
     this.#character = character;
     this.#eventIdSequence = eventIdSequence;
     this.#durationHours = durationHours;
+    this.#rewardRequests = rewardRequests;
     this.#activeEvent = this.#createEvent();
     this.#nextPatrolTimeHours = PATROL_INTERVAL_HOURS;
   }
@@ -78,7 +86,7 @@ class PatrolEventManager {
 
     const rewardPoints = this.#activeEvent.claimRewardPoints();
     if (rewardPoints !== null) {
-      this.#character.addMahoPayPoints(rewardPoints);
+      this.#addMahoPayPoints(rewardPoints);
     }
     this.#activeEvent = null;
     return true;
@@ -104,6 +112,15 @@ class PatrolEventManager {
    */
   getExecutingEventSnapshot() {
     return this.#activeEvent?.getSnapshot() ?? null;
+  }
+
+  #addMahoPayPoints(points) {
+    if (typeof this.#rewardRequests.addMahoPayPoints === 'function') {
+      return this.#rewardRequests.addMahoPayPoints(points);
+    }
+
+    this.#character.addMahoPayPoints(points);
+    return true;
   }
 
   #createEvent() {

@@ -23,13 +23,14 @@ function createCharacter() {
   });
 }
 
-function createManager(character = createCharacter()) {
+function createManager(character = createCharacter(), rewardRequests = {}) {
   return {
     character,
     manager: new PatrolEventManager({
       character,
       eventIdSequence: new EventIdSequence(),
       durationHours: FESTIVAL_DURATION_HOURS,
+      rewardRequests,
     }),
   };
 }
@@ -201,6 +202,25 @@ describe('PEM-UT-S02 場所の訪問と報酬', () => {
 
     // Assert
     assert.equal(result, true);
+  });
+
+  it('PEM-UT-S02-C06 報酬request adapterでMahoPay報酬を反映する', () => {
+    // Arrange
+    const rewardPoints = [];
+    const character = createCharacter();
+    const { manager } = createManager(character, {
+      addMahoPayPoints(points) {
+        rewardPoints.push(points);
+        return true;
+      },
+    });
+    const snapshot = manager.getExecutingEventSnapshot();
+
+    // Act
+    completePatrol(manager, character);
+
+    // Assert
+    assert.deepEqual(rewardPoints, [snapshot.rewardPoints]);
   });
 });
 

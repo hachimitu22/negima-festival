@@ -8,12 +8,13 @@
 
 ## 目的
 
-見回りイベントの生成、定期発生、場所移動との接続、成功報酬の反映、実行中イベントの保持と破棄を管理する。
+見回りイベントの生成、定期発生、場所移動との接続、成功報酬request、実行中イベントの保持と破棄を管理する。
 `MainGameScene`へ見回り固有の判断を公開せず、renderer向けには実行中eventのsnapshotだけを提供する。
 
 ## 所有する状態
 
-- `character`: 現在地の参照とMahoPay報酬の反映対象
+- `character`: 現在地の参照
+- `rewardRequests`: MahoPay報酬request API
 - `eventIdSequence`: 見回り生成時に使用する共通event ID採番器
 - `durationHours`: 祭の終了時刻
 - `activeEvent`: 実行中の`PatrolEvent`。未実行時は`null`
@@ -25,7 +26,7 @@
 
 ```js
 class PatrolEventManager {
-  constructor({ character, eventIdSequence, durationHours })
+  constructor({ character, eventIdSequence, durationHours, rewardRequests })
   advanceTo(currentHours)
   visitCurrentLocation()
   visitLocation(locationId)
@@ -53,7 +54,7 @@ class PatrolEventManager {
 実行中の見回りへ指定された`locationId`を通知する。
 未訪問の見回り先を訪問した場合は`true`、それ以外は`false`を返す。
 
-訪問によって見回りが成功した場合は、`PatrolEvent.claimRewardPoints()`で報酬を一度だけ請求し、`Character.addMahoPayPoints()`で反映してから`activeEvent`を破棄する。
+訪問によって見回りが成功した場合は、`PatrolEvent.claimRewardPoints()`で報酬を一度だけ請求し、`rewardRequests.addMahoPayPoints(points)`で反映してから`activeEvent`を破棄する。
 報酬額や完了結果は呼び出し側へ返さない。
 
 ### rewindTo
@@ -82,6 +83,7 @@ class PatrolEventManager {
 - `MainGameScene`は時間更新、成立した場所移動、カシオペアによる巻き戻しを公開APIへ接続する。
 - 座標移動中に入った場所を通知する場合は`visitLocation(locationId)`を使う。
 - [`PatrolEvent`](PatrolEvent.md)が訪問状態、成功状態、報酬請求、event snapshotを管理する。
+- `RewardSystem`が実際のMahoPay残高変更を担当する。
 - rendererは`MainGameScene`のscene snapshotへ格納されたevent snapshotだけを参照する。
 
 ## 単体テスト

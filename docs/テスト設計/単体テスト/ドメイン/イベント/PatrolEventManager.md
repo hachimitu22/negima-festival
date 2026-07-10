@@ -96,6 +96,13 @@ caseごとに実物の`Character`、`EventIdSequence`、`PatrolEventManager`を�
 - 操作: `visitLocation(locationId)`を呼ぶ。
 - 期待結果: `true`を返す。
 
+### PEM-UT-S02-C06 報酬request adapterでMahoPay報酬を反映する
+
+- 前提: 記録用`rewardRequests.addMahoPayPoints()`を持つManagerを生成する。
+- 入力: snapshotに含まれる全見回り先。
+- 操作: 各地点を訪問して見回りを完了する。
+- 期待結果: snapshotの報酬額が`rewardRequests.addMahoPayPoints()`へ一度だけ渡る。
+
 ## PEM-UT-S03 定期発生
 
 - 対象: `advanceTo()`

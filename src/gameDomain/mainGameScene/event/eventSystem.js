@@ -76,6 +76,7 @@ class EventSystem {
       character,
       eventIdSequence: this.#eventIdSequence,
       durationHours,
+      rewardRequests: this.#rewardRequests,
     });
     this.#branchEventManager = new BranchEventManager({
       character,

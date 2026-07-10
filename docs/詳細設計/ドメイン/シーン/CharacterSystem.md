@@ -108,12 +108,10 @@ Scene snapshotへ集約するため、次のfragmentを返す。
 `MainGameScene`は主人公、actor、gridMapを生成し、`CharacterSystem`へ渡す。
 以後、位置検索、移動開始、移動更新、位置snapshot集約は`CharacterSystem`へ委譲する。
 
-当面、次の責務は`MainGameScene`に残す。
+次の責務は`CharacterSystem`では扱わず、それぞれのSystemまたはScene接続側に残す。
 
 - 会話開始条件のうち、イベント固有のブロック判定
-- 配達・同行イベント候補生成
-- 好感度変更
-- MahoPay報酬やカシオペア消費MP
+- 配達・同行イベント候補生成とイベント進行
+- 好感度変更とMahoPay報酬反映
+- カシオペア消費MP
 - `LocationSystem`、`EventSystem`、`RewardSystem`などの上位System接続
-
-残る報酬責務は後続の`RewardSystem`切り出し時に再配置する。

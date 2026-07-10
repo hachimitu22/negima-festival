@@ -19,7 +19,7 @@
 - 実行中イベントと同行者のsnapshot fragmentを生成する
 
 通常会話のsession進行は`DialogueSystem`が担当する。
-actorの探索、位置・移動更新、好感度計算の実処理は`MainGameScene`または`CharacterSystem`側のadapterが担当する。
+actorの探索、位置・移動更新、報酬反映の実処理は`MainGameScene`側のadapterが担当する。
 
 ## 公開契約
 
@@ -70,6 +70,7 @@ conversationRequests.start({ script, onComplete })
 
 rewardRequests.applyConversationResult(actorId, conversationResult)
 rewardRequests.applyAffection(actorId, amount)
+rewardRequests.addMahoPayPoints(points)
 
 companionRequests.setActorMovementMode(actorId, movementMode)
 companionRequests.resetActorNextMoveTime(actorId)
@@ -100,4 +101,4 @@ companionRequests.resetActorNextMoveTime(actorId)
 - カシオペア遡行時のイベント破棄
 - 同行者ID、同行者snapshot、実行中イベントsnapshotの取得
 
-`MainGameScene`は引き続きactor入力の抽出、talkable actor検索、ゲーム時間、カシオペアMP消費、通常会話結果からの好感度計算adapterを担当する。
+`MainGameScene`は引き続きactor入力の抽出、talkable actor検索、ゲーム時間、カシオペアMP消費、報酬requestの`RewardSystem`接続を担当する。

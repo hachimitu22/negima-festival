@@ -75,6 +75,7 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 - [CharacterSystem（キャラクター位置・移動System）](単体テスト/ドメイン/シーン/CharacterSystem.md)
 - [LocationSystem（場所System）](単体テスト/ドメイン/シーン/LocationSystem.md)
 - [PlayerControlSystem（プレイヤー操作System）](単体テスト/ドメイン/シーン/PlayerControlSystem.md)
+- [RewardSystem（報酬System）](単体テスト/ドメイン/シーン/RewardSystem.md)
 - [GridMap（グリッドマップ）](単体テスト/ドメイン/マップ/GridMap.md)
 
 ## 統合テスト

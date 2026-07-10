@@ -1,5 +1,4 @@
 import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from '../actions.js';
-import { calculateAffectionChange } from './affection.js';
 import { Character } from './character.js';
 import { CharacterSystem } from './characterSystem.js';
 import {
@@ -11,6 +10,7 @@ import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS } from './locations.js';
 import { LocationSystem } from './locationSystem.js';
 import { PlayerControlSystem } from './playerControlSystem.js';
+import { RewardSystem } from './rewardSystem.js';
 import { Student } from './student.js';
 import { Teacher } from './teacher.js';
 
@@ -40,6 +40,7 @@ class MainGameScene {
   #playerControlSystem;
   #eventSystem;
   #locationSystem;
+  #rewardSystem;
   #gridMap;
 
   /**
@@ -126,6 +127,10 @@ class MainGameScene {
       actors,
       gridMap: this.#gridMap,
     });
+    this.#rewardSystem = new RewardSystem({
+      character: this.#characterSystem.getPlayerCharacter(),
+      actorsProvider: () => this.#characterSystem.getActors(),
+    });
     this.#dialogueSystem = new DialogueSystem();
     this.#eventSystem = new EventSystem({
       character: this.#characterSystem.getPlayerCharacter(),
@@ -146,13 +151,16 @@ class MainGameScene {
       },
       rewardRequests: {
         applyConversationResult: (actorId, conversationSceneResult) => (
-          this.#applyStudentConversationSceneResult(
+          this.#rewardSystem.applyConversationResult(
             actorId,
             conversationSceneResult,
           )
         ),
         applyAffection: (actorId, amount) => (
-          this.#applyStudentAffectionChange(actorId, amount)
+          this.#rewardSystem.applyAffection(actorId, amount)
+        ),
+        addMahoPayPoints: points => (
+          this.#rewardSystem.addMahoPayPoints(points)
         ),
       },
       companionRequests: {
@@ -329,29 +337,6 @@ class MainGameScene {
 
   #setActorMovementMode(actorId, movementMode) {
     return this.#characterSystem.setActorMovementMode(actorId, movementMode);
-  }
-
-  #applyStudentConversationSceneResult(actorId, conversationSceneResult) {
-    const student = this.#characterSystem.findActor(actorId);
-    if (!(student instanceof Student)) {
-      return false;
-    }
-
-    const baseChange = student.getBaseConversationSceneAffectionChange(
-      conversationSceneResult,
-    );
-    return this.#applyStudentAffectionChange(actorId, baseChange);
-  }
-
-  #applyStudentAffectionChange(actorId, baseChange) {
-    const student = this.#characterSystem.findActor(actorId);
-    if (!(student instanceof Student)) {
-      return false;
-    }
-
-    const affectionChange = calculateAffectionChange({ baseChange });
-    student.changeAffection(affectionChange);
-    return true;
   }
 
   #findTalkableActor(actorId) {
