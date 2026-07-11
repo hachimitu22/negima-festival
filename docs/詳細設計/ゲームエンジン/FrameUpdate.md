@@ -44,16 +44,18 @@ SceneがSystemをどの順序で更新し、会話などの一時状態によっ
 初期実装では、`MainGameScene`の更新順序を次の形へ寄せる。
 
 1. `DialogueSystem.beginFrame()`を呼ぶ。
-2. 入力を収集または受け取る。
-3. `DialogueSystem.processInput(input)`で進行中会話の入力を処理する。
-4. 会話中でなければ通常入力を処理する。
-5. 会話開始が成立した場合は`DialogueSystem.requestStart()`を呼ぶ。
-6. `DialogueSystem.getFrameControlState()`からフレーム制御状態を決定する。
-7. `gameplaySimulationEnabled`の場合だけ、ゲーム時間、移動、NPC自律行動を更新する。
-8. 各Systemのsnapshot fragmentをScene snapshotへ集約する。
+2. `GameFlowSystem.beginFrame()`でフレーム開始時点の入力モードを確定する。
+3. 入力を収集または受け取る。
+4. `DialogueSystem.processInput(input)`で進行中会話の入力を処理する。
+5. `GameFlowSystem.canProcessFieldInput()`が`true`の場合だけ、会話開始入力を処理する。
+6. 会話開始が成立した場合は`DialogueSystem.requestStart()`を呼ぶ。
+7. `GameFlowSystem.createControlContext()`でフレーム制御状態を決定する。
+8. `gameplayInputEnabled`の場合だけ通常入力を処理する。
+9. `gameplaySimulationEnabled`の場合だけ、ゲーム時間、移動、NPC自律行動を更新する。
+10. 各Systemのsnapshot fragmentをScene snapshotへ集約する。
 
-現在の`TimeControlSystem`はゲーム時間進行とカシオペア遡行を担当し、最終的な`frameControl`決定はScene側に残す。
-将来frame制御を独立Systemへ移す場合は、時間進行Systemとは別の責務として設計する。
+`GameFlowSystem`は会話状態に基づく入力モードとframe制御を担当する。
+`TimeControlSystem`はゲーム時間進行とカシオペア遡行だけを担当し、frame制御は扱わない。
 
 ## 1フレーム遅延
 

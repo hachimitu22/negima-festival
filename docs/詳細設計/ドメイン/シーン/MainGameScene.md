@@ -14,6 +14,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 麻帆良祭のゲーム状態を所有し、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
 ゲーム時間、フェス終了状態、ループ回数、カシオペア遡行は`TimeControlSystem`へ委譲する。
+入力モード、フレーム制御状態、表示layerの決定は`GameFlowSystem`へ委譲する。
 主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
 主人公の場所訪問検出と訪問request発行は`LocationSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
@@ -26,6 +27,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 | 状態                      | 内容                                             |
 | ------------------------- | ------------------------------------------------ |
 | `timeControlSystem`       | ゲーム時間、フェス終了、ループ、カシオペア遡行 |
+| `gameFlowSystem`          | 入力モード、フレーム制御、表示layer |
 | `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
 | `locationSystem`          | 空間状態version監視と場所訪問request発行 |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
@@ -49,15 +51,16 @@ class MainGameScene {
 ## 更新順序
 
 1. `DialogueSystem.beginFrame()`を呼び出す。
-2. `DialogueSystem.processInput(inputs)`で進行中会話の入力を処理する。
-3. 会話中でなければ、input全体から会話開始を成立させるactor入力を探す。
-4. 成立した場合は`EventSystem.requestActorConversation()`へactorと現在地を渡す。
-5. `DialogueSystem.getFrameControlState()`で会話による停止状態を確認する。
-6. 停止中でなければ、`PlayerControlSystem.update()`で通常入力をrequestへ変換する。
-7. 停止中でなければ、`TimeControlSystem.advance(frame)`でゲーム時間を進める。
-8. 更新後のゲーム時間を`EventSystem.advanceTo(currentHours)`へ通知する。
-9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
-10. `LocationSystem.update()`へ`CharacterSystem`の空間対象と空間状態versionを渡し、場所訪問requestを発行する。
+2. `GameFlowSystem.beginFrame({ dialogue })`でフレーム開始時点の入力モードを確定する。
+3. `DialogueSystem.processInput(inputs)`で進行中会話の入力を処理する。
+4. `GameFlowSystem.canProcessFieldInput()`が`true`なら、input全体から会話開始を成立させるactor入力を探す。
+5. 成立した場合は`EventSystem.requestActorConversation()`へactorと現在地を渡す。
+6. `GameFlowSystem.createControlContext({ dialogue })`でフレーム制御状態を決定する。
+7. `gameplayInputEnabled`が`true`なら、`PlayerControlSystem.update()`で通常入力をrequestへ変換する。
+8. `gameplaySimulationEnabled`が`true`なら、`TimeControlSystem.advance(frame)`でゲーム時間を進める。
+9. 更新後のゲーム時間を`EventSystem.advanceTo(currentHours)`へ通知する。
+10. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
+11. `LocationSystem.update()`へ`CharacterSystem`の空間対象と空間状態versionを渡し、場所訪問requestを発行する。
 
 会話遷移を最優先することで、同じframeの場所移動、時間進行、人物移動を会話開始前に実行しない。
 
@@ -180,7 +183,7 @@ class MainGameScene {
 - `actors`には各actorのsnapshotと`isTalkable`を含める。
 - `companion`は同行中だけ同伴者snapshot、それ以外は`null`とする。
 - `gameTime`と`loop`は`TimeControlSystem.createSnapshotFragment()`の結果を使用する。
-- `activeLayerId`は`DialogueSystem`が進行中会話を持つ場合に`conversation`、それ以外は`map`とする。
+- `activeLayerId`は`GameFlowSystem.createSnapshotFragment()`の結果を使用する。
 - `conversation`は会話中だけ`DialogueSystem.createSnapshotFragment()`の結果、それ以外は`null`とする。
 - `executingEvents`は見回り、分岐、配達または同行の順で実行中イベントを格納する。
 - actorやeventの内部オブジェクトを直接公開しない。
@@ -191,6 +194,7 @@ class MainGameScene {
 
 - `Character`、`Student`、`Teacher`
 - [`CharacterSystem`](CharacterSystem.md)
+- [`GameFlowSystem`](GameFlowSystem.md)
 - [`LocationSystem`](LocationSystem.md)
 - [`DialogueSystem`](../会話/DialogueSystem.md)
 - [`PlayerControlSystem`](PlayerControlSystem.md)
@@ -204,7 +208,7 @@ class MainGameScene {
 メインゲーム中の通常会話・イベント会話は、scene stackへ`ConversationScene`をpushせず、`MainGameScene`内の進行中会話として扱う。
 
 - 会話中のsnapshotは`sceneId: SCENE_IDS.MAIN_GAME`を維持し、`conversation: dialogueSystem.createSnapshotFragment()`を含める。
-- 会話中は`DialogueSystem`が`conversation:*`入力だけ処理し、`TimeControlSystem`の時間進行、主人公移動、actor自動移動、map入力、event選択、カシオペア入力は進めない。
+- 会話中は`DialogueSystem`が`conversation:*`入力だけ処理し、`GameFlowSystem`が通常入力とゲームシミュレーションを停止する。
 - 会話完了時は`DialogueSystem`の完了callbackを通して、通常会話の好感度反映、イベント会話の`completeInteraction()`、同行者制御など既存の完了callback相当処理を実行し、`conversation`を`null`へ戻す。
 
 独立した`ConversationScene`は互換用に残すが、メインゲーム中のフィールド会話表示には使わない。

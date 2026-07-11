@@ -1,4 +1,4 @@
-import { INPUT_TYPES, MAIN_GAME_LAYER_IDS, SCENE_IDS, TARGET_PREFIXES } from '../actions.js';
+import { INPUT_TYPES, SCENE_IDS, TARGET_PREFIXES } from '../actions.js';
 import { Character } from './character.js';
 import { CharacterSystem } from './characterSystem.js';
 import {
@@ -6,6 +6,7 @@ import {
   DialogueSystem,
 } from '../conversationScene/dialogueSystem.js';
 import { EventSystem } from './event/eventSystem.js';
+import { GameFlowSystem } from './gameFlowSystem.js';
 import { getDefaultGridMap } from './gridMap.js';
 import { LOCATION_IDS, LOCATIONS } from './locations.js';
 import { LocationSystem } from './locationSystem.js';
@@ -36,6 +37,7 @@ const TEACHER_IDS = {
  */
 class MainGameScene {
   #characterSystem;
+  #gameFlowSystem;
   #dialogueSystem;
   #playerControlSystem;
   #eventSystem;
@@ -117,6 +119,7 @@ class MainGameScene {
       actors,
       gridMap: this.#gridMap,
     });
+    this.#gameFlowSystem = new GameFlowSystem();
     this.#timeControlSystem = new TimeControlSystem({
       character: this.#characterSystem.getPlayerCharacter(),
     });
@@ -212,20 +215,27 @@ class MainGameScene {
   }) {
     const inputs = context.inputs ?? [];
     this.#dialogueSystem.beginFrame();
-    const wasConversationActive = this.#dialogueSystem.hasActiveSession();
+    this.#gameFlowSystem.beginFrame({
+      dialogue: this.#dialogueSystem,
+    });
     this.#dialogueSystem.processInput(inputs);
-    if (wasConversationActive) {
+    if (!this.#gameFlowSystem.canProcessFieldInput()) {
       return;
     }
 
     this.#startConversationFromInputs(inputs);
-    if (this.#isGameplaySimulationBlocked()) {
+    const controlContext = this.#gameFlowSystem.createControlContext({
+      dialogue: this.#dialogueSystem,
+    });
+    if (!controlContext.gameplayInputEnabled) {
       return;
     }
 
-    this.#playerControlSystem.update(inputs, {
-      gameplayInputEnabled: true,
-    });
+    this.#playerControlSystem.update(inputs, controlContext);
+    if (!controlContext.gameplaySimulationEnabled) {
+      return;
+    }
+
     this.#updateGameState(context);
   }
 
@@ -326,23 +336,14 @@ class MainGameScene {
     return {
       ...statusSnapshot,
       sceneId: SCENE_IDS.MAIN_GAME,
-      activeLayerId: this.#createActiveLayerId(),
+      ...this.#gameFlowSystem.createSnapshotFragment({
+        dialogue: this.#dialogueSystem,
+      }),
       conversation: this.#createActiveConversationSnapshot(),
       map: this.#gridMap.createSnapshot(),
       mapLocations: LOCATIONS,
       executingEvents: eventSnapshot.executingEvents,
     };
-  }
-
-  #createActiveLayerId() {
-    return this.#dialogueSystem.hasActiveSession()
-      ? MAIN_GAME_LAYER_IDS.CONVERSATION
-      : MAIN_GAME_LAYER_IDS.MAP;
-  }
-
-  #isGameplaySimulationBlocked() {
-    return this.#dialogueSystem.getFrameControlState()
-      .gameplaySimulationBlocked;
   }
 
   #rewind() {

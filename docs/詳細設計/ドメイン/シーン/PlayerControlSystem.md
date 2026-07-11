@@ -40,7 +40,7 @@ class PlayerControlSystem {
 }
 ```
 
-会話中、巻き戻し中、Scene遷移中などの入力禁止判断は、呼び出し元がcontrol contextへ反映する。
+会話中、巻き戻し中、Scene遷移中などの入力禁止判断は、`GameFlowSystem`がcontrol contextへ反映し、呼び出し元がそのまま渡す。
 `PlayerControlSystem`自身は会話状態やScene遷移状態を直接参照しない。
 
 ### 入力変換
@@ -73,7 +73,7 @@ actor入力は、現段階では`MainGameScene`の会話開始処理が先に扱
 
 ## MainGameSceneとの境界
 
-`MainGameScene`は`PlayerControlSystem`を生成し、通常入力処理フェーズで`update()`を呼ぶ。
+`MainGameScene`は`PlayerControlSystem`を生成し、`GameFlowSystem.createControlContext()`の結果が通常入力を許可する場合に`update()`を呼ぶ。
 `MainGameScene`はtarget prefixを直接解釈しない。
 
 初期段階では、移動は`CharacterSystem`へ、分岐選択は`EventSystem`へ、カシオペア使用は`TimeControlSystem`へ接続する`MainGameScene`内のadapterへ渡す。

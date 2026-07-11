@@ -11,6 +11,7 @@
 | [MainGameScene（メインゲームシーン）](MainGameScene.md) | 麻帆良祭の時間、人物、イベントを進行する | 確定     |
 | [ConversationScene（会話シーン）](ConversationScene.md) | 1件の会話を進行して結果を返す            | 確定     |
 | [CharacterSystem（キャラクター位置・移動System）](CharacterSystem.md) | 主人公と登場人物の位置・移動を管理する | 確定     |
+| [GameFlowSystem（ゲームフローSystem）](GameFlowSystem.md) | 入力モード、フレーム制御、表示layerを決定する | 確定     |
 | [LocationSystem（場所System）](LocationSystem.md) | 空間状態versionから場所訪問requestを発行する | 確定     |
 | [PlayerControlSystem（プレイヤー操作System）](PlayerControlSystem.md) | 通常入力をGameplay requestへ変換する | 確定     |
 | [RewardSystem（報酬System）](RewardSystem.md) | 好感度とMahoPayポイント報酬を反映する | 確定     |
@@ -22,6 +23,7 @@
 flowchart TB
   TitleScene --> MainGameScene
   MainGameScene --> CharacterSystem
+  MainGameScene --> GameFlowSystem
   MainGameScene --> LocationSystem
   MainGameScene --> DialogueSystem
   MainGameScene --> PlayerControlSystem
@@ -29,6 +31,7 @@ flowchart TB
   MainGameScene --> RewardSystem
   MainGameScene --> TimeControlSystem
   PlayerControlSystem --> CharacterSystem
+  GameFlowSystem -. frame control .-> DialogueSystem
   PlayerControlSystem -. branch request .-> EventSystem
   PlayerControlSystem -. cassiopeia request .-> TimeControlSystem
   LocationSystem -. location visit request .-> EventSystem
@@ -44,6 +47,7 @@ flowchart TB
 
 - `TitleScene`はゲーム開始時に`MainGameScene`を生成する。
 - `MainGameScene`は主人公とactorを生成し、位置・移動管理を`CharacterSystem`へ委譲する。
+- `GameFlowSystem`は会話状態から入力モード、フレーム制御、表示layerを決定する。
 - `MainGameScene`はフィールド会話条件と台本を決定し、メインシーン内の会話状態は`DialogueSystem`へ委譲する。
 - `PlayerControlSystem`は通常入力を解釈し、移動や分岐選択などのrequestへ変換する。
 - `LocationSystem`は位置状態versionの変化から場所訪問requestを発行する。

@@ -36,6 +36,7 @@
 
 - [シーン索引](ドメイン/シーン/README.md)
 - [CharacterSystem（キャラクター位置・移動System）](ドメイン/シーン/CharacterSystem.md)
+- [GameFlowSystem（ゲームフローSystem）](ドメイン/シーン/GameFlowSystem.md)
 - [LocationSystem（場所System）](ドメイン/シーン/LocationSystem.md)
 - [PlayerControlSystem（プレイヤー操作System）](ドメイン/シーン/PlayerControlSystem.md)
 - [RewardSystem（報酬System）](ドメイン/シーン/RewardSystem.md)
@@ -62,6 +63,8 @@
 
 クラス図は現在の主要な責務と依存関係を示す。
 各Markdown設計文書を公開契約と責務の正本とする。
+
+- <a href="./現行設計概要.drawio" download>現行設計概要（draw.io）</a>
 
 <<< ./クラス図.puml{ txt }
 
