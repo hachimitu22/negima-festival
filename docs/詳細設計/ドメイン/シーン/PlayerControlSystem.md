@@ -76,5 +76,5 @@ actor入力は、現段階では`MainGameScene`の会話開始処理が先に扱
 `MainGameScene`は`PlayerControlSystem`を生成し、通常入力処理フェーズで`update()`を呼ぶ。
 `MainGameScene`はtarget prefixを直接解釈しない。
 
-初期段階では、移動は`CharacterSystem`へ、分岐選択は`BranchEventManager`へ、カシオペア使用は`MainGameScene`内の暫定adapterへ渡す。
-カシオペア巻き戻し、Event開始、Interaction成立判定は今回の責務に含めない。
+初期段階では、移動は`CharacterSystem`へ、分岐選択は`EventSystem`へ、カシオペア使用は`TimeControlSystem`へ接続する`MainGameScene`内のadapterへ渡す。
+カシオペア巻き戻し後のEvent破棄、Event開始、Interaction成立判定は今回の責務に含めない。

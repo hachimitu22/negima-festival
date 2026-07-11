@@ -14,6 +14,7 @@
 | [LocationSystem（場所System）](LocationSystem.md) | 空間状態versionから場所訪問requestを発行する | 確定     |
 | [PlayerControlSystem（プレイヤー操作System）](PlayerControlSystem.md) | 通常入力をGameplay requestへ変換する | 確定     |
 | [RewardSystem（報酬System）](RewardSystem.md) | 好感度とMahoPayポイント報酬を反映する | 確定     |
+| [TimeControlSystem（時間制御System）](TimeControlSystem.md) | ゲーム時間とカシオペア遡行を管理する | 確定     |
 
 ## 依存方向
 
@@ -26,12 +27,15 @@ flowchart TB
   MainGameScene --> PlayerControlSystem
   MainGameScene --> EventSystem
   MainGameScene --> RewardSystem
+  MainGameScene --> TimeControlSystem
   PlayerControlSystem --> CharacterSystem
   PlayerControlSystem -. branch request .-> EventSystem
+  PlayerControlSystem -. cassiopeia request .-> TimeControlSystem
   LocationSystem -. location visit request .-> EventSystem
   LocationSystem -. spatial data .-> CharacterSystem
   EventSystem -. conversation request .-> DialogueSystem
   EventSystem -. reward request .-> RewardSystem
+  TimeControlSystem --> Character
   CharacterSystem --> Character
   CharacterSystem --> Actor
   DialogueSystem --> ConversationSceneSession
@@ -45,6 +49,7 @@ flowchart TB
 - `LocationSystem`は位置状態versionの変化から場所訪問requestを発行する。
 - `EventSystem`は継続イベント、イベント会話、実行中イベントsnapshotを管理する。
 - `RewardSystem`は会話やイベントの結果から好感度とMahoPayポイントを反映する。
+- `TimeControlSystem`はゲーム時間、フェス終了、ループ回数、カシオペア遡行を管理する。
 - `CharacterSystem`は`Character`と`Actor`の公開メソッドを呼び、移動更新と位置snapshot fragmentを管理する。
 - `DialogueSystem`は会話台本から`ConversationSceneSession`を生成し、会話入力と時間停止状態を管理する。
 - `ConversationScene`は独立会話シーン用に残り、会話台本から`ConversationSceneSession`を生成する。

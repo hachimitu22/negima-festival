@@ -39,6 +39,7 @@
 - [LocationSystem（場所System）](ドメイン/シーン/LocationSystem.md)
 - [PlayerControlSystem（プレイヤー操作System）](ドメイン/シーン/PlayerControlSystem.md)
 - [RewardSystem（報酬System）](ドメイン/シーン/RewardSystem.md)
+- [TimeControlSystem（時間制御System）](ドメイン/シーン/TimeControlSystem.md)
 - [TitleScene（タイトルシーン）](ドメイン/シーン/TitleScene.md)
 - [MainGameScene（メインゲームシーン）](ドメイン/シーン/MainGameScene.md)
 - [ConversationScene（会話シーン）](ドメイン/シーン/ConversationScene.md)

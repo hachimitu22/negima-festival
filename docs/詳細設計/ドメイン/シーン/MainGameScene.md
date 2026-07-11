@@ -12,7 +12,8 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 ## 目的
 
-麻帆良祭のゲーム状態を所有し、時間経過、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
+麻帆良祭のゲーム状態を所有し、プレイヤーと登場人物、MahoPayポイント、グリッドマップ、継続イベントを更新する。
+ゲーム時間、フェス終了状態、ループ回数、カシオペア遡行は`TimeControlSystem`へ委譲する。
 主人公と登場人物の位置、移動、移動snapshot生成は`CharacterSystem`へ委譲する。
 主人公の場所訪問検出と訪問request発行は`LocationSystem`へ委譲する。
 会話の開始条件と台本を決定し、進行中会話の保持、入力処理、時間停止、snapshot生成は`DialogueSystem`へ委譲する。
@@ -24,8 +25,7 @@ import MahoPayTransactionTable from '../../../.vitepress/components/MahoPayTrans
 
 | 状態                      | 内容                                             |
 | ------------------------- | ------------------------------------------------ |
-| `gameTime`                | 現在時間、終了時間、時間倍率、終了状態           |
-| `loop`                    | 周回数、遡行時間、カシオペア消費MP               |
+| `timeControlSystem`       | ゲーム時間、フェス終了、ループ、カシオペア遡行 |
 | `characterSystem`         | 主人公と登場人物の位置、移動、位置snapshot |
 | `locationSystem`          | 空間状態version監視と場所訪問request発行 |
 | `dialogueSystem`          | メインゲーム内会話のsession、入力、時間停止、snapshot |
@@ -54,7 +54,7 @@ class MainGameScene {
 4. 成立した場合は`EventSystem.requestActorConversation()`へactorと現在地を渡す。
 5. `DialogueSystem.getFrameControlState()`で会話による停止状態を確認する。
 6. 停止中でなければ、`PlayerControlSystem.update()`で通常入力をrequestへ変換する。
-7. 停止中でなければ、frame経過量からゲーム時間を進める。
+7. 停止中でなければ、`TimeControlSystem.advance(frame)`でゲーム時間を進める。
 8. 更新後のゲーム時間を`EventSystem.advanceTo(currentHours)`へ通知する。
 9. 経過ゲーム時間と実時間deltaを含むcontextで`CharacterSystem.update()`を呼ぶ。
 10. `LocationSystem.update()`へ`CharacterSystem`の空間対象と空間状態versionを渡し、場所訪問requestを発行する。
@@ -72,7 +72,7 @@ class MainGameScene {
 | ----------------------- | -------------------------------- |
 | `actor:<actorId>`       | 会話開始条件を判定する           |
 | `map-position:<x>,<y>`  | マップ座標へプレイヤーを移動する |
-| `cassiopeia`            | MP条件を満たす場合に時間を戻す   |
+| `cassiopeia`            | `TimeControlSystem`へ使用requestを渡す |
 
 `map-position`の`x`と`y`は32x32グリッド上の連続座標とする。
 目的地が場所に属さない、または壁で到達できない場合は移動を開始しない。
@@ -133,7 +133,7 @@ class MainGameScene {
 - 同行中の場所同期は`EventSystem`が同伴者IDを返し、実際の移動開始は`CharacterSystem`が行う。
 - 配達または同行の完了や失敗時は報酬を適用し、同伴者を`automatic`へ戻して対象イベントを破棄する。
 - 見回り完了時は`PatrolEventManager`が報酬ポイントを請求し、`RewardSystem`へMahoPayポイント反映を依頼して対象イベントを破棄する。
-- カシオペア使用時は`EventSystem`が同伴者を解放し、Managerへイベント破棄を通知する。
+- カシオペア使用時は`TimeControlSystem`が時間遡行とMP消費を行い、成功後に`EventSystem`が同伴者を解放し、Managerへイベント破棄を通知する。
 
 イベントのゲームルールは[基本設計のイベント仕様](../../../基本設計/イベント/README.md)を正本とする。
 
@@ -179,6 +179,7 @@ class MainGameScene {
 - `movement`は移動中だけ目的地、waypoint、速度を含み、停止中は`null`とする。
 - `actors`には各actorのsnapshotと`isTalkable`を含める。
 - `companion`は同行中だけ同伴者snapshot、それ以外は`null`とする。
+- `gameTime`と`loop`は`TimeControlSystem.createSnapshotFragment()`の結果を使用する。
 - `activeLayerId`は`DialogueSystem`が進行中会話を持つ場合に`conversation`、それ以外は`map`とする。
 - `conversation`は会話中だけ`DialogueSystem.createSnapshotFragment()`の結果、それ以外は`null`とする。
 - `executingEvents`は見回り、分岐、配達または同行の順で実行中イベントを格納する。
@@ -195,6 +196,7 @@ class MainGameScene {
 - [`PlayerControlSystem`](PlayerControlSystem.md)
 - [`EventSystem`](../イベント/EventSystem.md)
 - [`RewardSystem`](RewardSystem.md)
+- [`TimeControlSystem`](TimeControlSystem.md)
 - location定義と乱数
 
 ## フィールド会話パネル
@@ -202,7 +204,7 @@ class MainGameScene {
 メインゲーム中の通常会話・イベント会話は、scene stackへ`ConversationScene`をpushせず、`MainGameScene`内の進行中会話として扱う。
 
 - 会話中のsnapshotは`sceneId: SCENE_IDS.MAIN_GAME`を維持し、`conversation: dialogueSystem.createSnapshotFragment()`を含める。
-- 会話中は`DialogueSystem`が`conversation:*`入力だけ処理し、ゲーム内時間、主人公移動、actor自動移動、map入力、event選択、カシオペア入力は進めない。
+- 会話中は`DialogueSystem`が`conversation:*`入力だけ処理し、`TimeControlSystem`の時間進行、主人公移動、actor自動移動、map入力、event選択、カシオペア入力は進めない。
 - 会話完了時は`DialogueSystem`の完了callbackを通して、通常会話の好感度反映、イベント会話の`completeInteraction()`、同行者制御など既存の完了callback相当処理を実行し、`conversation`を`null`へ戻す。
 
 独立した`ConversationScene`は互換用に残すが、メインゲーム中のフィールド会話表示には使わない。

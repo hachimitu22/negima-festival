@@ -14,7 +14,7 @@
 
 ## MG-UT-S02 normal input routing
 
-`PlayerControlSystem`へ移譲した通常入力が、`MainGameScene`上の公開snapshotから見て従来通り反映されることを検証する。
+`PlayerControlSystem`へ移譲した通常入力と`TimeControlSystem`へ移譲したカシオペア遡行が、`MainGameScene`上の公開snapshotから見て従来通り反映されることを検証する。
 
 | ケースID | 観点 | 期待結果 |
 | --- | --- | --- |

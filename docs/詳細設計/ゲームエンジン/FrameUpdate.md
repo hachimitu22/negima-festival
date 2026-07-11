@@ -52,7 +52,8 @@ SceneがSystemをどの順序で更新し、会話などの一時状態によっ
 7. `gameplaySimulationEnabled`の場合だけ、ゲーム時間、移動、NPC自律行動を更新する。
 8. 各Systemのsnapshot fragmentをScene snapshotへ集約する。
 
-将来`TimeControlSystem`を導入する場合は、Sceneが各Systemのフレーム制御状態を渡し、`TimeControlSystem`が最終的な`frameControl`を返す。
+現在の`TimeControlSystem`はゲーム時間進行とカシオペア遡行を担当し、最終的な`frameControl`決定はScene側に残す。
+将来frame制御を独立Systemへ移す場合は、時間進行Systemとは別の責務として設計する。
 
 ## 1フレーム遅延
 

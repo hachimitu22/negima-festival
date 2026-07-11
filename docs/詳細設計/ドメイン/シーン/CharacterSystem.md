@@ -113,5 +113,5 @@ Scene snapshotへ集約するため、次のfragmentを返す。
 - 会話開始条件のうち、イベント固有のブロック判定
 - 配達・同行イベント候補生成とイベント進行
 - 好感度変更とMahoPay報酬反映
-- カシオペア消費MP
-- `LocationSystem`、`EventSystem`、`RewardSystem`などの上位System接続
+- ゲーム時間、カシオペア消費MP、時間遡行
+- `LocationSystem`、`EventSystem`、`RewardSystem`、`TimeControlSystem`などの上位System接続
