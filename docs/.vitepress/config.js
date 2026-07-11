@@ -23,6 +23,7 @@ export default withMermaid({
         link: '/基本設計/README',
         collapsed: false,
         items: [
+          { text: 'メインゲーム状態遷移図', link: '/基本設計/メインゲーム状態遷移図' },
           {
             text: 'シーン',
             link: '/基本設計/シーン/README',
@@ -64,6 +65,8 @@ export default withMermaid({
         link: '/詳細設計/README',
         collapsed: false,
         items: [
+          { text: 'フレーム更新スイムレーン', link: '/詳細設計/フレーム更新スイムレーン' },
+          { text: 'メインゲーム状態遷移図', link: '/詳細設計/メインゲーム状態遷移図' },
           {
             text: 'ゲームエンジン',
             collapsed: false,

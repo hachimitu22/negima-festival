@@ -1,0 +1,72 @@
+@startuml
+title メインゲーム状態遷移図
+
+skinparam shadowing false
+skinparam defaultFontName "Meiryo"
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #475569
+  FontColor #0F172A
+  StartColor #2563EB
+  EndColor #DC2626
+  ArrowColor #475569
+}
+skinparam note {
+  BackgroundColor #FEF3C7
+  BorderColor #D97706
+  FontColor #334155
+}
+
+[*] --> Initializing : TitleSceneから開始
+
+state "初期化\nMainGameScene constructor" as Initializing
+state "マップ操作可能\ninputMode=gameplay\nactiveLayerId=map" as MapReady
+state "通常シミュレーション更新\nTime / Event / Character / Location" as SimulationFrame
+state "会話開始停止フレーム\ninputMode=gameplay\nactiveSessionあり\n通常入力と時間進行を停止" as ConversationStartFrame
+state "会話中\ninputMode=dialogue\nactiveLayerId=conversation\n会話入力だけ処理" as ConversationActive
+state "会話完了停止フレーム\ninputMode=dialogue\nactiveSessionなし\n通常入力と時間進行を停止" as ConversationCompleteFrame
+state "イベント選択反映\nbranch choiceをEventSystemへ通知" as BranchChoiceFrame
+state "カシオペア巻き戻し\n時間遡行 / actor移動予定reset\n会話破棄 / event巻き戻し" as RewindFrame
+state "祭終了状態\nisEnded=true\n現行実装はscene遷移なし" as FestivalEnded
+
+Initializing --> MapReady : System群生成完了
+
+MapReady --> ConversationStartFrame : actor入力\nEventSystem.requestActorConversation()\nDialogueSystem.requestStart() accepted
+MapReady --> BranchChoiceFrame : branch choice入力\nPlayerControlSystem.update()
+MapReady --> RewindFrame : cassiopeia入力\nTimeControlSystem.useCassiopeia()成功
+MapReady --> SimulationFrame : 入力なし / 移動入力 /\ncassiopeia失敗 /\ngameplaySimulationEnabled=true
+
+BranchChoiceFrame --> SimulationFrame : 選択反映後も\nsimulation可能
+
+SimulationFrame --> MapReady : snapshot/render後\n次フレームへ
+SimulationFrame --> FestivalEnded : currentHours >= durationHours
+
+ConversationStartFrame --> ConversationActive : snapshot/render後\n次フレームへ
+ConversationActive --> ConversationActive : conversation next/choice\n未完了
+ConversationActive --> ConversationCompleteFrame : conversation nextでCOMPLETED\nonComplete実行
+ConversationCompleteFrame --> MapReady : snapshot/render後\n次フレームへ
+
+RewindFrame --> MapReady : rewind完了\nisEnded=false
+FestivalEnded --> ConversationStartFrame : actor入力 accepted
+FestivalEnded --> BranchChoiceFrame : branch choice入力
+FestivalEnded --> RewindFrame : cassiopeia成功
+FestivalEnded --> FestivalEnded : 入力なし / 通常入力\nadvance()はelapsedGameHours=0
+
+note right of ConversationStartFrame
+  requestStart()が受理されたフレームは
+  DialogueSystemがgameplaySimulationBlockedForFrameを立てる。
+  そのため通常入力、時間進行、場所訪問は実行しない。
+end note
+
+note right of ConversationCompleteFrame
+  会話完了時はactiveSessionを解除するが、
+  完了フレームだけ停止状態を維持する。
+  次フレームからMapReadyへ戻る。
+end note
+
+note bottom of FestivalEnded
+  TimeControlSystemは祭終了をsnapshotへ出す。
+  MainGameSceneから別sceneへ遷移する処理は現時点では未接続。
+end note
+
+@enduml

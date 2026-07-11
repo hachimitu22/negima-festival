@@ -25,6 +25,9 @@
         <mxCell id="main-game-scene" value="MainGameScene&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;ゲーム状態を集約&lt;br&gt;入力順序と停止判定を制御&lt;br&gt;+update({ context })&lt;br&gt;+createSnapshot()&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="pkg-domain">
           <mxGeometry x="300" y="45" width="180" height="115" as="geometry"/>
         </mxCell>
+        <mxCell id="game-flow-system" value="GameFlowSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;入力モード&lt;br&gt;フレーム制御&lt;br&gt;表示layer決定&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0EA5E9;" vertex="1" parent="pkg-domain">
+          <mxGeometry x="40" y="115" width="150" height="80" as="geometry"/>
+        </mxCell>
         <mxCell id="time-system" value="TimeControlSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;時間進行&lt;br&gt;祭終了&lt;br&gt;カシオペア遡行&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="pkg-domain">
           <mxGeometry x="40" y="210" width="150" height="90" as="geometry"/>
         </mxCell>
@@ -94,7 +97,7 @@
         <mxCell id="conversation-view" value="createConversationSceneView()&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;独立ConversationScene互換用&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;dashed=1;" vertex="1" parent="pkg-view">
           <mxGeometry x="510" y="55" width="190" height="75" as="geometry"/>
         </mxCell>
-        <mxCell id="note-embedded-conversation" value="メインゲーム中の会話は scene stack に push しない。&lt;br&gt;MainGameScene の snapshot に conversation と activeLayerId を含め、DialogueSystem が入力・停止・完了callbackを管理する。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="note-embedded-conversation" value="メインゲーム中の会話は scene stack に push しない。&lt;br&gt;MainGameScene の snapshot に conversation と activeLayerId を含める。会話sessionと完了callbackは DialogueSystem、入力モード・停止・表示layerは GameFlowSystem が管理する。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="860" y="720" width="470" height="90" as="geometry"/>
         </mxCell>
         <mxCell id="note-snapshot" value="依存方向の基本: domain state -&gt; snapshot -&gt; renderer。DOM固有状態はView内に閉じ込める。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=12;" vertex="1" parent="1">
@@ -119,6 +122,9 @@
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-main-time" style="endArrow=diamondThin;endFill=1;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="main-game-scene" target="time-system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-main-flow" style="endArrow=diamondThin;endFill=1;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="main-game-scene" target="game-flow-system">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-main-character" style="endArrow=diamondThin;endFill=1;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="main-game-scene" target="character-system">
@@ -176,6 +182,12 @@
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-event-reward" value="rewardRequests" style="endArrow=block;html=1;rounded=0;strokeColor=#16A34A;fontColor=#16A34A;" edge="1" parent="1" source="event-system" target="reward-system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-flow-dialogue" value="dialogue state" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;fontColor=#0EA5E9;dashed=1;" edge="1" parent="1" source="game-flow-system" target="dialogue-system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-flow-player" value="control context" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;fontColor=#0EA5E9;dashed=1;" edge="1" parent="1" source="game-flow-system" target="player-control-system">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-view-main" style="endArrow=diamondThin;endFill=1;html=1;rounded=0;strokeColor=#7C3AED;" edge="1" parent="1" source="dom-view" target="main-view">
@@ -339,6 +351,212 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram id="whole-game-flow" name="ゲーム全体フロー">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="wg-title" value="ゲーム全体フロー: 起動から毎フレームの描画まで" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="760" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-boot-band" value="起動と初期化" style="swimlane;html=1;rounded=0;whiteSpace=wrap;fillColor=#F3F4F6;strokeColor=#6B7280;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="1700" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-loop-band" value="毎フレーム更新" style="swimlane;html=1;rounded=0;whiteSpace=wrap;fillColor=#E8F4F8;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="290" width="1700" height="650" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-render-band" value="snapshot と描画" style="swimlane;html=1;rounded=0;whiteSpace=wrap;fillColor=#F3E8FF;strokeColor=#7C3AED;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="980" width="1700" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-window-load" value="window load" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#16A34A;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="145" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-index-main" value="index.js main()&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;DomGameView生成&lt;br&gt;MainGameScene生成&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="260" y="125" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-engine-init" value="GameEngine 初期化&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;initialSceneをpush&lt;br&gt;view.configure(enqueueInput)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="520" y="125" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-scene-init" value="MainGameScene 初期化&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;System群生成&lt;br&gt;初期actor / map / event&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="820" y="125" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-engine-start" value="engine.start()&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;initial snapshot&lt;br&gt;view.init(snapshot)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="125" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-raf" value="requestAnimationFrame loop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="145" width="240" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-frame" value="GameEngine.update(now)&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;frame更新&lt;br&gt;inputQueue drain&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="90" y="370" width="220" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-main-update" value="MainGameScene.update({ context })" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="385" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-dialogue-input" value="DialogueSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;beginFrame()&lt;br&gt;conversation入力処理&lt;br&gt;完了callback&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;" vertex="1" parent="1">
+          <mxGeometry x="730" y="350" width="190" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-game-flow" value="GameFlowSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;inputMode確定&lt;br&gt;field入力可否&lt;br&gt;control context&lt;br&gt;activeLayerId&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0EA5E9;" vertex="1" parent="1">
+          <mxGeometry x="980" y="340" width="200" height="125" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-field-input" value="field入力を処理できる?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="350" width="180" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-conversation-start" value="actor入力から会話開始判定&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;EventSystem.requestActorConversation()&lt;br&gt;DialogueSystem.requestStart()&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0E6;strokeColor=#F97316;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="340" width="200" height="125" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-control-decision" value="gameplaySimulationEnabled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="590" width="200" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-blocked" value="停止フレーム&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;会話中 / 会話開始 / 会話完了&lt;br&gt;通常入力とゲーム時間を進めない&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;" vertex="1" parent="1">
+          <mxGeometry x="410" y="590" width="260" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-player-control" value="PlayerControlSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;map / location&lt;br&gt;branch choice&lt;br&gt;cassiopeia&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="410" y="750" width="200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-cassiopeia" value="カシオペア成功?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="745" width="160" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-rewind" value="巻き戻し&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;TimeControlSystem.useCassiopeia()&lt;br&gt;DialogueSystem.dispose()&lt;br&gt;EventSystem.rewindTo()&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;" vertex="1" parent="1">
+          <mxGeometry x="910" y="730" width="265" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-time" value="TimeControlSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;advance(frame)&lt;br&gt;現在時刻 / 祭終了&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="730" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-event" value="EventSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;advanceTo(currentHours)&lt;br&gt;継続イベント進行&lt;br&gt;報酬request&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0E6;strokeColor=#F97316;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="720" width="200" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-character-location" value="CharacterSystem / LocationSystem&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;主人公・actor移動更新&lt;br&gt;訪問場所をEventSystemへ通知&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="855" width="285" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-snapshot" value="MainGameScene.createSnapshot()&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;System fragmentを集約&lt;br&gt;sceneId / activeLayerId / conversation&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;" vertex="1" parent="1">
+          <mxGeometry x="240" y="1015" width="300" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-view-render" value="DomGameView.render(snapshot)&lt;br&gt;&lt;span style=&quot;font-size:11px&quot;&gt;sceneView選択&lt;br&gt;map / conversation layer描画&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1015" width="300" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-next-frame" value="次の animation frame" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1030" width="230" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-stop" value="stop / destroy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="1025" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-load-main" style="endArrow=block;html=1;rounded=0;strokeColor=#4B5563;" edge="1" parent="1" source="wg-window-load" target="wg-index-main">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-main-engine" style="endArrow=block;html=1;rounded=0;strokeColor=#4B5563;" edge="1" parent="1" source="wg-index-main" target="wg-engine-init">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-engine-scene" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-engine-init" target="wg-scene-init">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-scene-start" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-scene-init" target="wg-engine-start">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-start-raf" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-engine-start" target="wg-raf">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-raf-frame" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-raf" target="wg-frame">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1650" y="315"/>
+              <mxPoint x="200" y="315"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-frame-main" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-frame" target="wg-main-update">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-main-dialogue" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;" edge="1" parent="1" source="wg-main-update" target="wg-dialogue-input">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-dialogue-flow" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="wg-dialogue-input" target="wg-game-flow">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-flow-field" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="wg-game-flow" target="wg-field-input">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-field-conv" value="yes" style="endArrow=block;html=1;rounded=0;strokeColor=#F97316;" edge="1" parent="1" source="wg-field-input" target="wg-conversation-start">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-field-control" value="no / after check" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="wg-field-input" target="wg-control-decision">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1350" y="540"/>
+              <mxPoint x="220" y="540"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-conv-control" value="requestStart後" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="wg-conversation-start" target="wg-control-decision">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1610" y="545"/>
+              <mxPoint x="220" y="545"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-control-blocked" value="no" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;" edge="1" parent="1" source="wg-control-decision" target="wg-blocked">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-control-player" value="yes" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-control-decision" target="wg-player-control">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="800"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-player-cassiopeia" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-player-control" target="wg-cassiopeia">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-cassiopeia-rewind" value="yes" style="endArrow=block;html=1;rounded=0;strokeColor=#DC2626;" edge="1" parent="1" source="wg-cassiopeia" target="wg-rewind">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-cassiopeia-time" value="no" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-cassiopeia" target="wg-time">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-rewind-time" style="endArrow=block;html=1;rounded=0;strokeColor=#DC2626;" edge="1" parent="1" source="wg-rewind" target="wg-time">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-time-event" style="endArrow=block;html=1;rounded=0;strokeColor=#F97316;" edge="1" parent="1" source="wg-time" target="wg-event">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-event-character" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-event" target="wg-character-location">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-character-event" value="visitLocations" style="endArrow=block;html=1;rounded=0;strokeColor=#F97316;fontColor=#F97316;dashed=1;" edge="1" parent="1" source="wg-character-location" target="wg-event">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-blocked-snapshot" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;" edge="1" parent="1" source="wg-blocked" target="wg-snapshot">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="955"/>
+              <mxPoint x="390" y="955"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-character-snapshot" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-character-location" target="wg-snapshot">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-snapshot-render" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;" edge="1" parent="1" source="wg-snapshot" target="wg-view-render">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-render-next" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-view-render" target="wg-next-frame">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="wg-e-next-loop" value="loop" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="wg-next-frame" target="wg-raf">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1530" y="1055"/>
+              <mxPoint x="1690" y="1055"/>
+              <mxPoint x="1690" y="170"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wg-e-render-stop" style="endArrow=block;html=1;rounded=0;strokeColor=#6B7280;dashed=1;" edge="1" parent="1" source="wg-view-render" target="wg-stop">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
   <diagram id="lifecycle-flow" name="ライフサイクルフロー">
     <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
       <root>
@@ -374,25 +592,25 @@
         <mxCell id="flow-scene-update" value="MainGameScene.update({ context })" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="930" y="245" width="270" height="55" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-dialogue-begin" value="DialogueSystem.beginFrame()&lt;br&gt;processInput(inputs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;" vertex="1" parent="1">
-          <mxGeometry x="120" y="400" width="250" height="75" as="geometry"/>
+        <mxCell id="flow-dialogue-begin" value="DialogueSystem.beginFrame()&lt;br&gt;GameFlowSystem.beginFrame({ dialogue })&lt;br&gt;DialogueSystem.processInput(inputs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;" vertex="1" parent="1">
+          <mxGeometry x="120" y="390" width="270" height="95" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-active-conv" value="会話中または会話終了フレーム?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="flow-active-conv" value="inputMode == dialogue?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="430" y="385" width="190" height="105" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-blocked" value="ゲーム進行を停止&lt;br&gt;時間 / 移動 / 場所訪問 / 通常入力を更新しない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;" vertex="1" parent="1">
+        <mxCell id="flow-blocked" value="GameFlowSystemが停止判定&lt;br&gt;時間 / 移動 / 場所訪問 / 通常入力を更新しない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;" vertex="1" parent="1">
           <mxGeometry x="690" y="375" width="290" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-start-conv" value="actor入力があれば会話開始判定&lt;br&gt;EventSystem.requestActorConversation()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0E6;strokeColor=#F97316;" vertex="1" parent="1">
+        <mxCell id="flow-start-conv" value="canProcessFieldInput() が trueなら&lt;br&gt;actor入力から会話開始判定&lt;br&gt;EventSystem.requestActorConversation()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF0E6;strokeColor=#F97316;" vertex="1" parent="1">
           <mxGeometry x="690" y="510" width="310" height="75" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-frame-control" value="DialogueSystem.getFrameControlState()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;" vertex="1" parent="1">
+        <mxCell id="flow-frame-control" value="GameFlowSystem.createControlContext({ dialogue })" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0EA5E9;" vertex="1" parent="1">
           <mxGeometry x="1070" y="505" width="260" height="65" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-sim-blocked" value="gameplaySimulationBlocked?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="flow-sim-blocked" value="gameplaySimulationEnabled?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1400" y="485" width="200" height="105" as="geometry"/>
         </mxCell>
-        <mxCell id="flow-player-control" value="PlayerControlSystem.update()&lt;br&gt;map / location / branch / cassiopeia" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
+        <mxCell id="flow-player-control" value="PlayerControlSystem.update(inputs, controlContext)&lt;br&gt;map / location / branch / cassiopeia" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;" vertex="1" parent="1">
           <mxGeometry x="130" y="680" width="290" height="75" as="geometry"/>
         </mxCell>
         <mxCell id="flow-cassiopeia" value="カシオペア入力?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;" vertex="1" parent="1">
@@ -458,16 +676,16 @@
         <mxCell id="f-active-start" value="no" style="endArrow=block;html=1;rounded=0;strokeColor=#F97316;" edge="1" parent="1" source="flow-active-conv" target="flow-start-conv">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="f-start-control" style="endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;" edge="1" parent="1" source="flow-start-conv" target="flow-frame-control">
+        <mxCell id="f-start-control" style="endArrow=block;html=1;rounded=0;strokeColor=#0EA5E9;" edge="1" parent="1" source="flow-start-conv" target="flow-frame-control">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="f-control-branch" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;" edge="1" parent="1" source="flow-frame-control" target="flow-sim-blocked">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="f-sim-blocked" value="yes" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;" edge="1" parent="1" source="flow-sim-blocked" target="flow-blocked">
+        <mxCell id="f-sim-blocked" value="no" style="endArrow=block;html=1;rounded=0;strokeColor=#D97706;" edge="1" parent="1" source="flow-sim-blocked" target="flow-blocked">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="f-sim-player" value="no" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="flow-sim-blocked" target="flow-player-control">
+        <mxCell id="f-sim-player" value="yes" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="flow-sim-blocked" target="flow-player-control">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="f-player-cassiopeia" style="endArrow=block;html=1;rounded=0;strokeColor=#2563EB;" edge="1" parent="1" source="flow-player-control" target="flow-cassiopeia">

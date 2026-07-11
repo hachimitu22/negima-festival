@@ -1,0 +1,105 @@
+@startuml
+title ゲーム進行フロー（プレイヤー目線）
+
+skinparam shadowing false
+skinparam defaultFontName "Meiryo"
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #475569
+  FontColor #0F172A
+  DiamondBackgroundColor #FEF3C7
+  DiamondBorderColor #D97706
+  StartColor #16A34A
+  EndColor #DC2626
+}
+skinparam note {
+  BackgroundColor #F8FAFC
+  BorderColor #94A3B8
+  FontColor #334155
+}
+
+start
+
+:ゲーム開始;
+:麻帆良祭が始まる;
+
+repeat
+  :現在地、時間、MP、MahoPay、
+  実行中イベントを確認する;
+
+  if (現在地から移動する？) then (はい)
+    :行き先を選ぶ;
+    :場所へ移動する;
+    :移動先の登場人物と
+    イベント目的を確認する;
+  else (いいえ)
+  endif
+
+  if (同じ場所に会話したい
+  登場人物がいる？) then (はい)
+    :登場人物を選ぶ;
+    :会話する;
+
+    if (イベントにつながる会話？) then (はい)
+      if (イベントを受ける？) then (はい)
+        :イベントを実行中にする;
+      else (いいえ)
+        :会話結果を得る;
+      endif
+    else (いいえ)
+      :会話結果を得る;
+    endif
+  else (いいえ)
+  endif
+
+  if (実行中イベントがある？) then (はい)
+    :目的の人物や場所を確認する;
+
+    if (イベント条件を満たした？) then (はい)
+      :イベントが進む;
+
+      if (イベントを達成した？) then (はい)
+        :報酬、好感度、
+        MahoPayを得る;
+        :達成したイベントを完了する;
+      else (まだ)
+      endif
+    else (いいえ)
+    endif
+  else (いいえ)
+  endif
+
+  :ゲーム時間が進む;
+  :MPが回復し、
+  登場人物が移動する;
+
+  if (カシオペアを使う？) then (はい)
+    if (必要なMPがある？) then (はい)
+      :MPを消費する;
+      :最大24時間戻る;
+      :実行中イベントを破棄する;
+      :戻った時間からやり直す;
+    else (いいえ)
+      :カシオペアを使わない;
+    endif
+  else (いいえ)
+  endif
+
+repeat while (祭の時間が残っている？) is (はい)
+
+:祭の終了を迎える;
+stop
+
+note right
+  イベント例:
+  - 配達
+  - 同行
+  - 見回り
+  - 連絡掲示
+  - 展示トラブル対応
+
+  個別イベントの細かな状態遷移は
+  この図では扱わない。
+end note
+
+@enduml

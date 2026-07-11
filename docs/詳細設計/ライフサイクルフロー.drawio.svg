@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1320" viewBox="0 0 1680 1320" role="img" aria-labelledby="title desc" content="&lt;mxfile host=&quot;embed.diagrams.net&quot; agent=&quot;Codex&quot;&gt;&lt;diagram id=&quot;lifecycle-flow&quot; name=&quot;Lifecycle Flow&quot;&gt;&lt;mxGraphModel dx=&quot;1600&quot; dy=&quot;1200&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1680&quot; pageHeight=&quot;1320&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&lt;root&gt;&lt;mxCell id=&quot;0&quot;/&gt;&lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;&lt;mxCell id=&quot;title&quot; value=&quot;Lifecycle Flow&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;fontSize=30;fontStyle=1;align=left;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;44&quot; y=&quot;24&quot; width=&quot;420&quot; height=&quot;44&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;boot&quot; value=&quot;1. Boot and initialization&amp;lt;br&amp;gt;window load - index.js - GameEngine - MainGameScene - view.init&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;80&quot; y=&quot;140&quot; width=&quot;360&quot; height=&quot;90&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;frame&quot; value=&quot;2. GameEngine frame&amp;lt;br&amp;gt;update frame - drain input - call MainGameScene.update&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;520&quot; y=&quot;140&quot; width=&quot;360&quot; height=&quot;90&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;dialogue&quot; value=&quot;3. Dialogue and flow control&amp;lt;br&amp;gt;DialogueSystem handles conversation input&amp;lt;br&amp;gt;GameFlowSystem decides input mode and control context&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E8FF;strokeColor=#7C3AED;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;960&quot; y=&quot;120&quot; width=&quot;420&quot; height=&quot;130&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;decision&quot; value=&quot;gameplaySimulationEnabled?&quot; style=&quot;rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;610&quot; y=&quot;330&quot; width=&quot;190&quot; height=&quot;110&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;stop&quot; value=&quot;Stop frame&amp;lt;br&amp;gt;conversation active / started / completed&amp;lt;br&amp;gt;skip normal input and simulation&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;930&quot; y=&quot;335&quot; width=&quot;320&quot; height=&quot;100&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;simulation&quot; value=&quot;Normal simulation&amp;lt;br&amp;gt;PlayerControlSystem - TimeControlSystem - EventSystem - CharacterSystem - LocationSystem&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;450&quot; y=&quot;540&quot; width=&quot;500&quot; height=&quot;100&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;rewind&quot; value=&quot;Cassiopeia rewind&amp;lt;br&amp;gt;useCassiopeia - reset actors - dispose dialogue - rewind events&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;1030&quot; y=&quot;540&quot; width=&quot;360&quot; height=&quot;100&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;snapshot&quot; value=&quot;4. Snapshot and render&amp;lt;br&amp;gt;MainGameScene.createSnapshot - DomGameView.render - next animation frame&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#FAF5FF;strokeColor=#7C3AED;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;520&quot; y=&quot;760&quot; width=&quot;500&quot; height=&quot;100&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e1&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#2563EB;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;boot&quot; target=&quot;frame&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e2&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;frame&quot; target=&quot;dialogue&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e3&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#D97706;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;dialogue&quot; target=&quot;decision&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e4&quot; value=&quot;no&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#D97706;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;decision&quot; target=&quot;stop&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e5&quot; value=&quot;yes&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#2563EB;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;decision&quot; target=&quot;simulation&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e6&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#DC2626;dashed=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;simulation&quot; target=&quot;rewind&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e7&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;stop&quot; target=&quot;snapshot&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e8&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;simulation&quot; target=&quot;snapshot&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e9&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#7C3AED;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;rewind&quot; target=&quot;snapshot&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;e10&quot; style=&quot;endArrow=block;html=1;rounded=0;strokeColor=#2563EB;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;snapshot&quot; target=&quot;frame&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;&lt;Array as=&quot;points&quot;&gt;&lt;mxPoint x=&quot;1400&quot; y=&quot;820&quot;/&gt;&lt;mxPoint x=&quot;1400&quot; y=&quot;185&quot;/&gt;&lt;/Array&gt;&lt;/mxGeometry&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;&lt;/diagram&gt;&lt;/mxfile&gt;">
+  <title id="title">ライフサイクルフロー</title>
+  <desc id="desc">麻帆良祭プロトタイプの起動、フレーム更新、会話停止、通常シミュレーション、カシオペア巻き戻し、snapshot描画までの流れ。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4b5563"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f97316"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", "Meiryo", sans-serif; fill: #111827; }
+      .title { font-size: 30px; font-weight: 700; }
+      .subtitle { font-size: 14px; fill: #4b5563; }
+      .band-title { font-size: 16px; font-weight: 700; fill: #374151; }
+      .box-title { font-size: 15px; font-weight: 700; }
+      .box-text { font-size: 12px; fill: #374151; }
+      .label { font-size: 12px; font-weight: 700; fill: #374151; }
+      .band { fill: #f9fafb; stroke: #d1d5db; stroke-width: 1.5; rx: 8; }
+      .boot { fill: #f3f4f6; stroke: #6b7280; }
+      .engine { fill: #dbeafe; stroke: #2563eb; }
+      .domain { fill: #eff6ff; stroke: #2563eb; }
+      .flow { fill: #e0f2fe; stroke: #0ea5e9; }
+      .dialogue { fill: #f3e8ff; stroke: #7c3aed; }
+      .event { fill: #fff7ed; stroke: #f97316; }
+      .reward { fill: #ecfdf5; stroke: #16a34a; }
+      .stop { fill: #fef3c7; stroke: #d97706; }
+      .rewind { fill: #fee2e2; stroke: #dc2626; }
+      .render { fill: #faf5ff; stroke: #7c3aed; }
+      .shape { stroke-width: 2; rx: 8; }
+      .decision { stroke-width: 2; }
+      .line-blue { fill: none; stroke: #2563eb; stroke-width: 2.2; marker-end: url(#arrow-blue); }
+      .line-gray { fill: none; stroke: #4b5563; stroke-width: 2.2; marker-end: url(#arrow-gray); }
+      .line-orange { fill: none; stroke: #f97316; stroke-width: 2.2; marker-end: url(#arrow-orange); }
+      .line-purple { fill: none; stroke: #7c3aed; stroke-width: 2.2; marker-end: url(#arrow-purple); }
+      .line-red { fill: none; stroke: #dc2626; stroke-width: 2.2; marker-end: url(#arrow-red); }
+      .line-dashed { stroke-dasharray: 7 6; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1680" height="1320" fill="#ffffff"/>
+  <text x="44" y="52" class="title">ライフサイクルフロー</text>
+  <text x="44" y="80" class="subtitle">現行実装: GameEngine がフレームを駆動し、MainGameScene が System 群を順序制御する。会話中の入力モードと停止判定は GameFlowSystem が担当する。</text>
+
+  <rect x="40" y="112" width="1600" height="150" class="band"/>
+  <text x="60" y="140" class="band-title">1. 起動と初期化</text>
+
+  <rect x="72" y="170" width="140" height="52" class="shape boot"/>
+  <text x="142" y="191" text-anchor="middle" class="box-title">window load</text>
+  <text x="142" y="209" text-anchor="middle" class="box-text">main()を呼ぶ</text>
+
+  <rect x="270" y="160" width="190" height="72" class="shape boot"/>
+  <text x="365" y="184" text-anchor="middle" class="box-title">index.js</text>
+  <text x="365" y="204" text-anchor="middle" class="box-text">DomGameView生成</text>
+  <text x="365" y="220" text-anchor="middle" class="box-text">MainGameScene生成</text>
+
+  <rect x="520" y="154" width="230" height="84" class="shape engine"/>
+  <text x="635" y="178" text-anchor="middle" class="box-title">GameEngine constructor</text>
+  <text x="635" y="198" text-anchor="middle" class="box-text">initialSceneをpush</text>
+  <text x="635" y="214" text-anchor="middle" class="box-text">view.configure(enqueueInput)</text>
+
+  <rect x="810" y="154" width="250" height="84" class="shape domain"/>
+  <text x="935" y="178" text-anchor="middle" class="box-title">MainGameScene constructor</text>
+  <text x="935" y="198" text-anchor="middle" class="box-text">System群を生成</text>
+  <text x="935" y="214" text-anchor="middle" class="box-text">初期actor / map / event</text>
+
+  <rect x="1120" y="154" width="230" height="84" class="shape engine"/>
+  <text x="1235" y="178" text-anchor="middle" class="box-title">engine.start()</text>
+  <text x="1235" y="198" text-anchor="middle" class="box-text">initial snapshot</text>
+  <text x="1235" y="214" text-anchor="middle" class="box-text">view.init(snapshot)</text>
+
+  <rect x="1420" y="170" width="180" height="52" class="shape engine"/>
+  <text x="1510" y="191" text-anchor="middle" class="box-title">RAF loop</text>
+  <text x="1510" y="209" text-anchor="middle" class="box-text">requestAnimationFrame</text>
+
+  <path d="M 212 196 L 270 196" class="line-gray"/>
+  <path d="M 460 196 L 520 196" class="line-gray"/>
+  <path d="M 750 196 L 810 196" class="line-blue"/>
+  <path d="M 1060 196 L 1120 196" class="line-blue"/>
+  <path d="M 1350 196 L 1420 196" class="line-blue"/>
+
+  <rect x="40" y="300" width="1600" height="260" class="band"/>
+  <text x="60" y="328" class="band-title">2. GameEngine の毎フレーム処理</text>
+
+  <rect x="80" y="384" width="220" height="82" class="shape engine"/>
+  <text x="190" y="409" text-anchor="middle" class="box-title">GameEngine.update(now)</text>
+  <text x="190" y="429" text-anchor="middle" class="box-text">未起動ならreturn</text>
+  <text x="190" y="445" text-anchor="middle" class="box-text">frame情報を更新</text>
+
+  <rect x="380" y="384" width="210" height="82" class="shape engine"/>
+  <text x="485" y="409" text-anchor="middle" class="box-title">入力をdrain</text>
+  <text x="485" y="429" text-anchor="middle" class="box-text">inputQueueを空にする</text>
+  <text x="485" y="445" text-anchor="middle" class="box-text">context.inputsへ格納</text>
+
+  <rect x="670" y="384" width="250" height="82" class="shape domain"/>
+  <text x="795" y="409" text-anchor="middle" class="box-title">MainGameScene.update</text>
+  <text x="795" y="429" text-anchor="middle" class="box-text">contextを受け取る</text>
+  <text x="795" y="445" text-anchor="middle" class="box-text">System更新順序を制御</text>
+
+  <rect x="1000" y="384" width="230" height="82" class="shape engine"/>
+  <text x="1115" y="409" text-anchor="middle" class="box-title">snapshot作成</text>
+  <text x="1115" y="429" text-anchor="middle" class="box-text">currentScene.createSnapshot()</text>
+  <text x="1115" y="445" text-anchor="middle" class="box-text">描画用データだけ公開</text>
+
+  <rect x="1310" y="384" width="230" height="82" class="shape render"/>
+  <text x="1425" y="409" text-anchor="middle" class="box-title">DomGameView.render</text>
+  <text x="1425" y="429" text-anchor="middle" class="box-text">sceneIdでView選択</text>
+  <text x="1425" y="445" text-anchor="middle" class="box-text">activeLayerIdで表示切替</text>
+
+  <path d="M 1510 222 C 1510 280 190 280 190 384" class="line-blue"/>
+  <path d="M 300 425 L 380 425" class="line-blue"/>
+  <path d="M 590 425 L 670 425" class="line-blue"/>
+  <path d="M 920 425 L 1000 425" class="line-blue"/>
+  <path d="M 1230 425 L 1310 425" class="line-purple"/>
+
+  <rect x="40" y="600" width="1600" height="520" class="band"/>
+  <text x="60" y="628" class="band-title">3. MainGameScene.update 内部ライフサイクル</text>
+
+  <rect x="80" y="680" width="235" height="94" class="shape dialogue"/>
+  <text x="197" y="705" text-anchor="middle" class="box-title">DialogueSystem</text>
+  <text x="197" y="725" text-anchor="middle" class="box-text">beginFrame()</text>
+  <text x="197" y="741" text-anchor="middle" class="box-text">processInput(inputs)</text>
+  <text x="197" y="757" text-anchor="middle" class="box-text">会話完了時 callback</text>
+
+  <rect x="385" y="672" width="250" height="110" class="shape flow"/>
+  <text x="510" y="697" text-anchor="middle" class="box-title">GameFlowSystem</text>
+  <text x="510" y="717" text-anchor="middle" class="box-text">beginFrame({ dialogue })</text>
+  <text x="510" y="733" text-anchor="middle" class="box-text">canProcessFieldInput()</text>
+  <text x="510" y="749" text-anchor="middle" class="box-text">createControlContext()</text>
+  <text x="510" y="765" text-anchor="middle" class="box-text">createSnapshotFragment()</text>
+
+  <polygon points="735,672 855,727 735,782 615,727" class="decision stop"/>
+  <text x="735" y="718" text-anchor="middle" class="box-title">入力モード</text>
+  <text x="735" y="738" text-anchor="middle" class="box-text">dialogue?</text>
+
+  <rect x="900" y="680" width="235" height="94" class="shape stop"/>
+  <text x="1017" y="705" text-anchor="middle" class="box-title">会話中フレーム</text>
+  <text x="1017" y="725" text-anchor="middle" class="box-text">field入力を処理しない</text>
+  <text x="1017" y="741" text-anchor="middle" class="box-text">ゲーム時間を進めない</text>
+  <text x="1017" y="757" text-anchor="middle" class="box-text">snapshot描画へ進む</text>
+
+  <rect x="80" y="845" width="255" height="94" class="shape event"/>
+  <text x="207" y="870" text-anchor="middle" class="box-title">actor会話開始判定</text>
+  <text x="207" y="890" text-anchor="middle" class="box-text">talkable actorを探す</text>
+  <text x="207" y="906" text-anchor="middle" class="box-text">EventSystemへ会話request</text>
+  <text x="207" y="922" text-anchor="middle" class="box-text">DialogueSystem.requestStart()</text>
+
+  <polygon points="435,845 555,900 435,955 315,900" class="decision stop"/>
+  <text x="435" y="890" text-anchor="middle" class="box-title">会話開始で</text>
+  <text x="435" y="910" text-anchor="middle" class="box-text">停止?</text>
+
+  <rect x="615" y="852" width="245" height="86" class="shape domain"/>
+  <text x="737" y="877" text-anchor="middle" class="box-title">PlayerControlSystem</text>
+  <text x="737" y="897" text-anchor="middle" class="box-text">gameplayInputEnabled時のみ</text>
+  <text x="737" y="913" text-anchor="middle" class="box-text">map / location / branch / cassiopeia</text>
+
+  <polygon points="980,845 1095,900 980,955 865,900" class="decision stop"/>
+  <text x="980" y="890" text-anchor="middle" class="box-title">Cassiopeia</text>
+  <text x="980" y="910" text-anchor="middle" class="box-text">成功?</text>
+
+  <rect x="1160" y="835" width="275" height="116" class="shape rewind"/>
+  <text x="1297" y="860" text-anchor="middle" class="box-title">巻き戻し処理</text>
+  <text x="1297" y="880" text-anchor="middle" class="box-text">TimeControlSystem.useCassiopeia()</text>
+  <text x="1297" y="896" text-anchor="middle" class="box-text">actor次回移動時刻をリセット</text>
+  <text x="1297" y="912" text-anchor="middle" class="box-text">DialogueSystem.dispose()</text>
+  <text x="1297" y="928" text-anchor="middle" class="box-text">EventSystem.rewindTo()</text>
+
+  <rect x="615" y="1000" width="220" height="80" class="shape domain"/>
+  <text x="725" y="1025" text-anchor="middle" class="box-title">TimeControlSystem</text>
+  <text x="725" y="1045" text-anchor="middle" class="box-text">advance(frame)</text>
+  <text x="725" y="1061" text-anchor="middle" class="box-text">現在時刻 / 祭終了</text>
+
+  <rect x="905" y="1000" width="220" height="80" class="shape event"/>
+  <text x="1015" y="1025" text-anchor="middle" class="box-title">EventSystem</text>
+  <text x="1015" y="1045" text-anchor="middle" class="box-text">advanceTo(currentHours)</text>
+  <text x="1015" y="1061" text-anchor="middle" class="box-text">継続イベント進行</text>
+
+  <rect x="1195" y="1000" width="260" height="80" class="shape domain"/>
+  <text x="1325" y="1025" text-anchor="middle" class="box-title">Character / Location</text>
+  <text x="1325" y="1045" text-anchor="middle" class="box-text">主人公とactor移動更新</text>
+  <text x="1325" y="1061" text-anchor="middle" class="box-text">訪問場所をEventSystemへ通知</text>
+
+  <path d="M 920 466 C 920 565 197 565 197 680" class="line-blue"/>
+  <path d="M 315 727 L 385 727" class="line-purple"/>
+  <path d="M 635 727 L 615 727" class="line-blue"/>
+  <path d="M 855 727 L 900 727" class="line-orange"/>
+  <text x="872" y="714" class="label">yes</text>
+  <path d="M 735 782 C 735 815 207 815 207 845" class="line-blue"/>
+  <text x="708" y="820" class="label">no</text>
+  <path d="M 335 900 L 315 900" class="line-orange"/>
+  <path d="M 555 900 L 615 895" class="line-blue"/>
+  <text x="570" y="883" class="label">no</text>
+  <path d="M 435 955 C 435 1110 1017 1110 1017 1118" class="line-orange"/>
+  <text x="455" y="978" class="label">yes</text>
+  <path d="M 860 895 L 865 900" class="line-blue"/>
+  <path d="M 1095 900 L 1160 893" class="line-red"/>
+  <text x="1110" y="881" class="label">yes</text>
+  <path d="M 980 955 C 980 980 725 980 725 1000" class="line-blue"/>
+  <text x="952" y="982" class="label">no</text>
+  <path d="M 1297 951 C 1297 980 725 980 725 1000" class="line-red"/>
+  <path d="M 835 1040 L 905 1040" class="line-orange"/>
+  <path d="M 1125 1040 L 1195 1040" class="line-blue"/>
+  <path d="M 1325 1000 C 1325 970 1015 970 1015 1000" class="line-orange line-dashed"/>
+  <text x="1148" y="970" class="label">visitLocations</text>
+
+  <rect x="40" y="1160" width="1600" height="110" class="band"/>
+  <text x="60" y="1188" class="band-title">4. Snapshot 集約と描画</text>
+
+  <rect x="190" y="1208" width="280" height="48" class="shape domain"/>
+  <text x="330" y="1230" text-anchor="middle" class="box-title">MainGameScene.createSnapshot()</text>
+  <text x="330" y="1248" text-anchor="middle" class="box-text">System fragmentを集約</text>
+
+  <rect x="680" y="1208" width="260" height="48" class="shape render"/>
+  <text x="810" y="1230" text-anchor="middle" class="box-title">DomGameView.render()</text>
+  <text x="810" y="1248" text-anchor="middle" class="box-text">sceneId / activeLayerIdで描画</text>
+
+  <rect x="1150" y="1208" width="230" height="48" class="shape engine"/>
+  <text x="1265" y="1230" text-anchor="middle" class="box-title">next frame</text>
+  <text x="1265" y="1248" text-anchor="middle" class="box-text">requestAnimationFrameへ戻る</text>
+
+  <path d="M 1017 774 C 1017 1150 330 1150 330 1208" class="line-orange"/>
+  <path d="M 1325 1080 C 1325 1140 330 1140 330 1208" class="line-blue"/>
+  <path d="M 470 1232 L 680 1232" class="line-purple"/>
+  <path d="M 940 1232 L 1150 1232" class="line-blue"/>
+  <path d="M 1265 1208 C 1265 1140 1585 1140 1585 425 C 1585 300 190 300 190 384" class="line-blue"/>
+
+  <rect x="1180" y="620" width="390" height="110" class="shape reward"/>
+  <text x="1375" y="648" text-anchor="middle" class="box-title">完了callbackと報酬反映</text>
+  <text x="1375" y="670" text-anchor="middle" class="box-text">通常会話: RewardSystem.applyConversationResult()</text>
+  <text x="1375" y="686" text-anchor="middle" class="box-text">イベント会話: event.completeInteraction()</text>
+  <text x="1375" y="702" text-anchor="middle" class="box-text">成功時: 好感度 / MahoPay / 同行者制御</text>
+  <path d="M 315 716 C 760 610 1020 610 1180 660" class="line-purple line-dashed"/>
+</svg>

@@ -1,0 +1,226 @@
+@startuml
+title フレーム更新スイムレーン
+
+skinparam shadowing false
+skinparam defaultFontName "Meiryo"
+skinparam sequence {
+  ArrowColor #475569
+  LifeLineBorderColor #94A3B8
+  LifeLineBackgroundColor #F8FAFC
+  ParticipantBorderColor #475569
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantFontColor #0F172A
+  BoxBorderColor #CBD5E1
+  BoxBackgroundColor #F8FAFC
+}
+skinparam note {
+  BackgroundColor #FEF3C7
+  BorderColor #D97706
+  FontColor #334155
+}
+
+actor Browser
+participant "DOM View" as View
+participant GameEngine
+participant MainGameScene
+participant GameFlowSystem
+participant DialogueSystem
+participant EventSystem
+participant PlayerControlSystem
+participant TimeControlSystem
+participant CharacterSystem
+participant LocationSystem
+participant RewardSystem
+
+== 起動済みの毎フレーム ==
+
+Browser -> GameEngine : update(now)
+activate GameEngine
+
+GameEngine -> GameEngine : frame情報を更新
+GameEngine -> GameEngine : inputQueueを取り出す
+GameEngine -> MainGameScene : update({ context, inputs })
+activate MainGameScene
+
+MainGameScene -> DialogueSystem : beginFrame()
+activate DialogueSystem
+DialogueSystem --> MainGameScene : 一時停止状態を初期化
+deactivate DialogueSystem
+
+MainGameScene -> GameFlowSystem : beginFrame({ dialogue })
+activate GameFlowSystem
+GameFlowSystem -> DialogueSystem : hasActiveSession()
+DialogueSystem --> GameFlowSystem : 進行中会話の有無
+GameFlowSystem --> MainGameScene : inputModeを確定
+deactivate GameFlowSystem
+
+MainGameScene -> DialogueSystem : processInput(inputs)
+activate DialogueSystem
+
+alt 会話入力で会話が完了した
+  DialogueSystem -> EventSystem : onComplete(result)
+  activate EventSystem
+  EventSystem -> EventSystem : event.completeInteraction()
+  alt 通常会話またはイベント報酬がある
+    EventSystem -> RewardSystem : applyConversationResult / applyAffection / addMahoPayPoints
+    activate RewardSystem
+    RewardSystem --> EventSystem : 報酬反映
+    deactivate RewardSystem
+  end
+  EventSystem --> DialogueSystem : 完了処理終了
+  deactivate EventSystem
+else 会話中ではない、または未完了
+end
+
+DialogueSystem --> MainGameScene : 会話入力処理結果
+deactivate DialogueSystem
+
+MainGameScene -> GameFlowSystem : canProcessFieldInput()
+activate GameFlowSystem
+GameFlowSystem --> MainGameScene : field入力可否
+deactivate GameFlowSystem
+
+alt field入力を処理できない
+  MainGameScene --> GameEngine : update終了
+else field入力を処理できる
+  MainGameScene -> EventSystem : requestActorConversation(actor, currentLocationId)
+  activate EventSystem
+
+  alt actor入力から会話を開始する
+    EventSystem -> DialogueSystem : requestStart({ script, onComplete })
+    activate DialogueSystem
+    DialogueSystem --> EventSystem : accepted / rejected
+    deactivate DialogueSystem
+  else actor会話入力がない、または会話開始しない
+  end
+
+  EventSystem --> MainGameScene : 会話開始可否
+  deactivate EventSystem
+
+  MainGameScene -> GameFlowSystem : createControlContext({ dialogue })
+  activate GameFlowSystem
+  GameFlowSystem -> DialogueSystem : getFrameControlState()
+  DialogueSystem --> GameFlowSystem : gameplaySimulationBlocked / playerControlBlocked
+  GameFlowSystem --> MainGameScene : controlContext
+  deactivate GameFlowSystem
+
+  alt gameplayInputEnabled == false
+    MainGameScene --> GameEngine : update終了
+  else gameplayInputEnabled == true
+    MainGameScene -> PlayerControlSystem : update(inputs, controlContext)
+    activate PlayerControlSystem
+
+    alt カシオペア入力がある
+      PlayerControlSystem -> MainGameScene : requestUseCassiopeia()
+      activate MainGameScene
+      MainGameScene -> TimeControlSystem : useCassiopeia()
+      activate TimeControlSystem
+      TimeControlSystem --> MainGameScene : 成功 / 失敗
+      deactivate TimeControlSystem
+
+      alt カシオペア成功
+        MainGameScene -> CharacterSystem : resetAllActorNextMoveTimes(currentHours)
+        activate CharacterSystem
+        CharacterSystem --> MainGameScene : reset完了
+        deactivate CharacterSystem
+
+        MainGameScene -> DialogueSystem : dispose()
+        activate DialogueSystem
+        DialogueSystem --> MainGameScene : 会話状態破棄
+        deactivate DialogueSystem
+
+        MainGameScene -> EventSystem : rewindTo(currentHours)
+        activate EventSystem
+        EventSystem --> MainGameScene : 実行中イベント破棄
+        deactivate EventSystem
+      end
+      MainGameScene --> PlayerControlSystem : request結果
+      deactivate MainGameScene
+    else 通常入力
+      PlayerControlSystem -> MainGameScene : movePlayer request
+      activate MainGameScene
+      MainGameScene -> CharacterSystem : movePlayerToMapPosition / movePlayerToLocation
+      activate CharacterSystem
+      CharacterSystem --> MainGameScene : 移動開始可否
+      deactivate CharacterSystem
+      MainGameScene --> PlayerControlSystem : request結果
+      deactivate MainGameScene
+
+      PlayerControlSystem -> MainGameScene : chooseCurrentTask request
+      activate MainGameScene
+      MainGameScene -> EventSystem : chooseCurrentTask(choiceId)
+      activate EventSystem
+      EventSystem --> MainGameScene : 選択反映可否
+      deactivate EventSystem
+      MainGameScene --> PlayerControlSystem : request結果
+      deactivate MainGameScene
+    end
+
+    PlayerControlSystem --> MainGameScene : 入力処理結果
+    deactivate PlayerControlSystem
+
+    alt gameplaySimulationEnabled == false
+      MainGameScene --> GameEngine : update終了
+    else gameplaySimulationEnabled == true
+      MainGameScene -> TimeControlSystem : advance(frame)
+      activate TimeControlSystem
+      TimeControlSystem --> MainGameScene : elapsedGameHours / currentHours
+      deactivate TimeControlSystem
+
+      MainGameScene -> EventSystem : advanceTo(currentHours)
+      activate EventSystem
+      EventSystem --> MainGameScene : 継続イベント進行
+      deactivate EventSystem
+
+      MainGameScene -> CharacterSystem : update(context)
+      activate CharacterSystem
+      CharacterSystem --> MainGameScene : 主人公 / actor更新
+      deactivate CharacterSystem
+
+      MainGameScene -> LocationSystem : update(subjects, spatialVersions)
+      activate LocationSystem
+      LocationSystem -> EventSystem : visitLocations(locationIds)
+      activate EventSystem
+      EventSystem --> LocationSystem : 場所訪問反映
+      deactivate EventSystem
+      LocationSystem --> MainGameScene : 訪問検出結果
+      deactivate LocationSystem
+
+      MainGameScene --> GameEngine : update終了
+    end
+  end
+end
+
+deactivate MainGameScene
+
+GameEngine -> MainGameScene : createSnapshot()
+activate MainGameScene
+MainGameScene -> GameFlowSystem : createSnapshotFragment({ dialogue })
+activate GameFlowSystem
+GameFlowSystem --> MainGameScene : activeLayerId
+deactivate GameFlowSystem
+MainGameScene -> DialogueSystem : createSnapshotFragment()
+activate DialogueSystem
+DialogueSystem --> MainGameScene : conversation / null
+deactivate DialogueSystem
+MainGameScene -> EventSystem : createSnapshotFragment()
+activate EventSystem
+EventSystem --> MainGameScene : companion / executingEvents
+deactivate EventSystem
+MainGameScene --> GameEngine : snapshot
+deactivate MainGameScene
+
+GameEngine -> View : render(snapshot)
+activate View
+View --> GameEngine : 描画完了
+deactivate View
+
+GameEngine --> Browser : frame終了
+deactivate GameEngine
+
+note over MainGameScene, GameFlowSystem
+  会話開始フレーム、会話中フレーム、会話完了フレームでは
+  通常入力とゲームシミュレーションを停止する。
+end note
+
+@enduml

@@ -1,0 +1,65 @@
+@startuml
+title メインゲーム状態遷移図（基本設計）
+
+skinparam shadowing false
+skinparam defaultFontName "Meiryo"
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #475569
+  FontColor #0F172A
+  StartColor #16A34A
+  EndColor #DC2626
+  ArrowColor #475569
+}
+skinparam note {
+  BackgroundColor #F8FAFC
+  BorderColor #94A3B8
+  FontColor #334155
+}
+
+[*] --> GameStarted : タイトルでゲーム開始
+
+state "ゲーム開始" as GameStarted
+state "祭開催中" as FestivalActive
+state "探索中\n移動・情報確認・会話相手選択" as Exploring
+state "会話中\n時間進行とメイン操作を停止" as Conversation
+state "イベント進行中\n目的の人物・場所へ向かう" as EventActive
+state "カシオペア使用\nMP消費・最大24時間戻る" as Cassiopeia
+state "巻き戻し後の再開\n実行中イベントを破棄" as Rewound
+state "祭終了" as FestivalEnded
+state "結果表示未決定" as ResultPending
+
+GameStarted --> FestivalActive : 麻帆良祭が始まる
+FestivalActive --> Exploring : 現在地・時間・MP・イベントを確認
+
+Exploring --> Conversation : 同じ場所の登場人物を選ぶ
+Conversation --> Exploring : 通常会話完了
+Conversation --> EventActive : イベント開始または\nイベント会話完了
+
+Exploring --> EventActive : 実行中イベントの目的を確認
+EventActive --> Exploring : 達成 / 失敗 / 中断
+
+Exploring --> Cassiopeia : MPが足りる状態で使用
+EventActive --> Cassiopeia : MPが足りる状態で使用
+Cassiopeia --> Rewound : 時間を戻す
+Rewound --> Exploring : 戻った時間から再開
+
+FestivalActive --> FestivalEnded : ゲーム時間72到達
+FestivalEnded --> ResultPending : 結果表示への流れは未決定
+
+note right of Conversation
+  会話中は時間進行、移動、場所訪問、
+  イベントの時間進行を止める。
+end note
+
+note right of Cassiopeia
+  維持する情報と破棄する情報は
+  カシオペアシステムを正本とする。
+end note
+
+note bottom of EventActive
+  個別イベントの詳細状態は
+  各イベント仕様を正本とする。
+end note
+
+@enduml
