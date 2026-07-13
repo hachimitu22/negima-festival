@@ -20,6 +20,19 @@ const transactions = [
     sourceHref: '/基本設計/イベント/見回りイベント',
     note: '最後の見回り先で一括付与',
   },
+  {
+    id: 'confession-prevention',
+    kind: 'earn',
+    title: '告白阻止',
+    condition: '世界樹周辺の魔力スポットで告白阻止に成功',
+    points: {
+      display: '1件につき100ポイント',
+      min: 100,
+      max: 100,
+    },
+    sourceHref: '/基本設計/構想整理/教師仕事',
+    note: '仮額。正式な報酬額は今後調整する。',
+  },
 ]
 
 function validateMahoPayTransactions(values) {

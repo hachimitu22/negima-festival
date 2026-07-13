@@ -63,7 +63,7 @@
 
 ## シーン差し替え
 
-`replaceScene(scene)`はタイトルから新しいメインゲームを開始するための予定契約である。
+`replaceScene(scene)`はタイトルのはじめから選択など、完全に別の実行単位へ移るための予定契約である。
 
 1. 引数を検証する。
 2. stack最上位のsceneを取り出す。
@@ -100,7 +100,7 @@ scene viewの生成と破棄はrendererが`sceneId`の変化を見て行う。
 
 | scene               | 遷移方法                               |
 | ------------------- | -------------------------------------- |
-| `TitleScene`        | ゲーム開始時に`MainGameScene`へreplace |
+| `TitleScene`        | はじめから選択時に`MainGameScene`へreplace |
 | `MainGameScene`     | フィールド会話はscene遷移せず会話layerを表示 |
 | `ConversationScene` | 独立会話シーンとして使う場合は完了時に自身をpop |
 

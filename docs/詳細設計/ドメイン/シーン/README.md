@@ -7,7 +7,7 @@
 
 | シーン                                                  | 役割                                     | 設計状態 |
 | ------------------------------------------------------- | ---------------------------------------- | -------- |
-| [TitleScene（タイトルシーン）](TitleScene.md)           | ゲーム開始を受け付ける                   | 草案     |
+| [TitleScene（タイトルシーン）](TitleScene.md)           | タイトルメニュー選択を受け付ける         | 草案     |
 | [MainGameScene（メインゲームシーン）](MainGameScene.md) | 麻帆良祭の時間、人物、イベントを進行する | 確定     |
 | [ConversationScene（会話シーン）](ConversationScene.md) | 1件の会話を進行して結果を返す            | 確定     |
 | [CharacterSystem（キャラクター位置・移動System）](CharacterSystem.md) | 主人公と登場人物の位置・移動を管理する | 確定     |
@@ -45,7 +45,7 @@ flowchart TB
   ConversationScene --> ConversationSceneSession
 ```
 
-- `TitleScene`はゲーム開始時に`MainGameScene`を生成する。
+- `TitleScene`ははじめから選択時に`MainGameScene`を生成する。
 - `MainGameScene`は主人公とactorを生成し、位置・移動管理を`CharacterSystem`へ委譲する。
 - `GameFlowSystem`は会話状態から入力モード、フレーム制御、表示layerを決定する。
 - `MainGameScene`はフィールド会話条件と台本を決定し、メインシーン内の会話状態は`DialogueSystem`へ委譲する。

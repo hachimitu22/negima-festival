@@ -13,7 +13,7 @@
   <text x="80" y="234" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">MP 100 / 100</text>
   <text x="335" y="234" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="15">フェス進行中</text>
   <rect x="80" y="259" width="490" height="50" rx="8" fill="#dbeafe" stroke="#2563eb"/>
-  <text x="325" y="290" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="14" text-anchor="middle">カシオペアを使う（24時間戻る / MP 30）</text>
+  <text x="325" y="290" fill="#0f172a" font-family="'Yu Gothic', Meiryo, sans-serif" font-size="14" text-anchor="middle">カシオペアを使う（最大24時間 / 消費MP可変）</text>
   <rect x="610" y="85" width="530" height="260" rx="8" fill="#ffffff" stroke="#c2410c" stroke-width="2"/>
   <path d="M 618 85 H 1132 A 8 8 0 0 1 1140 93 V 121 H 610 V 93 A 8 8 0 0 1 618 85 Z" fill="#fff7ed"/>
   <line x1="610" y1="121" x2="1140" y2="121" stroke="#c2410c" stroke-width="2"/>
