@@ -72,6 +72,7 @@ class GameEngine {
     if (this.#view && typeof this.#view.configure === 'function') {
       this.#view.configure({
         enqueueInput: input => this.#enqueueInput(input),
+        requestRenderStep: () => this.step(),
       });
     }
   }
@@ -194,6 +195,31 @@ class GameEngine {
   }
 
   /**
+   * 入力イベントを処理し、時間経過なしで1回だけ更新と描画を行う。
+   *
+   * 選択肢中心のDOMプロトタイプなど、常時フレーム更新が不要な画面で使用する。
+   *
+   * @public
+   * @param {Object|Array<Object>} inputOrInputs - このstepで処理する入力。省略時は既存のinput queueだけを処理する。
+   * @returns {void}
+   */
+  step(inputOrInputs = []) {
+    if (!this.#isRunning) {
+      return;
+    }
+
+    const inputs = Array.isArray(inputOrInputs) ? inputOrInputs : [inputOrInputs];
+    for (const input of inputs) {
+      if (input) {
+        this.#enqueueInput(input);
+      }
+    }
+
+    this.#updateSceneWithoutElapsedTime();
+    this.#renderView();
+  }
+
+  /**
    * アクティブシーンを更新する。フレーム更新 → 入力キュー処理 → シーン update メソッド呼び出し。
    * 
    * @private
@@ -202,6 +228,29 @@ class GameEngine {
    */
   #updateScene(now) {
     this.#updateFrame(now);
+    const inputs = this.#drainInputQueue();
+
+    if (!this.#currentScene || typeof this.#currentScene.update !== 'function') {
+      return;
+    }
+
+    const context = this.#createUpdateContext();
+    context.inputs = inputs;
+    this.#currentScene.update({
+      context,
+      sceneControl: this.#sceneControl,
+    });
+  }
+
+  /**
+   * 経過時間なしの単発更新としてアクティブシーンを更新する。
+   *
+   * @private
+   * @returns {void}
+   */
+  #updateSceneWithoutElapsedTime() {
+    this.#frame.deltaTime = 0;
+    this.#frame.count += 1;
     const inputs = this.#drainInputQueue();
 
     if (!this.#currentScene || typeof this.#currentScene.update !== 'function') {

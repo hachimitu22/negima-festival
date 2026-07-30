@@ -74,7 +74,7 @@ describe('TCS-UT-S02 cassiopeia rewind', () => {
   it('TCS-UT-S02-C01 spends MP, rewinds time, and increments the loop count', () => {
     // Arrange
     const character = createCharacter({
-      magicPowerCurrent: 100,
+      magicPowerCurrent: 300,
     });
     const system = createTimeControlSystem({
       character,
@@ -94,13 +94,14 @@ describe('TCS-UT-S02 cassiopeia rewind', () => {
     });
     assert.equal(snapshot.gameTime.currentHours, 6);
     assert.equal(snapshot.loop.count, 2);
-    assert.equal(character.getSnapshot().magicPower.current, 70);
+    assert.equal(snapshot.loop.cassiopeiaMagicPowerCost, 288);
+    assert.equal(character.getSnapshot().magicPower.current, 12);
   });
 
   it('TCS-UT-S02-C02 does not change state when MP is insufficient', () => {
     // Arrange
     const character = createCharacter({
-      magicPowerCurrent: 29,
+      magicPowerCurrent: 287,
     });
     const system = createTimeControlSystem({
       character,
@@ -118,13 +119,13 @@ describe('TCS-UT-S02 cassiopeia rewind', () => {
     // Assert
     assert.equal(result, false);
     assert.deepEqual(afterSnapshot, beforeSnapshot);
-    assert.equal(character.getSnapshot().magicPower.current, 29);
+    assert.equal(character.getSnapshot().magicPower.current, 287);
   });
 
   it('TCS-UT-S02-C03 rewinds to zero when current time is below 24 hours', () => {
     // Arrange
     const character = createCharacter({
-      magicPowerCurrent: 100,
+      magicPowerCurrent: 300,
     });
     const system = createTimeControlSystem({
       character,
@@ -144,7 +145,7 @@ describe('TCS-UT-S02 cassiopeia rewind', () => {
     });
     assert.equal(snapshot.gameTime.currentHours, 0);
     assert.equal(snapshot.loop.count, 2);
-    assert.equal(character.getSnapshot().magicPower.current, 70);
+    assert.equal(character.getSnapshot().magicPower.current, 12);
   });
 });
 
@@ -180,24 +181,22 @@ function createTimeControlSystem({
   durationHours = 72,
   hoursPerRealSecond = 0.5,
   timeTravelHours = 24,
-  cassiopeiaMagicPowerCost = 30,
 } = {}) {
   return new TimeControlSystem({
     character,
     durationHours,
     hoursPerRealSecond,
     timeTravelHours,
-    cassiopeiaMagicPowerCost,
   });
 }
 
 function createCharacter({
-  magicPowerCurrent = 100,
+  magicPowerCurrent = 300,
 } = {}) {
   return new Character(LOCATION_IDS.GYM_FRONT_PARKING, {
     magicPower: {
       current: magicPowerCurrent,
-      max: 100,
+      max: 300,
       recoveryPerGameHour: 5,
     },
   });

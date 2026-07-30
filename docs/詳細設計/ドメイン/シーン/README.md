@@ -10,6 +10,9 @@
 | [TitleScene（タイトルシーン）](TitleScene.md)           | タイトルメニュー選択を受け付ける         | 草案     |
 | [MainGameScene（メインゲームシーン）](MainGameScene.md) | 麻帆良祭の時間、人物、イベントを進行する | 確定     |
 | [ConversationScene（会話シーン）](ConversationScene.md) | 1件の会話を進行して結果を返す            | 確定     |
+| [PrototypeFestivalScene（プロトタイプ体験シーン）](PrototypeFestivalScene.md) | 限定範囲でイベント密度と遡行を検証する | 確定 |
+| [CanonicalFestivalPrototypeScene（原作導入プロトタイプシーン）](CanonicalFestivalPrototypeScene.md) | 最初のカシオペア起動と過去ネギ遭遇を進行する | 確定 |
+| [FestivalHappeningDirector（連鎖型ハプニング進行）](FestivalHappeningDirector.md) | ハプニング、エリア状態、群衆、波及を管理する | 確定 |
 | [CharacterSystem（キャラクター位置・移動System）](CharacterSystem.md) | 主人公と登場人物の位置・移動を管理する | 確定     |
 | [GameFlowSystem（ゲームフローSystem）](GameFlowSystem.md) | 入力モード、フレーム制御、表示layerを決定する | 確定     |
 | [LocationSystem（場所System）](LocationSystem.md) | 空間状態versionから場所訪問requestを発行する | 確定     |

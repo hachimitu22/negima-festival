@@ -1,24 +1,22 @@
 import { GameEngine } from './src/gameEngine/gameEngine.js';
-import { DomGameView } from './src/views/domGameView.js';
-import { MainGameScene } from './src/gameDomain/mainGameScene/mainGameScene.js';
+import { CanonicalFestivalPrototypeScene } from './src/gameDomain/canonicalFestivalPrototypeScene/canonicalFestivalPrototypeScene.js';
+import { CanonicalFestivalPrototypeView } from './src/views/canonicalFestivalPrototypeView.js';
 
-window.addEventListener('load', () => {
-  main();
-});
+/** ブラウザ初期化を開始するイベント名。 */
+const WINDOW_LOAD_EVENT = 'load';
 
+/**
+ * プロトタイプを起動して描画ループを開始する。
+ * @returns {void}
+ */
 function main() {
-  const gameView = new DomGameView(document.getElementById('game'));
+  const gameView = new CanonicalFestivalPrototypeView(document.getElementById('game'));
 
   const engine = new GameEngine({
-    initialScene: new MainGameScene(),
+    initialScene: new CanonicalFestivalPrototypeScene(),
     view: gameView,
   });
   engine.start();
-
-  function loop(now) {
-    engine.update(now);
-    requestAnimationFrame(loop);
-  }
-
-  requestAnimationFrame(loop);
 }
+
+window.addEventListener(WINDOW_LOAD_EVENT, main);

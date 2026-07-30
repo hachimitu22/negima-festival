@@ -1,0 +1,38 @@
+<mxfile host="app.diagrams.net" modified="2026-07-31T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="prototype-v2-player-flow" name="ゲームの遊び方">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="ゲームの遊び方" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#0F172A;" vertex="1" parent="1"><mxGeometry x="250" y="30" width="500" height="45" as="geometry" /></mxCell>
+
+        <mxCell id="start" value="ゲームを始める" style="ellipse;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#166534;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="400" y="110" width="200" height="60" as="geometry" /></mxCell>
+        <mxCell id="tutorial" value="チュートリアルを体験する" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#64748B;fontColor=#0F172A;" vertex="1" parent="1"><mxGeometry x="350" y="230" width="300" height="65" as="geometry" /></mxCell>
+        <mxCell id="explore" value="麻帆良祭を自由に巡る" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="350" y="360" width="300" height="65" as="geometry" /></mxCell>
+        <mxCell id="choose" value="場所や人物を選ぶ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="1"><mxGeometry x="350" y="490" width="300" height="65" as="geometry" /></mxCell>
+        <mxCell id="experience" value="出来事やハプニングを体験する" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontColor=#7F1D1D;" vertex="1" parent="1"><mxGeometry x="350" y="620" width="300" height="65" as="geometry" /></mxCell>
+        <mxCell id="time" value="時間が進む" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="1"><mxGeometry x="350" y="750" width="300" height="65" as="geometry" /></mxCell>
+
+        <mxCell id="rewindDecision" value="過去に戻って&lt;br&gt;別の行動を試す？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="1"><mxGeometry x="670" y="865" width="220" height="110" as="geometry" /></mxCell>
+        <mxCell id="continue" value="次の場所や行動を選ぶ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="1"><mxGeometry x="290" y="915" width="300" height="65" as="geometry" /></mxCell>
+        <mxCell id="rewind" value="カシオペアで過去へ戻る" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="1"><mxGeometry x="670" y="1040" width="220" height="65" as="geometry" /></mxCell>
+        <mxCell id="backToExplore" value="別の行動を試す" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="1"><mxGeometry x="670" y="1170" width="220" height="65" as="geometry" /></mxCell>
+
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#64748B;" edge="1" parent="1" source="start" target="tutorial"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#64748B;" edge="1" parent="1" source="tutorial" target="explore"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#B45309;" edge="1" parent="1" source="explore" target="choose"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#B45309;" edge="1" parent="1" source="choose" target="experience"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#B45309;" edge="1" parent="1" source="experience" target="time"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#B45309;" edge="1" parent="1" source="time" target="continue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="続ける" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#D97706;fontSize=11;" edge="1" parent="1" source="continue" target="explore"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="戻る" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563EB;fontSize=11;" edge="1" parent="1" source="time" target="rewindDecision"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" value="はい" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563EB;fontSize=11;" edge="1" parent="1" source="rewindDecision" target="rewind"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" value="いいえ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#D97706;fontSize=11;" edge="1" parent="1" source="rewindDecision" target="continue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2563EB;" edge="1" parent="1" source="rewind" target="backToExplore"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#D97706;" edge="1" parent="1" source="backToExplore" target="explore"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="note" value="麻帆良祭では、同じ時間を何度もやり直しながら、さまざまな出来事を楽しみます。" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#334155;" vertex="1" parent="1"><mxGeometry x="120" y="1320" width="760" height="60" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

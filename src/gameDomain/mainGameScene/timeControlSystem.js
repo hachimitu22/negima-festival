@@ -1,7 +1,12 @@
 const FESTIVAL_DURATION_HOURS = 72;
 const TIME_TRAVEL_HOURS = 24;
 const GAME_HOURS_PER_REAL_SECOND = 0.5;
-const CASSIOPEIA_MAGIC_POWER_COST = 30;
+/** MP consumed for each five minutes of Cassiopeia rewind. */
+const MAGIC_POWER_PER_FIVE_MINUTES = 1;
+/** MP consumed by the default 24-hour Cassiopeia rewind. */
+const CASSIOPEIA_MAGIC_POWER_COST = (
+  TIME_TRAVEL_HOURS * 60 / 5
+) * MAGIC_POWER_PER_FIVE_MINUTES;
 
 /**
  * メインゲーム中の時間進行とカシオペア遡行を管理するSystem。
@@ -29,7 +34,6 @@ class TimeControlSystem {
     durationHours = FESTIVAL_DURATION_HOURS,
     hoursPerRealSecond = GAME_HOURS_PER_REAL_SECOND,
     timeTravelHours = TIME_TRAVEL_HOURS,
-    cassiopeiaMagicPowerCost = CASSIOPEIA_MAGIC_POWER_COST,
   }) {
     if (!character) {
       throw new TypeError('character is required.');
@@ -45,7 +49,9 @@ class TimeControlSystem {
     this.#loop = {
       count: 1,
       timeTravelHours,
-      cassiopeiaMagicPowerCost,
+      cassiopeiaMagicPowerCost: (
+        timeTravelHours * 60 / 5
+      ) * MAGIC_POWER_PER_FIVE_MINUTES,
     };
   }
 

@@ -13,7 +13,8 @@
 ゲーム固有のルールや描画処理は持たず、現在のシーンを更新して、その結果をviewへ渡す。
 
 メインループのスケジューリングはゲームエンジンの外側で行う。
-通常起動ではentry pointが`GameEngine`を保持し、`requestAnimationFrame`ごとに`update(now)`を呼び出す。
+リアルタイム更新が必要な起動ではentry pointが`GameEngine`を保持し、`requestAnimationFrame`ごとに`update(now)`を呼び出す。
+選択肢とメッセージ中心のDOMプロトタイプでは、入力時だけ`step()`を呼び出す。
 
 ## 責務
 
@@ -64,6 +65,15 @@ viewが`configure()`を持つ場合は、inputをqueueへ追加する`enqueueInp
 実行中の場合に1 frame分の更新と描画を行う。
 停止中は何も行わない。
 
+### `step(inputOrInputs = [])`
+
+実行中の場合に、時間経過なしで1回分の更新と描画を行う。
+引数にinputまたはinput配列を渡した場合は、そのinputをqueueへ追加してから処理する。
+引数を省略した場合は、その時点のinput queueだけを処理する。
+
+`deltaTimeMs`と`deltaFrames`は`0`としてsceneへ渡す。
+ボタン選択やメッセージ送りのように、入力があったときだけ状態が変わる画面で使用する。
+
 ### `stop()`
 
 更新を停止し、viewの`destroy()`を一度呼び出して参照を破棄する。
@@ -89,6 +99,17 @@ flowchart LR
   Scene --> Snapshot["遷移後のsnapshot取得"]
   Snapshot --> View["view描画"]
 ```
+
+## 入力時更新の順序
+
+`step()`はframe時刻を進めず、入力処理と描画だけを行う。
+
+1. 引数のinputをinput queueへ追加する。
+2. `deltaTimeMs: 0`、`deltaFrames: 0`でcontextを作る。
+3. input queueを空にし、その時点までのinputを配列として取り出す。
+4. current sceneの`update({ context, sceneControl })`を呼ぶ。
+5. 遷移後のcurrent sceneからsnapshotを取得する。
+6. viewへsnapshotを渡す。
 
 ## update context
 
@@ -124,7 +145,7 @@ flowchart TB
 
 ```js
 {
-  configure({ enqueueInput }),
+  configure({ enqueueInput, requestRenderStep }),
   init(snapshot),
   render(snapshot),
   destroy(),
@@ -133,13 +154,14 @@ flowchart TB
 
 | メソッド    | 責務                                        |
 | ----------- | ------------------------------------------- |
-| `configure` | viewからinput queueへ入力する窓口を受け取る |
+| `configure` | viewからinput queueへ入力する窓口と、入力時更新を要求する窓口を受け取る |
 | `init`      | 最初のsnapshotで描画状態を初期化する        |
 | `render`    | 現在のsnapshotを描画する                    |
 | `destroy`   | renderer固有の状態とイベント購読を破棄する  |
 
 viewはsnapshotだけを参照し、sceneやGameObjectを直接参照しない。
 DOM rendererは`sceneId`に応じてscene viewを選択し、`sceneId`が変わった場合は以前のscene viewを破棄して新しいviewを初期化する。
+入力時更新を使うviewは、`enqueueInput(input)`の後に`requestRenderStep()`を呼ぶ。
 
 ## モジュール境界
 

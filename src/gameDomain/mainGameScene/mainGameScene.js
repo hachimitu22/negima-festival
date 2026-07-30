@@ -21,7 +21,7 @@ import {
   TimeControlSystem,
 } from './timeControlSystem.js';
 
-const MAX_MAGIC_POWER = 100;
+const MAX_MAGIC_POWER = 300;
 const MAGIC_POWER_RECOVERY_PER_GAME_HOUR = 5;
 const TEACHER_IDS = {
   TAKAHATA: 'teacher-takahata',
