@@ -102,6 +102,8 @@ const CANONICAL_PHASE_IDS = Object.freeze({
   CLASSMATE_ATTRACTION_TOUR: 'classmate-attraction-tour',
   KOTARO_AYAKA_ATTRACTION_TOUR: 'kotaro-ayaka-attraction-tour',
   YUE_FESTIVAL_TOUR: 'yue-festival-tour',
+  FESTIVAL_ENDING: 'festival-ending',
+  GAME_OVER: 'game-over',
   COMPLETE: 'complete',
 });
 
@@ -189,6 +191,18 @@ const INITIAL_CASSIOPEIA_MP_COST = Math.ceil(
 /** カシオペアで戻れる最小時刻（1日目AM10:00）。 */
 const CASSIOPEIA_MINUTE = 10 * 60;
 
+/** Library Island dungeon final floor. */
+const LIBRARY_DUNGEON_FINAL_FLOOR = 10;
+
+/** Prototype Ver2 time limit in minutes from midnight. */
+const PROTOTYPE_TIME_LIMIT_MINUTE = (23 * 60) + 30;
+
+/** Minutes advanced by one Library Island exploration choice. */
+const LIBRARY_DUNGEON_STEP_MINUTES = 5;
+
+/** Maximum random MP cost for a Library Island trap or barrier. */
+const LIBRARY_DUNGEON_MAX_EVENT_MP_COST = 5;
+
 /** MPの最大値。 */
 const MAGIC_POWER_MAX = 300;
 
@@ -221,6 +235,13 @@ const CANONICAL_TIMES = Object.freeze({
   YUE_FESTIVAL_TOUR_START: Object.freeze({ festivalDay: 1, hour: 16, minute: 30, label: 'PM4:30' }),
   YUE_FESTIVAL_TOUR_END: Object.freeze({ festivalDay: 1, hour: 18, minute: 0, label: 'PM6:00' }),
 });
+
+/** 麻帆良祭終了後に表示する固定演出。 */
+const FESTIVAL_ENDING_DIALOGUES = Object.freeze([
+  Object.freeze({ speaker: '麻帆良祭放送', text: 'これをもちまして、3日間にわたる麻帆良祭を終了します。' }),
+  Object.freeze({ speaker: 'ネギ', text: '祭りが終わりました。でも、何か大きな魔力を感じます……。' }),
+  Object.freeze({ speaker: 'カモ', text: '兄貴、チャオの計画が動き始めたみたいですぜ！' }),
+]);
 
 /** 麻帆良祭中に放送される通知の定義。 */
 const FESTIVAL_NOTIFICATION_DEFINITIONS = Object.freeze([
@@ -685,8 +706,10 @@ const PHASE_LABELS = Object.freeze({
   [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: '4ループ目へ戻る',
   [CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN]: '3-A再訪',
   [CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR]: 'クラスメイト出し物巡り',
-  [CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR]: '夕映と麻帆良祭を周る',
-  [CANONICAL_PHASE_IDS.COMPLETE]: '導入完了',
+      [CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR]: '夕映と麻帆良祭を周る',
+      [CANONICAL_PHASE_IDS.FESTIVAL_ENDING]: '麻帆良祭終了',
+      [CANONICAL_PHASE_IDS.GAME_OVER]: 'ゲームオーバー',
+      [CANONICAL_PHASE_IDS.COMPLETE]: '導入完了',
 });
 
 /** 進行段階ごとの会話。 */
@@ -742,6 +765,7 @@ const PHASE_DIALOGUES = Object.freeze({
     Object.freeze({ speaker: '刹那', text: 'あそこにいるのは、先ほどの私たちです。時間を戻ったと見て間違いありません。' }),
     Object.freeze({ speaker: 'エヴァ', text: '面白いものを持っているな、坊や。少し話を聞かせてもらおうか。' }),
   ]),
+  [CANONICAL_PHASE_IDS.FESTIVAL_ENDING]: FESTIVAL_ENDING_DIALOGUES,
   [CANONICAL_PHASE_IDS.HAUNTED_HOUSE_PANIC_RUN]: Object.freeze([
     Object.freeze({ speaker: 'ネギ', text: 'うわあああっ！ もう無理ですー！' }),
     Object.freeze({ speaker: 'カモ', text: '兄貴がパニックで出口まで走り抜けちまいましたぜ。' }),
@@ -838,6 +862,7 @@ const SCHOOL_POSITIONS = Object.freeze({
   GROUND_TOURNAMENT: Object.freeze({ x: 18, y: 7 }),
   TOURNAMENT_NOTICE: Object.freeze({ x: 16, y: 28 }),
   RYUGU_SHRINE: Object.freeze({ x: 14, y: 30 }),
+  LIBRARY_ISLAND: Object.freeze({ x: 30, y: 6 }),
 });
 
 /** のどか尾行の固定経路。 */
@@ -906,6 +931,14 @@ const FREE_EXPLORE_DESTINATIONS = Object.freeze([
     position: SCHOOL_POSITIONS.THIRD_LOOP_START,
     routeAreas: Object.freeze(['パレード会場', '世界樹広場']),
     description: '世界樹周辺の人の流れと魔力スポットを確認する。',
+  }),
+  Object.freeze({
+    id: 'library-island',
+    label: '図書館島',
+    areaName: '図書館島',
+    position: SCHOOL_POSITIONS.LIBRARY_ISLAND,
+    routeAreas: Object.freeze(['世界樹周辺', '図書館島前']),
+    description: '図書館島の地下へ続く入口。地下深くを探検できる。',
   }),
 ]);
 
@@ -1226,6 +1259,10 @@ function createInitialState() {
     gameTime: copyTime(CANONICAL_TIMES.FESTIVAL_START),
     phoneTimeLabel: null,
     magicPower: MAGIC_POWER_MAX,
+    isFinalBattleRoute: false,
+    gameOver: {
+      reason: null,
+    },
     affection: Object.fromEntries(
       CLASSMATE_SOCIAL_ACTORS.map((actor) => [actor.id, CLASSMATE_AFFECTION_INITIAL]),
     ),
@@ -1237,6 +1274,7 @@ function createInitialState() {
       hasExperiencedHauntedHouseFlyerAyakaEvent: false,
       hauntedHouseFlyerAyakaEventStartMinute: null,
       hasUnlockedYueFestivalTour: false,
+      hasReachedLibraryDungeonFinalFloor: false,
       completedScheduleEventIds: [],
     },
     playerPosition: copyPosition(SCHOOL_POSITIONS.START),
@@ -1313,6 +1351,12 @@ function createInitialState() {
       travelInterruptionChecked: false,
       interruption: null,
       actionResult: null,
+      libraryDungeon: {
+        isActive: false,
+        currentFloor: 1,
+        pendingBarrierCost: null,
+        lastResult: null,
+      },
     },
     classmateConversation: {
       actorId: null,
@@ -1372,10 +1416,20 @@ class CanonicalFestivalPrototypeScene {
    * シーンを初期状態で生成する。
    * @param {Object} [options] - テスト用の任意設定。
    * @param {Function} [options.random] - 0以上1未満を返す乱数関数。
+   * @param {Object} [options.initialGameTime] - テスト用の初期ゲーム時刻。
+   * @param {string} [options.initialPhaseId] - テスト用の初期フェーズ。
+   * @param {boolean} [options.isFinalBattleRoute] - 最終決戦ルートとして開始するか。
    */
   constructor(options = {}) {
     this.#state = createInitialState();
     this.#random = typeof options.random === 'function' ? options.random : Math.random;
+    if (options.initialGameTime) {
+      this.#state.gameTime = copyTime(options.initialGameTime);
+    }
+    if (typeof options.initialPhaseId === 'string') {
+      this.#state.phaseId = options.initialPhaseId;
+    }
+    this.#state.isFinalBattleRoute = options.isFinalBattleRoute === true;
     this.#rewindHistory = [];
     this.#recordRewindCheckpoint();
   }
@@ -1388,6 +1442,7 @@ class CanonicalFestivalPrototypeScene {
     this.#updateMovement(deltaSeconds);
     this.#updateCompanions();
     this.#updatePhaseProgress(deltaSeconds);
+    this.#enforceFestivalEndDeadline();
     this.#recordRewindCheckpoint();
   }
 
@@ -1735,6 +1790,9 @@ class CanonicalFestivalPrototypeScene {
 
   /** 会話または固定演出を次へ進める。 */
   #advanceStory() {
+    if (this.#state.phaseId === CANONICAL_PHASE_IDS.GAME_OVER) {
+      return;
+    }
     if (this.#state.activeScare) {
       this.#completeActiveScare();
       return;
@@ -1789,7 +1847,7 @@ class CanonicalFestivalPrototypeScene {
 
   /** 完了状態から最初へ戻す。 */
   #restartRoute() {
-    if (this.#state.phaseId !== CANONICAL_PHASE_IDS.COMPLETE) {
+    if (![CANONICAL_PHASE_IDS.COMPLETE, CANONICAL_PHASE_IDS.GAME_OVER].includes(this.#state.phaseId)) {
       return;
     }
     this.#state = createInitialState();
@@ -2163,6 +2221,8 @@ class CanonicalFestivalPrototypeScene {
       this.#placePlayer(SCHOOL_POSITIONS.CAFE);
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       this.#addLog('夕映との麻帆良祭巡りを終え、PM6:00に自由探索へ戻った。');
+    } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.FESTIVAL_ENDING) {
+      this.#startGameOver();
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN) {
       this.#state.thirdLoop.isAyakaCompanion = true;
       this.#enterClassmateAttractionTour();
@@ -2473,6 +2533,50 @@ class CanonicalFestivalPrototypeScene {
   }
 
   /** 同一ループ内のゲーム時間を前進させ、経過分のMPを回復する。 */
+  /** Return whether the current route is the fixed final-battle route. */
+  #isFinalBattleRoute() {
+    return this.#state.isFinalBattleRoute === true;
+  }
+
+  /** Enter the festival-ending cutscene when the prototype route reaches day 1 PM11:30. */
+  #enforceFestivalEndDeadline() {
+    if (
+      this.#isFinalBattleRoute()
+      || this.#state.phaseId === CANONICAL_PHASE_IDS.COMPLETE
+      || this.#state.phaseId === CANONICAL_PHASE_IDS.FESTIVAL_ENDING
+      || this.#state.phaseId === CANONICAL_PHASE_IDS.GAME_OVER
+      || this.#state.gameTime.festivalDay !== 1
+      || getMinuteOfDay(this.#state.gameTime) < (23 * 60 + 30)
+    ) {
+      return;
+    }
+    this.#state.gameTime = {
+      ...this.#state.gameTime,
+      hour: 23,
+      minute: 30,
+      label: 'PM11:30',
+    };
+    this.#state.freeExplore.libraryDungeon.isActive = false;
+    this.#state.freeExplore.libraryDungeon.pendingBarrierCost = null;
+    this.#state.movementInput = { x: 0, y: 0 };
+    this.#setPhase(CANONICAL_PHASE_IDS.FESTIVAL_ENDING);
+    this.#addLog('1日目PM11:30になり、麻帆良祭が終了した。');
+  }
+
+  /** Finish the festival-ending cutscene and trigger Chao's plan. */
+  #startGameOver() {
+    this.#state.gameTime = {
+      ...this.#state.gameTime,
+      hour: 23,
+      minute: 37,
+      label: 'PM11:37',
+    };
+    this.#state.gameOver.reason = 'チャオの計画が発動し、企みが成功した。';
+    this.#state.movementInput = { x: 0, y: 0 };
+    this.#setPhase(CANONICAL_PHASE_IDS.GAME_OVER);
+    this.#addLog('PM11:37、チャオの計画が発動しゲームオーバーになった。');
+  }
+
   #advanceGameTime(nextTime) {
     const previousTime = this.#state.gameTime;
     const elapsedMinutes = getForwardElapsedMinutes(previousTime, nextTime);
@@ -2777,7 +2881,14 @@ class CanonicalFestivalPrototypeScene {
       this.#startFreeExploreTravel(action.destinationId);
       return;
     }
-    if (!['wait-until', 'cassiopeia-rewind'].includes(action.kind) && this.#random() >= 0.75) {
+    if (![
+      'wait-until',
+      'cassiopeia-rewind',
+      'library-dungeon-start',
+      'library-dungeon-choice',
+      'library-dungeon-wait',
+      'library-dungeon-return',
+    ].includes(action.kind) && this.#random() >= 0.75) {
       this.#startFreeExploreInterruption('action', FREE_EXPLORE_ACTION_INTERRUPTION_DEFINITIONS);
       return;
     }
@@ -2855,6 +2966,22 @@ class CanonicalFestivalPrototypeScene {
 
   /** Complete a selected free-explore location action. */
   #completeFreeExploreLocationAction(action) {
+    if (action.kind === 'library-dungeon-start') {
+      this.#startLibraryDungeon();
+      return;
+    }
+    if (action.kind === 'library-dungeon-choice') {
+      this.#exploreLibraryDungeon(action.directionIndex);
+      return;
+    }
+    if (action.kind === 'library-dungeon-wait') {
+      this.#waitInLibraryDungeon();
+      return;
+    }
+    if (action.kind === 'library-dungeon-return') {
+      this.#returnFromLibraryDungeon('図書館島の入口へ戻った。');
+      return;
+    }
     if (action.kind === 'chao-location') {
       const location = this.#getChaoSearchLocation(action.locationId);
       if (location) {
@@ -3139,6 +3266,17 @@ class CanonicalFestivalPrototypeScene {
         resultText: '周囲の出し物、人の流れ、別の場所へ波及しそうな賑わいを確認した。',
       },
     ];
+    if (this.#state.freeExplore.libraryDungeon.isActive) {
+      return this.#createLibraryDungeonActions();
+    }
+    if (currentLocationId === 'library-island') {
+      actions.unshift({
+        id: 'start-library-dungeon',
+        label: '探検する',
+        kind: 'library-dungeon-start',
+        resultText: '図書館島の地下へ入った。',
+      });
+    }
     if (this.#isHauntedHouseFlyerTime()) {
       actions.unshift({
         id: 'hand-out-haunted-house-flyers',
@@ -3362,6 +3500,160 @@ class CanonicalFestivalPrototypeScene {
     return actions;
   }
 
+  /** Create the choices available while exploring Library Island. */
+  #createLibraryDungeonActions() {
+    const dungeon = this.#state.freeExplore.libraryDungeon;
+    if (dungeon.pendingBarrierCost !== null) {
+      return [
+        {
+          id: 'library-dungeon-wait',
+          label: '待機する',
+          kind: 'library-dungeon-wait',
+          resultText: '結界を解除できるまで待機する。',
+        },
+        {
+          id: 'library-dungeon-return',
+          label: '帰還する',
+          kind: 'library-dungeon-return',
+          resultText: '図書館島の入口へ戻る。',
+        },
+      ];
+    }
+    return [
+      ...['左', '中央', '右'].map((label, index) => ({
+        id: `library-dungeon-choice-${index}`,
+        label,
+        kind: 'library-dungeon-choice',
+        directionIndex: index,
+        resultText: '',
+      })),
+      {
+        id: 'library-dungeon-return',
+        label: '帰還する',
+        kind: 'library-dungeon-return',
+        resultText: '図書館島の入口へ戻る。',
+      },
+    ];
+  }
+
+  /** Start Library Island exploration from its area. */
+  #startLibraryDungeon() {
+    this.#state.freeExplore.libraryDungeon = {
+      isActive: true,
+      currentFloor: 1,
+      pendingBarrierCost: null,
+      lastResult: '地下1階に入った。',
+    };
+    this.#state.freeExplore.actionResult = {
+      title: '図書館島を探検する',
+      text: '地下1階から探検を始めた。',
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
+    this.#addLog('図書館島の地下1階から探検を始めた。');
+  }
+
+  /** Resolve one left, center, or right Library Island choice. */
+  #exploreLibraryDungeon(directionIndex) {
+    const dungeon = this.#state.freeExplore.libraryDungeon;
+    if (!dungeon.isActive || dungeon.pendingBarrierCost !== null) {
+      return;
+    }
+    this.#advanceFreeExploreTime(LIBRARY_DUNGEON_STEP_MINUTES);
+    const eventRoll = this.#random();
+    let resultText = `${['左', '中央', '右'][directionIndex]}の道を進んだ。`;
+    if (eventRoll < 0.3) {
+      const cost = this.#getLibraryDungeonEventCost();
+      this.#state.magicPower = Math.max(0, this.#state.magicPower - cost);
+      resultText += `トラップにかかり、MPを${cost}消費した。`;
+    } else if (eventRoll < 0.5) {
+      const cost = this.#getLibraryDungeonEventCost();
+      if (this.#state.magicPower < cost) {
+        dungeon.pendingBarrierCost = cost;
+        resultText += `次の階段を結界が塞いでいる。解除には${cost}MP必要だ。`;
+        dungeon.lastResult = resultText;
+        this.#state.freeExplore.actionResult = {
+          title: `地下${dungeon.currentFloor}階`,
+          text: resultText,
+        };
+        this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
+        this.#addLog(resultText);
+        return;
+      }
+      this.#state.magicPower -= cost;
+      resultText += `結界を${cost}MPで解除した。`;
+    } else {
+      resultText += '何事もなく階段を見つけた。';
+    }
+    dungeon.currentFloor += 1;
+    dungeon.lastResult = resultText;
+    this.#finishLibraryDungeonStep(resultText);
+  }
+
+  /** Return a random MP cost for a Library Island event. */
+  #getLibraryDungeonEventCost() {
+    return 1 + Math.floor(this.#random() * LIBRARY_DUNGEON_MAX_EVENT_MP_COST);
+  }
+
+  /** Wait for MP recovery while a Library Island barrier is pending. */
+  #waitInLibraryDungeon() {
+    const dungeon = this.#state.freeExplore.libraryDungeon;
+    if (!dungeon.isActive || dungeon.pendingBarrierCost === null) {
+      return;
+    }
+    this.#advanceFreeExploreTime(LIBRARY_DUNGEON_STEP_MINUTES);
+    dungeon.lastResult = '結界を解除できるまで待機した。';
+    if (this.#state.magicPower >= dungeon.pendingBarrierCost) {
+      const cost = dungeon.pendingBarrierCost;
+      dungeon.pendingBarrierCost = null;
+      this.#state.magicPower -= cost;
+      dungeon.currentFloor += 1;
+      this.#finishLibraryDungeonStep(`結界を${cost}MPで解除し、次の階へ進んだ。`);
+      return;
+    }
+    this.#state.freeExplore.actionResult = {
+      title: `地下${dungeon.currentFloor}階`,
+      text: `MPが足りない。あと${dungeon.pendingBarrierCost - this.#state.magicPower}MP必要だ。`,
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
+  }
+
+  /** Finish one Library Island step or force a return when its limit is reached. */
+  #finishLibraryDungeonStep(resultText) {
+    const dungeon = this.#state.freeExplore.libraryDungeon;
+    if (this.#state.magicPower <= 0) {
+      this.#returnFromLibraryDungeon('MPが0になったため、図書館島から帰還した。');
+      return;
+    }
+    if (dungeon.currentFloor >= LIBRARY_DUNGEON_FINAL_FLOOR) {
+      this.#state.persistentEvents.hasReachedLibraryDungeonFinalFloor = true;
+      resultText += '地下10階に到達した。';
+      this.#returnFromLibraryDungeon(resultText);
+      return;
+    }
+    this.#state.freeExplore.actionResult = {
+      title: `地下${dungeon.currentFloor}階`,
+      text: resultText,
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
+    this.#addLog(resultText);
+  }
+
+  /** Leave Library Island dungeon exploration and return to its area. */
+  #returnFromLibraryDungeon(resultText) {
+    this.#state.freeExplore.libraryDungeon = {
+      isActive: false,
+      currentFloor: 1,
+      pendingBarrierCost: null,
+      lastResult: resultText,
+    };
+    this.#state.freeExplore.actionResult = {
+      title: '図書館島から帰還',
+      text: resultText,
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
+    this.#addLog(resultText);
+  }
+
   /** チラシ配りを選択できる時刻か返す。 */
   #isHauntedHouseFlyerTime() {
     const minute = getMinuteOfDay(this.#state.gameTime);
@@ -3407,7 +3699,7 @@ class CanonicalFestivalPrototypeScene {
   #createWaitActions() {
     const currentMinute = getMinuteOfDay(this.#state.gameTime);
     const actions = [];
-    for (let targetMinute = currentMinute + FREE_EXPLORE_TIME_STEP_MINUTES; targetMinute <= 23 * 60 + 55; targetMinute += FREE_EXPLORE_TIME_STEP_MINUTES) {
+    for (let targetMinute = currentMinute + FREE_EXPLORE_TIME_STEP_MINUTES; targetMinute <= PROTOTYPE_TIME_LIMIT_MINUTE; targetMinute += FREE_EXPLORE_TIME_STEP_MINUTES) {
       actions.push({
         id: `wait-until-${targetMinute}`,
         label: `${createTimeLabelFromMinute(targetMinute)}まで待つ`,
@@ -3449,7 +3741,7 @@ class CanonicalFestivalPrototypeScene {
     }
     const currentMinute = getMinuteOfDay(this.#state.gameTime);
     const nextMinute = Number(targetMinute);
-    if (!Number.isInteger(nextMinute) || nextMinute <= currentMinute || nextMinute > 23 * 60 + 55 || (nextMinute - currentMinute) % FREE_EXPLORE_TIME_STEP_MINUTES !== 0) {
+    if (!Number.isInteger(nextMinute) || nextMinute <= currentMinute || nextMinute > PROTOTYPE_TIME_LIMIT_MINUTE || (nextMinute - currentMinute) % FREE_EXPLORE_TIME_STEP_MINUTES !== 0) {
       return;
     }
     this.#clearCurrentFestivalNotification();
@@ -3987,7 +4279,7 @@ class CanonicalFestivalPrototypeScene {
   }
 
   #getPhaseInputKind() {
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.COMPLETE) {
+    if ([CANONICAL_PHASE_IDS.COMPLETE, CANONICAL_PHASE_IDS.GAME_OVER].includes(this.#state.phaseId)) {
       return 'restart';
     }
     if (this.#state.activeScare) {
@@ -4288,9 +4580,11 @@ class CanonicalFestivalPrototypeScene {
       [CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN]: { title: '3-Aの客寄せを手伝う', position: null },
       [CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR]: this.#createClassmateAttractionTourObjective(),
       [CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR]: { title: '夕映と麻帆良祭を周る', position: SCHOOL_POSITIONS.CAFE },
+      [CANONICAL_PHASE_IDS.FESTIVAL_ENDING]: { title: '麻帆良祭の終了を見届ける', position: null },
+      [CANONICAL_PHASE_IDS.GAME_OVER]: { title: 'ゲームオーバー', position: null },
       [CANONICAL_PHASE_IDS.COMPLETE]: { title: '原作導入プロトタイプ完了', position: null },
     };
-    const objective = objectives[this.#state.phaseId];
+    const objective = objectives[this.#state.phaseId] ?? { title: '自由探索', position: null };
     return {
       title: objective.title,
       position: objective.position ? copyPosition(objective.position) : null,
@@ -4770,6 +5064,13 @@ class CanonicalFestivalPrototypeScene {
       actionResult: this.#state.freeExplore.actionResult
         ? { ...this.#state.freeExplore.actionResult }
         : null,
+      libraryDungeon: {
+        isActive: this.#state.freeExplore.libraryDungeon.isActive,
+        currentFloor: this.#state.freeExplore.libraryDungeon.currentFloor,
+        pendingBarrierCost: this.#state.freeExplore.libraryDungeon.pendingBarrierCost,
+        lastResult: this.#state.freeExplore.libraryDungeon.lastResult,
+        hasReachedFinalFloor: this.#state.persistentEvents.hasReachedLibraryDungeonFinalFloor,
+      },
     };
   }
 
@@ -5346,6 +5647,10 @@ class CanonicalFestivalPrototypeScene {
       tutorial: this.#createTutorialSnapshot(),
       dialogue,
       festivalNotification: this.#createFestivalNotificationSnapshot(),
+      gameOver: {
+        isActive: this.#state.phaseId === CANONICAL_PHASE_IDS.GAME_OVER,
+        reason: this.#state.gameOver.reason,
+      },
       routeComplete: this.#state.phaseId === CANONICAL_PHASE_IDS.COMPLETE,
       log: [...this.#state.log],
     });
@@ -5435,6 +5740,9 @@ export {
   HAUNTED_SCARE_POINTS,
   HAUNTED_PANIC_RECOVERY_PER_SECOND,
   INITIAL_CASSIOPEIA_MP_COST,
+  LIBRARY_DUNGEON_FINAL_FLOOR,
+  LIBRARY_DUNGEON_MAX_EVENT_MP_COST,
+  LIBRARY_DUNGEON_STEP_MINUTES,
   NODOKA_HIDE_WARNING_SECONDS,
   NODOKA_TOO_CLOSE_DISTANCE,
   NODOKA_TOO_CLOSE_LIMIT_SECONDS,

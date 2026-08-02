@@ -36,6 +36,117 @@ test('CFP-UT-S33 主要イベントのスナップショットにチャオ探索
   assert.ok(snapshot.events['chao-search'].data);
 });
 
+test('CFP-UT-LIBRARY-C01 図書館島へ移動して探検を開始できる', () => {
+  const scene = createSceneAtChaoSearch(() => 0);
+
+  selectDestination(scene, 'library-island');
+  advanceFreeExploreTravel(scene);
+  let snapshot = scene.createSnapshot();
+  assert.equal(snapshot.freeExplore.currentLocation.id, 'library-island');
+  assert.ok(snapshot.freeExplore.locationActions.some((action) => (
+    action.id === 'start-library-dungeon'
+  )));
+
+  selectLocationAction(scene, 'start-library-dungeon');
+  snapshot = scene.createSnapshot();
+  assert.equal(snapshot.freeExplore.libraryDungeon.isActive, true);
+  assert.equal(snapshot.freeExplore.libraryDungeon.currentFloor, 1);
+  advanceStory(scene);
+  snapshot = scene.createSnapshot();
+  assert.deepEqual(
+    snapshot.freeExplore.locationActions
+      .filter((action) => action.kind === 'library-dungeon-choice')
+      .map((action) => action.label),
+    ['左', '中央', '右'],
+  );
+});
+
+test('CFP-UT-LIBRARY-C02 探検の選択で5分進み階層が進む', () => {
+  const scene = createSceneAtChaoSearch(() => 0);
+  selectDestination(scene, 'library-island');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'start-library-dungeon');
+  advanceStory(scene);
+  const before = scene.createSnapshot();
+
+  selectLocationAction(scene, 'library-dungeon-choice-0');
+  const result = scene.createSnapshot();
+
+  assert.equal(result.gameTime.minute, before.gameTime.minute + 5);
+  assert.equal(result.freeExplore.libraryDungeon.currentFloor, 2);
+  assert.match(result.freeExplore.actionResult.text, /左の道/);
+});
+
+test('CFP-UT-LIBRARY-C03 地下10階到達後に帰還し到達フラグを保持する', () => {
+  const scene = createSceneAtChaoSearch(() => 0);
+  selectDestination(scene, 'library-island');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'start-library-dungeon');
+  advanceStory(scene);
+
+  for (let floor = 1; floor < 10; floor += 1) {
+    selectLocationAction(scene, 'library-dungeon-choice-1');
+    if (floor < 9) {
+      advanceStory(scene);
+    }
+  }
+
+  const snapshot = scene.createSnapshot();
+  assert.equal(snapshot.freeExplore.currentLocation.id, 'library-island');
+  assert.equal(snapshot.freeExplore.libraryDungeon.isActive, false);
+  assert.equal(snapshot.freeExplore.libraryDungeon.hasReachedFinalFloor, true);
+  assert.match(snapshot.freeExplore.actionResult.text, /地下10階/);
+});
+
+test('CFP-UT-FESTIVAL-END-C01 1日目PM11:30で終了演出へ移行する', () => {
+  const scene = new CanonicalFestivalPrototypeScene({
+    initialGameTime: { festivalDay: 1, loopCount: 1, hour: 23, minute: 25, label: 'PM11:25' },
+    initialPhaseId: CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+  });
+
+  waitUntil(scene, 23, 30);
+  const snapshot = scene.createSnapshot();
+
+  assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.FESTIVAL_ENDING);
+  assert.equal(snapshot.gameTime.label, 'PM11:30');
+  assert.equal(snapshot.phase.inputKind, 'story');
+  assert.equal(snapshot.dialogue.speaker, '麻帆良祭放送');
+});
+
+test('CFP-UT-FESTIVAL-END-C02 終了演出後PM11:37にゲームオーバーになる', () => {
+  const scene = new CanonicalFestivalPrototypeScene({
+    initialGameTime: { festivalDay: 1, loopCount: 1, hour: 23, minute: 30, label: 'PM11:30' },
+    initialPhaseId: CANONICAL_PHASE_IDS.FESTIVAL_ENDING,
+  });
+
+  advanceStory(scene);
+  advanceStory(scene);
+  advanceStory(scene);
+  const snapshot = scene.createSnapshot();
+
+  assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.GAME_OVER);
+  assert.equal(snapshot.gameTime.label, 'PM11:37');
+  assert.deepEqual(snapshot.gameOver, {
+    isActive: true,
+    reason: 'チャオの計画が発動し、企みが成功した。',
+  });
+});
+
+test('CFP-UT-FESTIVAL-END-C03 最終決戦ルートでは通常終了処理を行わない', () => {
+  const scene = new CanonicalFestivalPrototypeScene({
+    initialGameTime: { festivalDay: 1, loopCount: 1, hour: 23, minute: 25, label: 'PM11:25' },
+    initialPhaseId: CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+    isFinalBattleRoute: true,
+  });
+
+  waitUntil(scene, 23, 30);
+  const snapshot = scene.createSnapshot();
+
+  assert.notEqual(snapshot.phase.id, CANONICAL_PHASE_IDS.FESTIVAL_ENDING);
+  assert.notEqual(snapshot.phase.id, CANONICAL_PHASE_IDS.GAME_OVER);
+  assert.equal(snapshot.gameTime.label, 'PM11:30');
+});
+
 test('CFP-UT-S04-C08 お化け屋敷の演出中は次へ入力だけを受け付ける', () => {
   // Arrange
   const scene = createSceneAtMoveTo3A();
@@ -2755,7 +2866,7 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
     assert.equal(snapshot.dialogue.speaker, 'カモ');
   });
 
-  test('CFP-UT-S13-C09 待機時刻は5分刻みで現在ループの23:55まで選べる', () => {
+  test('CFP-UT-S13-C09 待機時刻は5分刻みで1日目PM11:30まで選べる', () => {
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
     const before = scene.createSnapshot();
@@ -2767,7 +2878,7 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
 
     // Assert
     assert.equal(waitActions[0].targetMinute, 615);
-    assert.equal(waitActions.at(-1).targetMinute, 1435);
+    assert.equal(waitActions.at(-1).targetMinute, 1410);
     assert.equal(after.gameTime.label, 'AM10:15');
     assert.equal(after.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
   });
@@ -2775,7 +2886,7 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
   test('CFP-UT-S13-C09 カシオペアは1日目AM10:00より前を候補に表示しない', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
-    waitUntil(scene, 23, 55);
+    waitUntil(scene, 23, 25);
 
     // Act
     const before = scene.createSnapshot();
@@ -2791,7 +2902,7 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
     // Assert
     assert.ok(rewindActions.some((action) => action.targetMinute === 10 * 60));
     assert.equal(rewindActions.some((action) => action.targetMinute < 10 * 60), false);
-    assert.equal(after.gameTime.label, 'PM11:55');
+    assert.equal(after.gameTime.label, 'PM11:25');
     assert.equal(after.gameTime.loopCount, before.gameTime.loopCount);
   });
 

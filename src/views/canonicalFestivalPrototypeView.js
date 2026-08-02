@@ -270,6 +270,7 @@ class CanonicalFestivalPrototypeView {
         .map((notification) => `${notification.id}:${notification.text}`),
       choices: snapshot.choices.map((choice) => `${choice.id}:${choice.label}:${choice.isRecommended}`),
       routeComplete: snapshot.routeComplete,
+      gameOver: `${snapshot.gameOver?.isActive}:${snapshot.gameOver?.reason ?? ''}`,
       hauntedHouse: snapshot.events['haunted-house']
         ? `${snapshot.events['haunted-house'].data.difficulty.id}:${snapshot.events['haunted-house'].data.panic.current}:${snapshot.events['haunted-house'].data.excitement.current}:${snapshot.events['haunted-house'].data.result}`
         : null,
@@ -341,6 +342,9 @@ class CanonicalFestivalPrototypeView {
     html += this.#createChoiceHtml(snapshot);
     if (snapshot.routeComplete) {
       html += `<button type="button" ${ACTION_ATTRIBUTE}="restart">最初から</button>`;
+    }
+    if (snapshot.gameOver?.isActive) {
+      html += `<button type="button" ${ACTION_ATTRIBUTE}="restart">タイトルへ戻る</button>`;
     }
     return html;
   }
@@ -415,6 +419,12 @@ class CanonicalFestivalPrototypeView {
     const freeExplore = snapshot.freeExplore;
     let html = '<section class="canonical-action-group">';
     html += `<h3>${escapeHtml(freeExplore.currentLocation.label)} / ${escapeHtml(freeExplore.currentLocation.areaName)}</h3>`;
+    if (freeExplore.libraryDungeon?.isActive) {
+      html += `<p>図書館島 地下${escapeHtml(freeExplore.libraryDungeon.currentFloor)}階</p>`;
+      if (freeExplore.libraryDungeon.pendingBarrierCost !== null) {
+        html += `<p>結界解除に${escapeHtml(freeExplore.libraryDungeon.pendingBarrierCost)}MP必要</p>`;
+      }
+    }
     if (snapshot.phase.id === 'travel' && freeExplore.travel) {
       html += `<p>${escapeHtml(freeExplore.travel.destinationLabel)}へ移動中</p>`;
       html += `<button type="button" ${ACTION_ATTRIBUTE}="advance">次へ</button>`;
@@ -555,6 +565,13 @@ class CanonicalFestivalPrototypeView {
   /** Create the current message box HTML. */
   #createMessageHtml(snapshot) {
     let html = '<h2>メッセージ</h2>';
+    if (snapshot.gameOver?.isActive) {
+      html += '<section class="canonical-game-over">';
+      html += '<p><b>ゲームオーバー</b></p>';
+      html += `<p>${escapeHtml(snapshot.gameOver.reason)}</p>`;
+      html += '</section>';
+      return html;
+    }
     if (snapshot.festivalNotification.length > 0) {
       html += '<section class="canonical-festival-notification">';
       for (const notification of snapshot.festivalNotification) {
@@ -587,6 +604,9 @@ class CanonicalFestivalPrototypeView {
 
   /** Create a short label for the current input mode. */
   #createInputHint(snapshot) {
+    if (snapshot.gameOver?.isActive) {
+      return 'タイトルへ戻る';
+    }
     if (snapshot.routeComplete) {
       return '最初から開始';
     }
