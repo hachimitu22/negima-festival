@@ -557,7 +557,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     areaId: 'dining-street',
     startMinute: 960,
     endMinute: 1050,
-    loopCount: 2,
+    loopCount: null,
   }),
   Object.freeze({
     id: 'yue-festival-tour',
@@ -575,7 +575,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     areaId: 'world-tree',
     startMinute: 900,
     endMinute: 960,
-    loopCount: 3,
+    loopCount: null,
   }),
   Object.freeze({
     id: 'tournament-qualifier',
@@ -584,7 +584,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     areaId: 'ground',
     startMinute: 1050,
     endMinute: 1140,
-    loopCount: 3,
+    loopCount: null,
   }),
   Object.freeze({
     id: 'world-tree-patrol-evening',
@@ -593,7 +593,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     areaId: 'world-tree',
     startMinute: 1140,
     endMinute: 1260,
-    loopCount: 3,
+    loopCount: null,
   }),
 ]);
 
@@ -699,7 +699,7 @@ const PHASE_LABELS = Object.freeze({
   [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: 'のどかとのキスシーン',
   [CANONICAL_PHASE_IDS.ESCAPE_PATROL_STUDENTS]: '魔法生徒から逃走',
   [CANONICAL_PHASE_IDS.WORLD_TREE_MAGIC]: '世界樹魔力溜まり事件',
-  [CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP]: '3ループ目へ戻る',
+  [CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP]: '世界樹パトロールへ進む',
   [CANONICAL_PHASE_IDS.THIRD_LOOP_PATROL]: '世界樹見回り',
   [CANONICAL_PHASE_IDS.THIRD_LOOP_CAFE]: '夕映とカフェへ',
   [CANONICAL_PHASE_IDS.THIRD_LOOP_BOAT]: '観光船',
@@ -710,7 +710,7 @@ const PHASE_LABELS = Object.freeze({
   [CANONICAL_PHASE_IDS.TOURNAMENT_QUALIFIER]: '武道会予選',
   [CANONICAL_PHASE_IDS.TOURNAMENT_RESULT]: 'まほら武道会予選結果',
   [CANONICAL_PHASE_IDS.DAY1_DEBRIEF]: '1日目反省会',
-  [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: '4ループ目へ戻る',
+  [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: 'クラスメイトの出し物巡りへ進む',
   [CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN]: '3-A再訪',
   [CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR]: 'クラスメイト出し物巡り',
       [CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR]: '夕映と麻帆良祭を周る',
@@ -806,7 +806,7 @@ const PHASE_DIALOGUES = Object.freeze({
   ]),
   [CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP]: Object.freeze([
     Object.freeze({ speaker: 'カモ', text: '本来すべきだった予定をこなすため、カシオペアで過去へ戻りますぜ。' }),
-    Object.freeze({ speaker: '刹那', text: '1日目3ループ目13:30です。明日菜さん、木乃香お嬢様、私はここで解散します。' }),
+    Object.freeze({ speaker: '刹那', text: 'PM3:00です。明日菜さん、木乃香お嬢様、私はここで解散します。' }),
   ]),
   [CANONICAL_PHASE_IDS.THIRD_LOOP_BOAT]: Object.freeze([
     Object.freeze({ speaker: '夕映', text: '観光船から見る麻帆良祭も悪くないです。地上とは違う情報が見えるのです。' }),
@@ -837,7 +837,7 @@ const PHASE_DIALOGUES = Object.freeze({
   ]),
   [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: Object.freeze([
     Object.freeze({ speaker: 'カモ', text: '次はネギ、オレっち、小太郎の三人で過去へ戻りますぜ。' }),
-    Object.freeze({ speaker: '小太郎', text: 'カシオペアが起動したで。1日目4ループ目AM11:30からやり直しや。' }),
+    Object.freeze({ speaker: '小太郎', text: 'カシオペアが起動したで。AM11:30から出し物巡りを始めるで。' }),
   ]),
   [CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN]: Object.freeze([
     Object.freeze({ speaker: '小太郎', text: 'まずは3-Aのホラーハウスやな。客寄せも手伝うで。' }),
@@ -1196,6 +1196,24 @@ function createSecondLoopTime(hour, minute) {
     hour,
     minute,
     label: createTimeLabel(hour, minute),
+  };
+}
+
+/** Create a time-of-day value while preserving the current festival loop. */
+function createCurrentLoopTime(currentTime, hour, minute) {
+  return {
+    ...currentTime,
+    hour,
+    minute,
+    label: createTimeLabel(hour, minute),
+  };
+}
+
+/** Create a time-of-day value in the next festival loop. */
+function createNextLoopTime(currentTime, hour, minute) {
+  return {
+    ...createCurrentLoopTime(currentTime, hour, minute),
+    loopCount: currentTime.loopCount + 1,
   };
 }
 
@@ -1695,7 +1713,7 @@ class CanonicalFestivalPrototypeScene {
     this.#addLog(step.text);
     this.#state.thirdLoop.patrolStepIndex += 1;
     if (this.#state.thirdLoop.patrolStepIndex >= THIRD_LOOP_PATROL_STEPS.length) {
-      this.#advanceGameTime(CANONICAL_TIMES.THIRD_LOOP_YUE);
+      this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
       this.#placePlayer(SCHOOL_POSITIONS.YUE_MEET);
       this.#setPhase(CANONICAL_PHASE_IDS.THIRD_LOOP_CAFE);
       this.#addLog('PM4:12、あやかと別れた後に夕映と出会った。');
@@ -1836,7 +1854,7 @@ class CanonicalFestivalPrototypeScene {
       if (this.#isClassmateAttractionTourComplete()) {
         this.#setPhase(CANONICAL_PHASE_IDS.COMPLETE);
         this.#state.movementInput = { x: 0, y: 0 };
-        this.#addLog('4ループ目のクラスメイト出し物巡りを終えた。');
+        this.#addLog('クラスメイトの出し物巡りを終えた。');
       }
       return;
     }
@@ -2182,11 +2200,11 @@ class CanonicalFestivalPrototypeScene {
       this.#addLog('飛行船で得た全体地図を手掛かりに探索を続けた。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.MEET_CHAO) {
       this.#state.chaoSearch.hasCassiopeiaManual = true;
-      if (isTimeBefore(this.#state.gameTime, CANONICAL_TIMES.NODOKA_DATE)) {
-        this.#advanceGameTime(CANONICAL_TIMES.SCHEDULE_REVIEW);
+      if (getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)) {
+        this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 11, 30));
         this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
       } else {
-        this.#advanceGameTime(CANONICAL_TIMES.NODOKA_DATE);
+        this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
         this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE, false);
       }
       this.#setPhase(CANONICAL_PHASE_IDS.REVIEW_SCHEDULE);
@@ -2292,10 +2310,10 @@ class CanonicalFestivalPrototypeScene {
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       this.#addLog('世界樹の事件が収束し、同じループの自由探索へ戻った。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP) {
-      this.#state.gameTime = copyTime(CANONICAL_TIMES.THIRD_LOOP_AFTER_RETURN);
+      this.#state.gameTime = createNextLoopTime(this.#state.gameTime, 15, 0);
       this.#enterThirdLoopPatrol();
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.THIRD_LOOP_BOAT) {
-      this.#advanceGameTime(CANONICAL_TIMES.THIRD_LOOP_DINNER);
+      this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 17, 0));
       this.#setPhase(CANONICAL_PHASE_IDS.THIRD_LOOP_DINNER);
       this.#addLog('夕映と観光船を楽しみ、夕食の時間になった。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.THIRD_LOOP_DINNER) {
@@ -2309,14 +2327,14 @@ class CanonicalFestivalPrototypeScene {
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       this.#addLog('まほら武道会会場の確認を終え、自由探索へ戻った。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.TOURNAMENT_QUALIFIER) {
-      this.#advanceGameTime(CANONICAL_TIMES.THIRD_LOOP_DEBRIEF);
+      this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 21, 0));
       this.#setPhase(CANONICAL_PHASE_IDS.DAY1_DEBRIEF);
       this.#addLog('武道会予選を突破し、3-Aの反省会へ向かった。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.DAY1_DEBRIEF) {
       this.#setPhase(CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP);
       this.#addLog('未体験の出し物を別ループで回る方針にした。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP) {
-      this.#state.gameTime = copyTime(CANONICAL_TIMES.FOURTH_LOOP_ATTRACTIONS);
+      this.#state.gameTime = createNextLoopTime(this.#state.gameTime, 11, 30);
       this.#enterFourthLoopHauntedHouseActions();
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR) {
       this.#advanceGameTime({
@@ -2764,15 +2782,15 @@ class CanonicalFestivalPrototypeScene {
 
   /** Return the current Nodoka date schedule and deadline end time. */
   #getNodokaDateEndTime() {
-    return this.#state.chaoSearch.foundLocationId
+    const sourceTime = this.#state.chaoSearch.foundLocationId
       ? CANONICAL_TIMES.NODOKA_DATE_EXTENDED_END
       : CANONICAL_TIMES.NODOKA_DATE_END;
+    return createCurrentLoopTime(this.#state.gameTime, sourceTime.hour, sourceTime.minute);
   }
 
   /** Return whether the unlocked Yue festival tour is within its time window. */
   #isYueFestivalTourTime() {
     return this.#state.persistentEvents.hasUnlockedYueFestivalTour
-      && this.#state.gameTime.loopCount >= 3
       && getMinuteOfDay(this.#state.gameTime) >= 16 * 60 + 30
       && getMinuteOfDay(this.#state.gameTime) < 18 * 60;
   }
@@ -3412,7 +3430,10 @@ class CanonicalFestivalPrototypeScene {
         resultText: '',
       });
     }
-    if (currentLocationId === 'entrance-gate' && isTimeBefore(this.#state.gameTime, CANONICAL_TIMES.PARADE_END)) {
+    if (
+      currentLocationId === 'entrance-gate'
+      && getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.PARADE_END)
+    ) {
       actions.unshift({
         id: 'watch-parade',
         label: 'パレードを見る',
@@ -3445,8 +3466,7 @@ class CanonicalFestivalPrototypeScene {
         resultText: '',
       });
       if (
-        this.#state.gameTime.loopCount === 4
-        && this.#state.thirdLoop.hasHelpedHauntedHouse
+        this.#state.thirdLoop.hasHelpedHauntedHouse
         && getMinuteOfDay(this.#state.gameTime) >= 720
         && !this.#isClassmateAttractionTourComplete()
       ) {
@@ -3508,7 +3528,6 @@ class CanonicalFestivalPrototypeScene {
     }
     if (
       currentLocationId === 'world-tree'
-      && this.#state.gameTime.loopCount === 3
       && this.#state.thirdLoop.patrolStepIndex === 0
       && this.#state.thirdLoop.completedPatrolStepIds.length === 0
     ) {
@@ -4216,7 +4235,7 @@ class CanonicalFestivalPrototypeScene {
   #startNodokaDate() {
     this.#state.movementInput = { x: 0, y: 0 };
     this.#state.prepareDate.interactionDialogue = null;
-    this.#advanceGameTime(CANONICAL_TIMES.NODOKA_DATE);
+    this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
     this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE);
     this.#addLog('PM4:00になり、のどかとのデートを開始した。');
   }
@@ -4265,7 +4284,7 @@ class CanonicalFestivalPrototypeScene {
     this.#resetFreeExploreState('world-tree');
     this.#placePlayer(SCHOOL_POSITIONS.THIRD_LOOP_START);
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    this.#addLog('1日目3ループ目PM1:30へ戻り、世界樹周辺の見回り準備を始めた。');
+    this.#addLog('PM3:00へ進み、世界樹周辺の見回り準備を始めた。');
   }
 
   /** Start the fourth-loop free-explore actions at the 3-A haunted house. */
@@ -4277,7 +4296,7 @@ class CanonicalFestivalPrototypeScene {
     this.#resetFreeExploreState('school-building');
     this.#placePlayer(SCHOOL_POSITIONS.CLASS_3A);
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    this.#addLog('1日目4ループ目AM11:30へ戻った。3-Aホラーハウスの行動を選べる。');
+    this.#addLog('AM11:30へ進み、3-Aホラーハウスの行動を選べる。');
   }
 
   /** Start the third-loop patrol from the world-tree location action. */
@@ -4301,7 +4320,7 @@ class CanonicalFestivalPrototypeScene {
     this.#addLog(step.text);
     this.#state.thirdLoop.patrolStepIndex += 1;
     if (this.#state.thirdLoop.patrolStepIndex >= THIRD_LOOP_PATROL_STEPS.length) {
-      this.#advanceGameTime(CANONICAL_TIMES.THIRD_LOOP_YUE);
+      this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
       this.#placePlayer(SCHOOL_POSITIONS.YUE_MEET);
       this.#setPhase(CANONICAL_PHASE_IDS.THIRD_LOOP_CAFE);
       this.#addLog('PM4:12、あやかと別れた後に夕映と出会った。');
@@ -4321,7 +4340,7 @@ class CanonicalFestivalPrototypeScene {
     this.#state.thirdLoop.currentAttractionAreaId = 'school-building';
     this.#placePlayer(SCHOOL_POSITIONS.CLASS_3A);
     this.#setPhase(CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR);
-    this.#addLog('4ループ目のクラスメイト出し物巡りを始めた。');
+    this.#addLog('クラスメイトの出し物巡りを始めた。');
   }
 
   /** Handle talking with classmate attraction actors. */
@@ -4692,7 +4711,7 @@ class CanonicalFestivalPrototypeScene {
       [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: { title: 'のどかとのキスシーンを見る', position: null },
       [CANONICAL_PHASE_IDS.ESCAPE_PATROL_STUDENTS]: { title: '魔法生徒から逃げる', position: SCHOOL_POSITIONS.ESCAPE_GOAL },
       [CANONICAL_PHASE_IDS.WORLD_TREE_MAGIC]: { title: '世界樹の魔力溜まり事件を見る', position: null },
-      [CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP]: { title: '1日目3ループ目へ戻る', position: null },
+      [CANONICAL_PHASE_IDS.RETURN_TO_THIRD_LOOP]: { title: '世界樹パトロールへ進む', position: null },
       [CANONICAL_PHASE_IDS.THIRD_LOOP_PATROL]: this.#createThirdLoopPatrolObjective(),
       [CANONICAL_PHASE_IDS.THIRD_LOOP_CAFE]: { title: '夕映とカフェへ向かう', position: SCHOOL_POSITIONS.CAFE },
       [CANONICAL_PHASE_IDS.THIRD_LOOP_BOAT]: { title: '観光船で麻帆良祭を見る', position: null },
@@ -4703,7 +4722,7 @@ class CanonicalFestivalPrototypeScene {
       [CANONICAL_PHASE_IDS.TOURNAMENT_QUALIFIER]: { title: 'まほら武道会の予選を突破する', position: null },
       [CANONICAL_PHASE_IDS.TOURNAMENT_RESULT]: { title: 'まほら武道会予選の結果を選ぶ', position: null },
       [CANONICAL_PHASE_IDS.DAY1_DEBRIEF]: { title: '3-A反省会に参加する', position: null },
-      [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: { title: '1日目4ループ目へ戻る', position: null },
+      [CANONICAL_PHASE_IDS.REWIND_TO_FOURTH_LOOP]: { title: '出し物巡りへ進む', position: null },
       [CANONICAL_PHASE_IDS.FOURTH_LOOP_HAUNTED_RETURN]: { title: '3-Aの客寄せを手伝う', position: null },
       [CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR]: this.#createClassmateAttractionTourObjective(),
       [CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR]: { title: '夕映と麻帆良祭を周る', position: SCHOOL_POSITIONS.CAFE },
@@ -5567,7 +5586,7 @@ class CanonicalFestivalPrototypeScene {
     }
     if (
       this.#state.chaoSearch.foundLocationId
-      && isTimeBefore(this.#state.gameTime, CANONICAL_TIMES.NODOKA_DATE)
+      && getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)
       && !this.#state.chaoSearch.isNodokaDateCompleted
       && !this.#state.chaoSearch.hasMissedNodokaDate
     ) {

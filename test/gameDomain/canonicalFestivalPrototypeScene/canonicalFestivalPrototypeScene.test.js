@@ -36,6 +36,23 @@ test('CFP-UT-S33 主要イベントのスナップショットにチャオ探索
   assert.ok(snapshot.events['chao-search'].data);
 });
 
+test('CFP-UT-S34 全イベントの予定はループ数に関係なく時刻で判定する', () => {
+  const scene = new CanonicalFestivalPrototypeScene({
+    initialGameTime: { festivalDay: 1, loopCount: 5, hour: 15, minute: 30, label: 'PM3:30' },
+    initialPhaseId: CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+  });
+
+  const snapshot = scene.createSnapshot();
+  const entries = Object.fromEntries(
+    snapshot.schedule.negi.entries.map((entry) => [entry.id, entry]),
+  );
+
+  assert.equal(entries['world-tree-patrol-afternoon'].isInScheduleTime, true);
+  assert.equal(entries['world-tree-patrol-afternoon'].loopCount, undefined);
+  assert.equal(entries['mahora-budokai-qualifier'].isInScheduleTime, false);
+  assert.equal(entries['nodoka-date'].isInScheduleTime, false);
+});
+
 test('CFP-UT-SAVE-C01 自由探索中にセーブとロードができる', () => {
   const storage = {
     value: null,

@@ -2,7 +2,7 @@
 
 ## 責務
 
-`CanonicalFestivalPrototypeScene`は、最初のカシオペア起動から1日目4ループ目のクラスメイト出し物巡りまでを扱う原作導入の進行段階、固定時刻、プレイヤーと同行者の位置、3-Aホラーハウス、のどかの尾行、のどか振り返りカットシーン、エヴァの追跡、チュートリアル後の場所選択式自由探索、チャオ探索、3ループ目の予定消化、4ループ目の出し物巡り、人物の発話、再試行を管理する。
+`CanonicalFestivalPrototypeScene`は、最初のカシオペア起動から、チュートリアル後の場所選択式自由探索、チャオ探索、世界樹パトロール、武道会、クラスメイトの出し物巡りまでを扱う原作導入の進行段階、固定時刻、プレイヤーと同行者の位置、3-Aホラーハウス、のどかの尾行、のどか振り返りカットシーン、エヴァの追跡、人物の発話、再試行を管理する。イベントはループ番号ではなく、現在時刻、場所、進行状態、永続解禁情報で判定する。
 
 旧`PrototypeFestivalScene`が扱うイベント実験、教師仕事、ハプニング、任意カシオペア使用は使用しない。エヴァ逃走後は自由移動ではなく場所選択式で移動中と行動中の巻き込みを検証する。
 
@@ -25,7 +25,7 @@ Canonicalプロトタイプのブラウザ起動では、常時メインルー�
 
 ### createSnapshot
 
-rendererへ現在の進行段階、固定時刻、携帯電話時刻、プレイヤー、同行者、目的、マップ、人物、尾行、カットシーン、場所選択式自由探索、チャオ探索、デート前自由時間、3ループ目以降の進行、人物の発話、完了状態を返す。
+rendererへ現在の進行段階、固定時刻、携帯電話時刻、プレイヤー、同行者、目的、マップ、人物、尾行、カットシーン、場所選択式自由探索、チャオ探索、デート前自由時間、世界樹パトロール、武道会、出し物巡り、人物の発話、完了状態を返す。
 
 ## 入力
 
@@ -92,7 +92,7 @@ rendererへ現在の進行段階、固定時刻、携帯電話時刻、プレイ
 | `tournament-qualifier` | 攻撃・投げ・防御を選択してまほら武道会予選を行う | `canonical.choice.select` |
 | `tournament-result` | 予選敗北後に再挑戦または棄権を選ぶ | `canonical.choice.select` |
 | `day1-debrief` | 1日目の3-A反省会に参加する | `canonical.story.advance` |
-| `rewind-to-fourth-loop` | カシオペアで1日目4ループ目AM11:30へ戻る | `canonical.story.advance` |
+| `rewind-to-fourth-loop` | カシオペアで次のループのAM11:30へ戻る | `canonical.story.advance` |
 | `fourth-loop-haunted-return` | 3-Aホラーハウスの客寄せ後にあやかと合流する | `canonical.story.advance` |
 | `classmate-attraction-tour` | クラスメイトの出し物を巡り、各エリアで生徒と会話する | `canonical.choice.select`、`canonical.interact` |
 | `complete` | クラスメイト出し物巡り完了を表示する | `canonical.route.restart` |
@@ -128,20 +128,20 @@ rendererへ現在の進行段階、固定時刻、携帯電話時刻、プレイ
 | `nodoka-date` | 1日目2ループ目 PM4:00 |
 | `escape-patrol-students` | 1日目2ループ目 PM4:00 |
 | `world-tree-magic` | 1日目2ループ目 PM4:00 |
-| `third-loop-patrol` | 1日目3ループ目 PM3:00 |
-| `third-loop-cafe` | 1日目3ループ目 PM4:00 |
-| `third-loop-boat` | 1日目3ループ目 PM4:00 |
-| `third-loop-dinner` | 1日目3ループ目 PM5:00 |
+| `third-loop-patrol` | 現在ループのPM3:00 |
+| `third-loop-cafe` | 現在ループのPM4:00 |
+| `third-loop-boat` | 現在ループのPM4:00 |
+| `third-loop-dinner` | 現在ループのPM5:00 |
 | `tournament-kotaro` | 現在ループのPM5:00通知後からPM6:00まで |
 | `tournament-venue` | 小太郎同行後からPM6:00まで |
 | `tournament-reception` | 現在ループのPM6:00からPM7:00まで |
 | `tournament-qualifier` | 現在ループのPM7:00からPM7:30まで |
 | `tournament-result` | 予選敗北時 |
-| `day1-debrief` | 1日目3ループ目 PM9:00 |
-| `rewind-to-fourth-loop` | 1日目3ループ目 PM9:00 |
-| `fourth-loop-haunted-return` | 1日目4ループ目 PM12:00 |
-| `classmate-attraction-tour` | 1日目4ループ目 PM12:00 |
-| `complete` | 1日目4ループ目 PM12:00 |
+| `day1-debrief` | 現在ループのPM9:00 |
+| `rewind-to-fourth-loop` | 次のループのAM11:30 |
+| `fourth-loop-haunted-return` | 現在ループのAM11:30 |
+| `classmate-attraction-tour` | 現在ループのAM11:30 |
+| `complete` | 現在ループの出し物巡り完了時 |
 
 更新フレーム数、移動距離、会話表示時間、再試行回数では時刻を変更しない。
 
