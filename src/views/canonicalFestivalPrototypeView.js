@@ -104,6 +104,11 @@ class CanonicalFestivalPrototypeView {
             <div><dt>MP</dt><dd><span data-view-role="mp"></span><meter data-view-role="mp-meter" min="0"></meter></dd></div>
             <div><dt>PARTY</dt><dd data-view-role="party"></dd></div>
           </dl>
+          <div class="canonical-save-controls" data-view-role="save-controls">
+            <button type="button" ${ACTION_ATTRIBUTE}="save" data-view-role="save-button">セーブ</button>
+            <button type="button" ${ACTION_ATTRIBUTE}="load" data-view-role="load-button">ロード</button>
+            <small data-view-role="save-status"></small>
+          </div>
         </section>
         <aside class="canonical-schedule" ${VIEW_ROLE_ATTRIBUTE}="schedule"></aside>
         <aside class="canonical-classmate-status" ${VIEW_ROLE_ATTRIBUTE}="classmate-status"></aside>
@@ -129,6 +134,11 @@ class CanonicalFestivalPrototypeView {
       .filter((companion) => companion.id !== 'kamo')
       .map((companion) => companion.name)
       .join('、') || 'なし';
+    const saveData = snapshot.saveData ?? { canSave: false, canLoad: false, status: null };
+    this.#getElement('save-button').disabled = !saveData.canSave;
+    this.#getElement('load-button').disabled = !saveData.canLoad;
+    this.#getElement('save-status').textContent = saveData.status?.text ?? '';
+    this.#getElement('save-status').dataset.statusKind = saveData.status?.kind ?? '';
     this.#updateHtmlRegion('schedule', this.#createScheduleRenderKey(snapshot), this.#createScheduleHtml(snapshot));
     this.#updateHtmlRegion('classmate-status', this.#createClassmateStatusRenderKey(snapshot), this.#createClassmateStatusHtml(snapshot));
     this.#updateHtmlRegion('main', this.#createMainRenderKey(snapshot), this.#createMainHtml(snapshot));
@@ -713,6 +723,12 @@ class CanonicalFestivalPrototypeView {
       this.#lastDialogueKey = null;
       this.#lastFestivalNotificationKey = null;
       this.#submitInput({ type: CANONICAL_INPUT_TYPES.ROUTE_RESTART });
+    } else if (action === 'save') {
+      this.#submitInput({ type: CANONICAL_INPUT_TYPES.SAVE_GAME });
+    } else if (action === 'load') {
+      if (window.confirm('保存時点の状態をロードしますか？')) {
+        this.#submitInput({ type: CANONICAL_INPUT_TYPES.LOAD_GAME });
+      }
     }
     this.#updateHtmlRegion('log', JSON.stringify(this.#displayLog), this.#createLogHtml());
   }

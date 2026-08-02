@@ -16,7 +16,14 @@ const CANONICAL_INPUT_TYPES = Object.freeze({
   WAIT_UNTIL: 'canonical.waitUntil',
   CASSIOPEIA_REWIND: 'canonical.cassiopeia.rewind',
   TUTORIAL_SKIP: 'canonical.tutorial.skip',
+  SAVE_GAME: 'canonical.save.game',
+  LOAD_GAME: 'canonical.load.game',
 });
+
+/** Current prototype save-data schema version. */
+const CANONICAL_SAVE_DATA_VERSION = 1;
+/** Browser storage key for the currently selected prototype slot. */
+const CANONICAL_SAVE_STORAGE_KEY = 'negima-festival-canonical-prototype-current';
 
 /** Main event identifiers used by the canonical prototype. */
 const CANONICAL_MAIN_EVENT_IDS = Object.freeze({
@@ -1263,6 +1270,10 @@ function createInitialState() {
     gameOver: {
       reason: null,
     },
+    saveStatus: {
+      kind: null,
+      text: null,
+    },
     affection: Object.fromEntries(
       CLASSMATE_SOCIAL_ACTORS.map((actor) => [actor.id, CLASSMATE_AFFECTION_INITIAL]),
     ),
@@ -1412,6 +1423,10 @@ class CanonicalFestivalPrototypeScene {
 
   #rewindHistory;
 
+  #storage;
+
+  #skipSimulationThisFrame;
+
   /**
    * シーンを初期状態で生成する。
    * @param {Object} [options] - テスト用の任意設定。
@@ -1431,6 +1446,9 @@ class CanonicalFestivalPrototypeScene {
     }
     this.#state.isFinalBattleRoute = options.isFinalBattleRoute === true;
     this.#rewindHistory = [];
+    this.#storage = options.storage
+      ?? (typeof globalThis.localStorage !== 'undefined' ? globalThis.localStorage : null);
+    this.#skipSimulationThisFrame = false;
     this.#recordRewindCheckpoint();
   }
 
@@ -1439,6 +1457,10 @@ class CanonicalFestivalPrototypeScene {
     const inputs = context?.inputs ?? [];
     const deltaSeconds = Math.max(0, (context?.deltaTimeMs ?? 0) / 1000);
     this.#handleInputs(inputs);
+    if (this.#skipSimulationThisFrame) {
+      this.#skipSimulationThisFrame = false;
+      return;
+    }
     this.#updateMovement(deltaSeconds);
     this.#updateCompanions();
     this.#updatePhaseProgress(deltaSeconds);
@@ -1488,6 +1510,10 @@ class CanonicalFestivalPrototypeScene {
         this.#rewindWithCassiopeia(input.targetMinute);
       } else if (input.type === CANONICAL_INPUT_TYPES.TUTORIAL_SKIP) {
         this.#skipTutorial();
+      } else if (input.type === CANONICAL_INPUT_TYPES.SAVE_GAME) {
+        this.#saveGame();
+      } else if (input.type === CANONICAL_INPUT_TYPES.LOAD_GAME) {
+        this.#loadGame();
       }
     }
   }
@@ -1846,6 +1872,107 @@ class CanonicalFestivalPrototypeScene {
   }
 
   /** 完了状態から最初へ戻す。 */
+  /** Return whether the current state is a stable free-exploration save point. */
+  #canUseSaveData() {
+    return [CANONICAL_PHASE_IDS.FREE_EXPLORE, CANONICAL_PHASE_IDS.LOCATION_ACTIONS]
+      .includes(this.#state.phaseId);
+  }
+
+  /** Return whether the active slot contains a compatible save payload. */
+  #hasSavedGame() {
+    if (!this.#storage?.getItem) {
+      return false;
+    }
+    try {
+      const raw = this.#storage.getItem(CANONICAL_SAVE_STORAGE_KEY);
+      const payload = raw ? JSON.parse(raw) : null;
+      return payload?.version === CANONICAL_SAVE_DATA_VERSION
+        && payload?.state
+        && Array.isArray(payload.rewindHistory);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Set a transient save/load result for the status block and log. */
+  #setSaveStatus(kind, text) {
+    this.#state.saveStatus = { kind, text };
+    this.#addLog(text);
+  }
+
+  /** Save the current free-exploration state to the active browser slot. */
+  #saveGame() {
+    if (!this.#canUseSaveData()) {
+      this.#setSaveStatus('error', '自由探索中のみセーブできます。');
+      return;
+    }
+    if (!this.#storage?.setItem) {
+      this.#setSaveStatus('error', 'セーブ機能を利用できません。');
+      return;
+    }
+    const payload = {
+      version: CANONICAL_SAVE_DATA_VERSION,
+      state: cloneCanonicalState(this.#state),
+      rewindHistory: this.#rewindHistory.map((checkpoint) => ({
+        key: checkpoint.key,
+        state: cloneCanonicalState(checkpoint.state),
+      })),
+    };
+    try {
+      this.#storage.setItem(CANONICAL_SAVE_STORAGE_KEY, JSON.stringify(payload));
+      this.#setSaveStatus('success', 'セーブしました。');
+    } catch {
+      this.#setSaveStatus('error', 'セーブに失敗しました。');
+    }
+  }
+
+  /** Load the active browser slot during free exploration. */
+  #loadGame() {
+    if (!this.#canUseSaveData()) {
+      this.#setSaveStatus('error', '自由探索中のみロードできます。');
+      return;
+    }
+    if (!this.#storage?.getItem) {
+      this.#setSaveStatus('error', 'ロード機能を利用できません。');
+      return;
+    }
+    let payload;
+    try {
+      const raw = this.#storage.getItem(CANONICAL_SAVE_STORAGE_KEY);
+      payload = raw ? JSON.parse(raw) : null;
+    } catch {
+      payload = null;
+    }
+    if (!payload || payload.version !== CANONICAL_SAVE_DATA_VERSION || !payload.state || !Array.isArray(payload.rewindHistory)) {
+      this.#setSaveStatus('error', 'ロードできるセーブデータがありません。');
+      return;
+    }
+    const hasValidCheckpoint = payload.rewindHistory.every((checkpoint) => (
+      checkpoint
+      && typeof checkpoint.key === 'string'
+      && checkpoint.state
+      && checkpoint.state.gameTime
+      && typeof checkpoint.state.phaseId === 'string'
+    ));
+    if (!payload.state.gameTime || typeof payload.state.phaseId !== 'string' || !hasValidCheckpoint) {
+      this.#setSaveStatus('error', 'セーブデータが壊れています。');
+      return;
+    }
+    try {
+      this.#state = cloneCanonicalState(payload.state);
+      this.#state.saveStatus = { kind: 'success', text: 'ロードしました。' };
+      this.#rewindHistory = payload.rewindHistory.map((checkpoint) => ({
+        key: checkpoint.key,
+        state: cloneCanonicalState(checkpoint.state),
+      }));
+    } catch {
+      this.#setSaveStatus('error', 'セーブデータが壊れています。');
+      return;
+    }
+    this.#skipSimulationThisFrame = true;
+    this.#addLog('ロードしました。');
+  }
+
   #restartRoute() {
     if (![CANONICAL_PHASE_IDS.COMPLETE, CANONICAL_PHASE_IDS.GAME_OVER].includes(this.#state.phaseId)) {
       return;
@@ -5650,6 +5777,11 @@ class CanonicalFestivalPrototypeScene {
       gameOver: {
         isActive: this.#state.phaseId === CANONICAL_PHASE_IDS.GAME_OVER,
         reason: this.#state.gameOver.reason,
+      },
+      saveData: {
+        canSave: this.#canUseSaveData(),
+        canLoad: this.#canUseSaveData() && this.#hasSavedGame(),
+        status: this.#state.saveStatus ? { ...this.#state.saveStatus } : null,
       },
       routeComplete: this.#state.phaseId === CANONICAL_PHASE_IDS.COMPLETE,
       log: [...this.#state.log],

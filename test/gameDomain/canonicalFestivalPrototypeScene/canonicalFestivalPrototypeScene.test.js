@@ -36,6 +36,64 @@ test('CFP-UT-S33 主要イベントのスナップショットにチャオ探索
   assert.ok(snapshot.events['chao-search'].data);
 });
 
+test('CFP-UT-SAVE-C01 自由探索中にセーブとロードができる', () => {
+  const storage = {
+    value: null,
+    getItem() { return this.value; },
+    setItem(key, value) { this.value = value; },
+  };
+  const scene = new CanonicalFestivalPrototypeScene({
+    storage,
+    initialGameTime: { festivalDay: 1, loopCount: 2, hour: 10, minute: 0, label: 'AM10:00' },
+    initialPhaseId: CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+  });
+
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.SAVE_GAME });
+  assert.equal(scene.createSnapshot().saveData.status.text, 'セーブしました。');
+  waitUntil(scene, 10, 5);
+  assert.equal(scene.createSnapshot().gameTime.label, 'AM10:05');
+
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.LOAD_GAME });
+  const snapshot = scene.createSnapshot();
+  assert.equal(snapshot.gameTime.label, 'AM10:00');
+  assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+  assert.equal(snapshot.saveData.status.text, 'ロードしました。');
+});
+
+test('CFP-UT-SAVE-C02 自由探索中以外はセーブとロードを実行できない', () => {
+  const storage = {
+    value: null,
+    getItem() { return this.value; },
+    setItem(key, value) { this.value = value; },
+  };
+  const scene = new CanonicalFestivalPrototypeScene({ storage });
+
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.SAVE_GAME });
+  assert.equal(scene.createSnapshot().saveData.status.kind, 'error');
+  assert.equal(storage.value, null);
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.LOAD_GAME });
+  assert.equal(scene.createSnapshot().saveData.status.kind, 'error');
+});
+
+test('CFP-UT-SAVE-C03 壊れたセーブデータは現在状態を変更しない', () => {
+  const storage = {
+    value: '{invalid-json',
+    getItem() { return this.value; },
+    setItem(key, value) { this.value = value; },
+  };
+  const scene = new CanonicalFestivalPrototypeScene({
+    storage,
+    initialGameTime: { festivalDay: 1, loopCount: 2, hour: 10, minute: 0, label: 'AM10:00' },
+    initialPhaseId: CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+  });
+
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.LOAD_GAME });
+  const snapshot = scene.createSnapshot();
+  assert.equal(snapshot.gameTime.label, 'AM10:00');
+  assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+  assert.equal(snapshot.saveData.status.kind, 'error');
+});
+
 test('CFP-UT-LIBRARY-C01 図書館島へ移動して探検を開始できる', () => {
   const scene = createSceneAtChaoSearch(() => 0);
 
