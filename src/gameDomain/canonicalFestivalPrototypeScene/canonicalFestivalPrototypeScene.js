@@ -132,6 +132,15 @@ const CANONICAL_TUTORIAL_PHASE_IDS = Object.freeze([
   CANONICAL_PHASE_IDS.HIDE_FROM_NODOKA,
   CANONICAL_PHASE_IDS.TIME_TRAVEL_CONFIRMED,
   CANONICAL_PHASE_IDS.EVA_ESCAPE,
+  CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+  CANONICAL_PHASE_IDS.TRAVEL,
+  CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT,
+  CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION,
+  CANONICAL_PHASE_IDS.SEARCH_CHAO,
+  CANONICAL_PHASE_IDS.CHAO_ATTRACTION,
+  CANONICAL_PHASE_IDS.AIRSHIP_OVERVIEW,
+  CANONICAL_PHASE_IDS.MEET_CHAO,
+  CANONICAL_PHASE_IDS.REVIEW_SCHEDULE,
 ]);
 
 /** 学園マップの一辺の長さ。 */
@@ -346,15 +355,22 @@ const HAUNTED_DIFFICULTIES = Object.freeze({
 /** チャオ探索で体験するアトラクション。 */
 const CHAO_ATTRACTIONS = Object.freeze([
   Object.freeze({
-    id: 'gun-shooting',
-    label: 'ガンシューティング',
-    description: '的を撃ちながらチャオの手掛かりを探す。',
-  }),
-  Object.freeze({
     id: 'roller-coaster',
     label: 'ジェットコースター',
     description: '学園を駆け抜ける乗り物からチャオの姿を探す。',
   }),
+  Object.freeze({
+    id: 'gun-shooting',
+    label: 'ガンシューティング',
+    description: '的を撃ちながらチャオの手掛かりを探す。',
+  }),
+]);
+
+/** チャオ探索で必ず進む地点の順番。 */
+const CHAO_SEARCH_ROUTE = Object.freeze([
+  'roller-coaster',
+  'gun-shooting',
+  'airship',
 ]);
 
 /** チャオ探索でチャオが出現し得る候補地点。 */
@@ -1406,6 +1422,7 @@ function createInitialState() {
     evaElapsedSeconds: 0,
     evaResult: null,
     isTutorialSkipped: false,
+    isTutorialCompleted: false,
     retryCount: 0,
     log: ['麻帆良祭前日のプロローグが始まった。'],
   });
@@ -1543,6 +1560,9 @@ class CanonicalFestivalPrototypeScene {
 
   /** 選択入力を現在段階に対応する分岐へ反映する。 */
   #handleChoiceInput(input) {
+    if (this.#isChaoSearchRouteActive()) {
+      return;
+    }
     this.#clearCurrentFestivalNotification();
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.SELECT_HAUNTED_DIFFICULTY) {
       this.#selectHauntedDifficulty(input.choiceId);
@@ -1557,11 +1577,10 @@ class CanonicalFestivalPrototypeScene {
 
   /** interaction入力を現在段階に対応する対象へ反映する。 */
   #handleInteractInput(input) {
-    this.#clearCurrentFestivalNotification();
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.SEARCH_CHAO && !this.#state.chaoSearch.pendingSetsunaChoice) {
-      this.#interactInChaoSearch(input.targetId);
+    if (this.#isChaoSearchRouteActive() || this.#state.phaseId === CANONICAL_PHASE_IDS.SEARCH_CHAO) {
       return;
     }
+    this.#clearCurrentFestivalNotification();
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE) {
       this.#interactInPrepareDate(input.targetId);
       return;
@@ -2006,18 +2025,31 @@ class CanonicalFestivalPrototypeScene {
     const skippedLog = 'チュートリアルをスキップした。';
     this.#state = createInitialState();
     this.#state.isTutorialSkipped = true;
+    this.#state.isTutorialCompleted = true;
     this.#state.phoneTimeLabel = '20:06';
     this.#state.magicPower = MAGIC_POWER_MAX - INITIAL_CASSIOPEIA_MP_COST;
     this.#state.gameTime = copyTime(CANONICAL_TIMES.SECOND_OPENING);
-    this.#enterChaoSearch();
+    this.#state.chaoSearch.targetLocationId = CHAO_SEARCH_LOCATIONS[0].id;
+    this.#state.chaoSearch.foundLocationId = CHAO_SEARCH_LOCATIONS[0].id;
+    this.#state.chaoSearch.hasCassiopeiaManual = true;
+    this.#state.chaoSearch.isSetsunaWaiting = false;
+    this.#resetFreeExploreState('entrance-gate');
+    this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     this.#recordRewindCheckpoint();
-    this.#state.gameTime = copyTime(CANONICAL_TIMES.CHAO_SEARCH);
+    this.#state.gameTime = {
+      ...this.#state.gameTime,
+      hour: 14,
+      minute: 0,
+      label: 'PM2:00',
+    };
     this.#addLog(skippedLog);
   }
 
   /** Return whether the current phase is part of the tutorial. */
   #isTutorialPhase() {
-    return CANONICAL_TUTORIAL_PHASE_IDS.includes(this.#state.phaseId);
+    return !this.#state.isTutorialCompleted
+      && CANONICAL_TUTORIAL_PHASE_IDS.includes(this.#state.phaseId);
   }
 
   /** 移動可能な段階でプレイヤーを動かす。 */
@@ -2193,23 +2225,50 @@ class CanonicalFestivalPrototypeScene {
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.AIRSHIP_OVERVIEW) {
       if (this.#state.chaoSearch.targetLocationId === 'airship') {
         this.#setPhase(CANONICAL_PHASE_IDS.MEET_CHAO);
+        this.#addLog("Chaoを発見した。");
+        return;
+        this.#state.isTutorialCompleted = true;
+        if (getMinuteOfDay(this.#state.gameTime) < 14 * 60) {
+          this.#advanceFreeExploreTime(14 * 60 - getMinuteOfDay(this.#state.gameTime));
+        }
+        this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
+        this.#returnToFreeExplore();
+        /*
+        this.#addLog('繝√Ε繧ｪ繧呈ｫ九▽縺代√メ繝･繝ｼ繝医Μ繧｢繝ｫ繧堤ｵゆｺ・＠縺溘・);
+        return;
         this.#addLog('飛行船内でチャオと出会った。');
         return;
+        */
       }
       this.#returnToFreeExplore();
       this.#addLog('飛行船で得た全体地図を手掛かりに探索を続けた。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.MEET_CHAO) {
+      this.#state.isTutorialCompleted = true;
+      if (getMinuteOfDay(this.#state.gameTime) < 14 * 60) {
+        this.#advanceFreeExploreTime(14 * 60 - getMinuteOfDay(this.#state.gameTime));
+      }
+      this.#setMainEvent(
+        getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)
+          ? CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE
+          : CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE,
+        false,
+      );
+      this.#returnToFreeExplore();
+      this.#addLog("チャオ探索を終了し、チュートリアルを完了した。");
+      return;
       this.#state.chaoSearch.hasCassiopeiaManual = true;
+      if (getMinuteOfDay(this.#state.gameTime) < 14 * 60) {
+        this.#advanceFreeExploreTime(14 * 60 - getMinuteOfDay(this.#state.gameTime));
+      }
       if (getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)) {
-        this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 11, 30));
         this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
       } else {
-        this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
         this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE, false);
       }
       this.#setPhase(CANONICAL_PHASE_IDS.REVIEW_SCHEDULE);
       this.#addLog('カシオペアの説明書を受け取った。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.REVIEW_SCHEDULE) {
+      this.#state.isTutorialCompleted = true;
       this.#returnToFreeExplore();
       this.#addLog('自由探索へ戻った。');
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.TOURNAMENT_KOTARO) {
@@ -2640,11 +2699,7 @@ class CanonicalFestivalPrototypeScene {
 
   /** チャオ探索段階を開始し、今回のチャオ出現場所を決める。 */
   #enterChaoSearch() {
-    const targetIndex = Math.min(
-      CHAO_SEARCH_LOCATIONS.length - 1,
-      Math.max(0, Math.floor(this.#random() * CHAO_SEARCH_LOCATIONS.length)),
-    );
-    this.#state.chaoSearch.targetLocationId = CHAO_SEARCH_LOCATIONS[targetIndex].id;
+    this.#state.chaoSearch.targetLocationId = 'airship';
     this.#state.chaoSearch.foundLocationId = null;
     this.#state.chaoSearch.visitedLocationIds = [];
     this.#state.chaoSearch.heardHintActorIds = [];
@@ -2653,7 +2708,7 @@ class CanonicalFestivalPrototypeScene {
     this.#state.chaoSearch.interactionDialogue = null;
     this.#state.chaoSearch.returnAfterNodokaDatePhaseId = null;
     this.#state.chaoSearch.pendingSetsunaChoice = false;
-    this.#state.chaoSearch.isSetsunaWaiting = true;
+    this.#state.chaoSearch.isSetsunaWaiting = false;
     this.#state.companionPositions.setsuna = null;
     this.#initializeClassmateRandomLocations();
     this.#resetFreeExploreState('entrance-gate');
@@ -2954,7 +3009,8 @@ class CanonicalFestivalPrototypeScene {
     if (this.#state.phaseId !== CANONICAL_PHASE_IDS.FREE_EXPLORE) {
       return;
     }
-    if (!this.#getFreeExploreDestination(destinationId)) {
+    const destination = this.#getFreeExploreDestination(destinationId);
+    if (!destination || !this.#isChaoSearchDestinationAllowed(destination.id)) {
       return;
     }
     this.#clearCurrentFestivalNotification();
@@ -2964,7 +3020,7 @@ class CanonicalFestivalPrototypeScene {
   /** Start travel to a free-explore destination. */
   #startFreeExploreTravel(destinationId) {
     const destination = this.#getFreeExploreDestination(destinationId);
-    if (!destination) {
+    if (!destination || !this.#isChaoSearchDestinationAllowed(destination.id)) {
       return;
     }
     if (destination.id === this.#state.freeExplore.currentLocationId) {
@@ -3002,7 +3058,7 @@ class CanonicalFestivalPrototypeScene {
     }
     this.#rollRandomClassmateMovement();
     this.#state.freeExplore.travelInterruptionChecked = true;
-    if (this.#random() >= 0.7) {
+    if (!this.#isTutorialPhase() && this.#random() >= 0.7) {
       this.#startFreeExploreInterruption('travel', FREE_EXPLORE_TRAVEL_INTERRUPTION_DEFINITIONS);
       return;
     }
@@ -3016,7 +3072,7 @@ class CanonicalFestivalPrototypeScene {
     }
     const action = this.#createFreeExploreLocationActions()
       .find((entry) => entry.id === actionId);
-    if (!action) {
+    if (!action || !this.#isTutorialLocationActionEnabled(action)) {
       return;
     }
     this.#clearCurrentFestivalNotification();
@@ -3026,7 +3082,7 @@ class CanonicalFestivalPrototypeScene {
       this.#startFreeExploreTravel(action.destinationId);
       return;
     }
-    if (![
+    if (!this.#isTutorialPhase() && ![
       'wait-until',
       'cassiopeia-rewind',
       'library-dungeon-start',
@@ -3038,6 +3094,32 @@ class CanonicalFestivalPrototypeScene {
       return;
     }
     this.#completeFreeExploreLocationAction(action);
+  }
+
+  /** Return whether a location action is enabled during the tutorial. */
+  #isTutorialLocationActionEnabled(action) {
+    if (!this.#isTutorialPhase()) {
+      return true;
+    }
+    if (!this.#state.chaoSearch.targetLocationId) {
+      return true;
+    }
+    if (action.kind === 'wait-until') {
+      return false;
+    }
+    if (this.#isChaoSearchRouteActive()) {
+      const nextLocation = this.#getNextChaoSearchLocation();
+      return Boolean(nextLocation) && (
+        (action.kind === 'destination' && action.destinationId === nextLocation.areaId)
+        || (action.kind === 'chao-location' && action.locationId === nextLocation.id)
+      );
+    }
+    return [
+      'destination',
+      'chao-location',
+      'classmate-talk',
+      'classmate-attraction',
+    ].includes(action.kind) || action.id === 'look-around';
   }
 
   /** Select how to handle the current free-explore interruption. */
@@ -3232,6 +3314,37 @@ class CanonicalFestivalPrototypeScene {
     this.#addLog(`${action.label}を行った。`);
   }
 
+  /** チャオ探索の固定ルートが進行中か判定する。 */
+  #isChaoSearchRouteActive() {
+    return Boolean(
+      this.#state.chaoSearch.targetLocationId
+      && !this.#state.chaoSearch.foundLocationId
+      && [
+        CANONICAL_PHASE_IDS.FREE_EXPLORE,
+        CANONICAL_PHASE_IDS.TRAVEL,
+        CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
+      ].includes(this.#state.phaseId),
+    );
+  }
+
+  /** チャオ探索で次に向かう地点を返す。 */
+  #getNextChaoSearchLocation() {
+    const nextLocationId = CHAO_SEARCH_ROUTE.find((locationId) => (
+      locationId === 'airship'
+        ? !this.#state.chaoSearch.foundLocationId
+        : !this.#state.chaoSearch.completedAttractionIds.includes(locationId)
+    ));
+    return nextLocationId ? this.#getChaoSearchLocation(nextLocationId) : null;
+  }
+
+  /** チャオ探索中に選択できる移動先か判定する。 */
+  #isChaoSearchDestinationAllowed(destinationId) {
+    if (!this.#isChaoSearchRouteActive()) {
+      return true;
+    }
+    return this.#getNextChaoSearchLocation()?.areaId === destinationId;
+  }
+
   /** Handle the choices shown while talking with a classmate. */
   #handleClassmateConversationChoice(choiceId) {
     const actor = CLASSMATE_SOCIAL_ACTORS.find(
@@ -3413,6 +3526,59 @@ class CanonicalFestivalPrototypeScene {
     ];
     if (this.#state.freeExplore.libraryDungeon.isActive) {
       return this.#createLibraryDungeonActions();
+    }
+    if (false && this.#isChaoSearchRouteActive()) {
+      const nextLocation = this.#getNextChaoSearchLocation();
+      if (!nextLocation) {
+        return [];
+      }
+      if (nextLocation.areaId !== currentLocationId) {
+        const destination = this.#getFreeExploreDestination(nextLocation.areaId);
+        return [{
+          id: `move-to-${nextLocation.areaId}`,
+          /*
+          label: '次のエリアへ移動する',
+          */
+          label: destination?.label ?? nextLocation.areaId,
+          kind: 'destination',
+          destinationId: nextLocation.areaId,
+          resultText: '',
+        }];
+        /*
+        return [{
+          id: `move-to-${nextLocation.areaId}`,
+          label: `${destination?.label ?? nextLocation.areaId}へ移動する`,
+          `,
+          label: '次のエリアへ移動する',
+          ',
+          kind: 'destination',
+          destinationId: nextLocation.areaId,
+          resultText: '',
+        }];
+        */
+      }
+      return [{
+        id: `investigate-${nextLocation.id}`,
+        /*
+        label: '次の目的地を調べる',
+        */
+        label: nextLocation.label,
+        kind: 'chao-location',
+        locationId: nextLocation.id,
+        resultText: '',
+      }];
+      /*
+      return [{
+        id: `investigate-${nextLocation.id}`,
+        label: `${nextLocation.label}を確認する`,
+        `,
+        label: '次の目的地を調べる',
+        ',
+        kind: 'chao-location',
+        locationId: nextLocation.id,
+        resultText: '',
+      }];
+      */
     }
     if (currentLocationId === 'library-island') {
       actions.unshift({
@@ -3882,7 +4048,11 @@ class CanonicalFestivalPrototypeScene {
 
   /** Wait until a selected time in the current loop. */
   #waitUntil(targetMinute) {
-    if (this.#state.phaseId !== CANONICAL_PHASE_IDS.LOCATION_ACTIONS) {
+    if (
+      this.#state.phaseId !== CANONICAL_PHASE_IDS.LOCATION_ACTIONS
+      || this.#isTutorialPhase()
+      || this.#isChaoSearchRouteActive()
+    ) {
       return;
     }
     const currentMinute = getMinuteOfDay(this.#state.gameTime);
@@ -3901,6 +4071,7 @@ class CanonicalFestivalPrototypeScene {
   #rewindWithCassiopeia(targetMinute) {
     if (
       this.#state.phaseId !== CANONICAL_PHASE_IDS.LOCATION_ACTIONS
+      || this.#isChaoSearchRouteActive()
       || !this.#state.chaoSearch.hasCassiopeiaManual
     ) {
       return;
@@ -4051,14 +4222,15 @@ class CanonicalFestivalPrototypeScene {
 
   /** チャオ探索中にinteractionできる最寄り対象を返す。 */
   #findChaoSearchInteractionTarget(targetId) {
+    const nextLocation = this.#getNextChaoSearchLocation();
     const targets = [
       ...this.#createChaoSearchActorTargets(),
-      ...CHAO_SEARCH_LOCATIONS.map((location) => ({
+      ...(nextLocation ? [{
         type: 'location',
-        id: location.id,
-        position: location.position,
-        location,
-      })),
+        id: nextLocation.id,
+        position: nextLocation.position,
+        location: nextLocation,
+      }] : []),
     ];
     if (targetId) {
       return targets.find((target) => target.id === targetId) ?? null;
@@ -4077,6 +4249,9 @@ class CanonicalFestivalPrototypeScene {
 
   /** チャオ探索中の人物interaction候補を生成する。 */
   #createChaoSearchActorTargets() {
+    if (this.#isChaoSearchRouteActive()) {
+      return [];
+    }
     const targets = CHAO_HINT_ACTORS.map((actor) => ({
       type: 'hint-actor',
       id: actor.id,
@@ -4123,6 +4298,9 @@ class CanonicalFestivalPrototypeScene {
 
   /** チャオ探索の候補地点を調べる。 */
   #visitChaoSearchLocation(location) {
+    if (this.#isChaoSearchRouteActive() && location.id !== this.#getNextChaoSearchLocation()?.id) {
+      return;
+    }
     if (!this.#state.chaoSearch.visitedLocationIds.includes(location.id)) {
       this.#state.chaoSearch.visitedLocationIds.push(location.id);
     }
@@ -4777,7 +4955,7 @@ class CanonicalFestivalPrototypeScene {
         state: this.#state.prepareDate.hasCoordinated ? 'coordinated' : 'prepare-date',
       });
     }
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.SEARCH_CHAO) {
+    if (false && this.#state.phaseId === CANONICAL_PHASE_IDS.SEARCH_CHAO) {
       for (const actor of CHAO_HINT_ACTORS) {
         actors.push({ id: actor.id, name: actor.name, position: copyPosition(actor.position), state: 'chao-hint' });
       }
@@ -5205,6 +5383,7 @@ class CanonicalFestivalPrototypeScene {
           label: action.label,
           kind: action.kind,
           targetMinute: action.targetMinute ?? null,
+          isEnabled: this.#isTutorialLocationActionEnabled(action),
         }))
         : [],
       actionResult: this.#state.freeExplore.actionResult
@@ -5263,7 +5442,7 @@ class CanonicalFestivalPrototypeScene {
       nextDestination: this.#state.phaseId === CANONICAL_PHASE_IDS.AIRSHIP_OVERVIEW
         || this.#state.phaseId === CANONICAL_PHASE_IDS.MEET_CHAO
         ? 'airship'
-        : currentAttraction?.id ?? null,
+        : this.#getNextChaoSearchLocation()?.id ?? currentAttraction?.id ?? null,
       airshipOverview: this.#state.phaseId === CANONICAL_PHASE_IDS.AIRSHIP_OVERVIEW
         ? {
           title: AIRSHIP_OVERVIEW_MAP.title,
@@ -5626,6 +5805,7 @@ class CanonicalFestivalPrototypeScene {
     return {
       canSkip: this.#isTutorialPhase(),
       isSkipped: this.#state.isTutorialSkipped,
+      isCompleted: this.#state.isTutorialCompleted,
     };
   }
 

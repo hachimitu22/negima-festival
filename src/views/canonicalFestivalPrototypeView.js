@@ -494,7 +494,7 @@ class CanonicalFestivalPrototypeView {
   #createLocationActionButtonsHtml(actions) {
     let html = '';
     for (const action of actions) {
-      html += `<button type="button" ${ACTION_ATTRIBUTE}="location-action" data-action-id="${escapeHtml(action.id)}">${escapeHtml(action.label)}</button>`;
+      html += `<button type="button" ${ACTION_ATTRIBUTE}="location-action" data-action-id="${escapeHtml(action.id)}" ${action.isEnabled === false ? 'disabled' : ''}>${escapeHtml(action.label)}</button>`;
     }
     return html;
   }
