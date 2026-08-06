@@ -111,6 +111,51 @@ test('CFP-UT-SAVE-C03 壊れたセーブデータは現在状態を変更しな�
   assert.equal(snapshot.saveData.status.kind, 'error');
 });
 
+test('CFP-UT-MAP-C01 接続先だけを移動候補として表示する', () => {
+  const scene = new CanonicalFestivalPrototypeScene({ random: () => 0 });
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.TUTORIAL_SKIP });
+
+  let snapshot = scene.createSnapshot();
+  const entranceDestinations = snapshot.freeExplore.locationActions
+    .filter((action) => action.kind === 'destination')
+    .map((action) => action.destinationId);
+  assert.deepEqual(entranceDestinations, ['world-tree', 'ryugu-shrine']);
+  assert.equal(entranceDestinations.includes('ground'), false);
+  assert.equal(entranceDestinations.includes('hall'), false);
+
+  selectLocationAction(scene, 'move-to-world-tree');
+  advanceFreeExploreTravel(scene);
+  snapshot = scene.createSnapshot();
+  const worldTreeDestinations = snapshot.freeExplore.locationActions
+    .filter((action) => action.kind === 'destination')
+    .map((action) => action.destinationId);
+  assert.deepEqual(worldTreeDestinations, [
+    'club-building',
+    'world-tree-plaza',
+    'entrance-gate',
+    'stall-street',
+    'ryugu-shrine',
+    'library-island-route',
+  ]);
+});
+
+test('CFP-UT-MAP-C02 未対応エリアでも周辺調査を実行できる', () => {
+  const scene = new CanonicalFestivalPrototypeScene({ random: () => 0 });
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.TUTORIAL_SKIP });
+  sendInput(scene, { type: CANONICAL_INPUT_TYPES.DESTINATION_SELECT, destinationId: 'library-hallway' });
+  advanceFreeExploreTravel(scene);
+  const before = scene.createSnapshot();
+
+  assert.equal(before.freeExplore.currentLocation.id, 'library-hallway');
+  assert.ok(before.freeExplore.locationActions.some((action) => (
+    action.id === 'look-around' && action.label === '周辺を調べる'
+  )));
+  selectLocationAction(scene, 'look-around');
+  const after = scene.createSnapshot();
+  assert.equal(after.gameTime.minute, before.gameTime.minute + 5);
+  assert.equal(after.freeExplore.actionResult.title, '周辺を調べる');
+});
+
 test('CFP-UT-LIBRARY-C01 図書館島へ移動して探検を開始できる', () => {
   const scene = createSceneAtPrepareDate(() => 0);
 
@@ -299,7 +344,7 @@ test.skip('CFP-UT-S14-C08 クラスメイト出し物スケジュールを時刻
     {
       actorName: '3-A',
       attractionName: 'ホラーハウス',
-      areaId: 'school-building',
+      areaId: 'hall',
       startTimeLabel: 'AM10:00',
       endTimeLabel: 'PM4:00',
       isAllDay: true,
@@ -489,7 +534,7 @@ describe.skip('CFP-UT-S14 3ループ目以降（旧仕様）', () => {
     advanceFreeExploreTravel(scene);
     selectLocationAction(scene, 'talk-classmate-kotaro');
     selectChoice(scene, 'join-kotaro');
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
 
     // Act
@@ -506,7 +551,7 @@ describe.skip('CFP-UT-S14 3ループ目以降（旧仕様）', () => {
     assert.equal(active.activeEvent.endTimeLabel, 'PM6:00');
     assert.equal(finished.gameTime.label, 'PM6:00');
     assert.equal(finished.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(finished.freeExplore.currentLocation.id, 'school-building');
+    assert.equal(finished.freeExplore.currentLocation.id, 'hall');
     assert.equal(finished.companions.some((companion) => companion.id === 'kotaro'), false);
   });
 
@@ -514,7 +559,7 @@ describe.skip('CFP-UT-S14 3ループ目以降（旧仕様）', () => {
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
     waitUntil(scene, 12, 5);
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
 
     // Act
@@ -575,7 +620,7 @@ describe.skip('CFP-UT-S14 3ループ目以降（旧仕様）', () => {
     selectChoice(scene, 'join-kotaro');
     advanceCurrentDialogue(scene);
     waitUntil(scene, 11, 30);
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
 
     // Act
@@ -633,7 +678,13 @@ function interact(scene, targetId = null) {
 /** 場所選択式の目的地を選択する。 */
 function selectDestination(scene, destinationId) {
   if (scene.createSnapshot().phase.id === CANONICAL_PHASE_IDS.LOCATION_ACTIONS) {
-    selectLocationAction(scene, `move-to-${destinationId}`);
+    const action = scene.createSnapshot().freeExplore.locationActions
+      .find((entry) => entry.id === `move-to-${destinationId}`);
+    if (action) {
+      selectLocationAction(scene, action.id);
+      return;
+    }
+    sendInput(scene, { type: CANONICAL_INPUT_TYPES.DESTINATION_SELECT, destinationId });
     return;
   }
   sendInput(scene, { type: CANONICAL_INPUT_TYPES.DESTINATION_SELECT, destinationId });
@@ -677,11 +728,9 @@ function advanceCurrentDialogue(scene) {
   }
 }
 
-/** 場所選択式の移動中フェーズを到着または巻き込みまで進める。 */
+/** 場所選択式の移動先選択後に到着済みであることを確認する。 */
 function advanceFreeExploreTravel(scene) {
-  if (scene.createSnapshot().phase.id === CANONICAL_PHASE_IDS.TRAVEL) {
-    advanceStory(scene);
-  }
+  assert.equal(scene.createSnapshot().phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
 }
 
 /** 移動方向を指定秒数入力して止める。 */
@@ -852,8 +901,8 @@ function completeEvaEscape(scene) {
 }
 
 /** チャオ探索開始まで進める。 */
-function createSceneAtChaoSearch(random = () => 0) {
-  const scene = createSceneAtFollowNodoka({ random });
+function createSceneAtChaoSearch(random = () => 0, options = {}) {
+  const scene = createSceneAtFollowNodoka({ ...options, random });
   completeFollowToHide(scene);
   advanceCurrentDialogue(scene);
   advanceCurrentDialogue(scene);
@@ -883,11 +932,32 @@ function visitChaoLocation(scene, locationId) {
 }
 
 /** デート前自由時間まで進める。 */
-function createSceneAtPrepareDate(random = () => 0) {
-  const scene = createSceneAtChaoSearch(random);
+function createSceneAtPrepareDate(random = () => 0, options = {}) {
+  const scene = createSceneAtChaoSearch(random, options);
   visitChaoLocation(scene, 'airship');
   completeChaoTutorial(scene);
   return scene;
+}
+
+/** Complete four preparation actions with the selected outfit. */
+function completeDatePreparation(scene, outfitChoice = 'choose-outfit-casual') {
+  selectDestination(scene, 'dining-street');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'prepare-konoka');
+  selectChoice(scene, outfitChoice);
+  advanceStory(scene);
+  selectDestination(scene, 'stall-street');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'prepare-date-gift');
+  advanceStory(scene);
+  selectDestination(scene, 'hall');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'prepare-date-topic');
+  advanceStory(scene);
+  selectDestination(scene, 'dining-street');
+  advanceFreeExploreTravel(scene);
+  selectLocationAction(scene, 'prepare-date-prep');
+  advanceStory(scene);
 }
 
 /** 固定ルートの飛行船遭遇からチュートリアル完了まで進める。 */
@@ -1140,7 +1210,7 @@ describe('CFP-UT-S15 tutorial skip', () => {
     // Assert
     const actionById = (id) => actions.find((action) => action.id === id);
     assert.equal(actionById('move-to-ground').isEnabled, true);
-    assert.equal(actionById('move-to-school-building').isEnabled, false);
+    assert.equal(actionById('move-to-hall')?.isEnabled, false);
     assert.equal(actionById('watch-parade').isEnabled, false);
     assert.equal(actionById('wait-until-615').isEnabled, false);
 
@@ -1949,7 +2019,7 @@ describe('CFP-UT-S11 チャオ探索以降', () => {
     assert.equal(afterInvalidVisit.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
   });
 
-  test('CFP-UT-S11-C20 off-schedule classmates can randomly move during travel start', () => {
+  test('CFP-UT-S11-C20 scheduled classmates remain at their attraction area', () => {
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
     const before = scene.createSnapshot().schedule.negi.entries.find((entry) => entry.id === 'ku-fei');
@@ -1960,63 +2030,67 @@ describe('CFP-UT-S11 チャオ探索以降', () => {
     const after = snapshot.schedule.negi.entries.find((entry) => entry.id === 'ku-fei');
 
     // Assert
-    assert.equal(before.currentAreaId, 'entrance-gate');
-    assert.equal(after.currentAreaId, 'school-building');
+    assert.equal(before.currentAreaId, 'ground');
+    assert.equal(after.currentAreaId, 'ground');
     assert.equal(snapshot.actors.some((actor) => actor.id === 'chao'), false);
   });
 
-  test('CFP-UT-S11-C03 場所を選択すると移動中を経て現地行動へ進む', () => {
+  test('CFP-UT-S11-C47 classmate attractions are open at 10:00 and closed at 14:00', () => {
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
+    const attractionIds = [
+      'asuna',
+      'ku-fei',
+      'yue',
+      'haruna',
+      'akira',
+      'setsuna-attraction',
+      'satsuki',
+      'konoka-attraction',
+    ];
+
+    // Act
+    const openingSnapshot = scene.createSnapshot();
+    const closingScene = createSceneAtPrepareDate(() => 0);
+    const closingSnapshot = closingScene.createSnapshot();
+
+    // Assert
+    for (const attractionId of attractionIds) {
+      const openingEntry = openingSnapshot.schedule.negi.entries.find((entry) => entry.id === attractionId);
+      const closingEntry = closingSnapshot.schedule.negi.entries.find((entry) => entry.id === attractionId);
+      assert.equal(openingEntry.startTimeLabel, 'AM10:00');
+      assert.equal(openingEntry.endTimeLabel, 'PM2:00');
+      assert.equal(openingEntry.isInScheduleTime, true);
+      assert.equal(closingEntry.isInScheduleTime, false);
+    }
+  });
+
+  test('CFP-UT-S11-C03 場所を選択すると即時に現地行動へ進む', () => {
+    // Arrange
+    const scene = createSceneAtChaoSearch(() => 0.99);
 
     // Act
     selectDestination(scene, 'ground');
-    const travel = scene.createSnapshot();
-    advanceFreeExploreTravel(scene);
     const snapshot = scene.createSnapshot();
 
     // Assert
-    assert.equal(travel.phase.id, CANONICAL_PHASE_IDS.TRAVEL);
-    assert.equal(travel.gameTime.label, 'AM10:10');
-    assert.equal(travel.freeExplore.travel.destinationId, 'ground');
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     assert.equal(snapshot.freeExplore.currentLocation.id, 'ground');
     assert.equal(snapshot.gameTime.label, 'AM10:15');
   });
 
-  test('CFP-UT-S11-C04 チュートリアル中は移動中の巻き込みを発生させない', () => {
+  test('CFP-UT-S11-C04 移動中は乱数値に関係なく巻き込みを発生させない', () => {
     // Arrange
-    const scene = createSceneAtChaoSearch(() => 0.99);
+    const scene = createSceneAtPrepareDate(() => 0.99);
 
     // Act
-    return;
     selectDestination(scene, 'dining-street');
-    advanceFreeExploreTravel(scene);
     const snapshot = scene.createSnapshot();
 
     // Assert
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     assert.equal(snapshot.freeExplore.interruption, null);
-    assert.equal(snapshot.gameTime.label, 'AM10:15');
-  });
-
-  test('CFP-UT-S11-C40 チュートリアル中は調査中の巻き込みを発生させない', () => {
-    // Arrange
-    let forceInterruption = false;
-    const scene = createSceneAtChaoSearch(() => (forceInterruption ? 0.99 : 0));
-    selectDestination(scene, 'school-building');
-    advanceFreeExploreTravel(scene);
-
-    // Act
-    return;
-    forceInterruption = true;
-    selectLocationAction(scene, 'investigate-school-exhibit');
-    const snapshot = scene.createSnapshot();
-
-    // Assert
-    assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(snapshot.freeExplore.interruption, null);
-    assert.equal(snapshot.freeExplore.currentLocation.id, 'school-building');
+    assert.equal(snapshot.freeExplore.currentLocation.id, 'dining-street');
   });
 
   test('CFP-UT-S11-C16 入場門では正午までパレードを見られる', () => {
@@ -2071,7 +2145,7 @@ describe('CFP-UT-S11 チャオ探索以降', () => {
 
     // Act
     return;
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
     const snapshot = scene.createSnapshot();
 
@@ -2123,7 +2197,7 @@ test('CFP-UT-S11-C28 ホラーハウス営業とネギの手伝いを別スケ�
       {
         startTimeLabel: 'AM11:30',
         endTimeLabel: 'PM12:00',
-        areaId: 'school-building',
+        areaId: 'hall',
         isAllDay: false,
       },
     );
@@ -2137,7 +2211,7 @@ test('CFP-UT-S11-C28 ホラーハウス営業とネギの手伝いを別スケ�
       {
         startTimeLabel: 'AM10:00',
         endTimeLabel: 'PM4:00',
-        areaId: 'school-building',
+        areaId: 'hall',
         isAllDay: true,
       },
     );
@@ -2151,7 +2225,7 @@ test('CFP-UT-S11-C28 ホラーハウス営業とネギの手伝いを別スケ�
     advanceFreeExploreTravel(scene);
     selectLocationAction(scene, 'visit-classmate-attraction-ku-fei');
     advanceStory(scene);
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
     selectLocationAction(scene, 'look-around');
     advanceStory(scene);
@@ -2540,7 +2614,7 @@ test('CFP-UT-S13-C18 40以下へ下がった出店は再び60以上で通知す�
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
     waitUntil(scene, 11, 30);
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
 
     // Act
@@ -2557,7 +2631,7 @@ test('CFP-UT-S13-C18 40以下へ下がった出店は再び60以上で通知す�
     assert.equal(entry.conditionText, '小太郎がパーティに同行している');
     assert.equal(entry.startTimeLabel, 'AM11:30');
     assert.equal(entry.endTimeLabel, 'PM6:00');
-    assert.equal(entry.areaId, 'school-building');
+    assert.equal(entry.areaId, 'hall');
   });
 
   test('CFP-UT-S11-C43 helping at the haunted house follows the Ayaka branch with Kotaro', () => {
@@ -2572,7 +2646,7 @@ test('CFP-UT-S13-C18 40以下へ下がった出店は再び60以上で通知す�
     selectLocationAction(scene, 'talk-classmate-kotaro');
     selectChoice(scene, 'join-kotaro');
     advanceCurrentDialogue(scene);
-    selectDestination(scene, 'school-building');
+    selectDestination(scene, 'hall');
     advanceFreeExploreTravel(scene);
 
     // Act
@@ -2612,11 +2686,11 @@ describe('CFP-UT-S12 デート前自由時間', () => {
 
     // Act
     selectDestination(scene, 'dining-street');
-    const travel = scene.createSnapshot();
+    const snapshot = scene.createSnapshot();
 
     // Assert
-    assert.equal(travel.phase.id, CANONICAL_PHASE_IDS.TRAVEL);
-    assert.equal(travel.freeExplore.travel.destinationId, 'dining-street');
+    assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+    assert.equal(snapshot.freeExplore.currentLocation.id, 'dining-street');
   });
 
   test('CFP-UT-S12-C03 食堂街で木乃香に相談すると服装コーディネートが完了する', () => {
@@ -2628,15 +2702,20 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     // Act
     selectLocationAction(scene, 'prepare-konoka');
     const dialogue = scene.createSnapshot();
+    selectChoice(scene, 'choose-outfit-casual');
     advanceStory(scene);
     const snapshot = scene.createSnapshot();
 
     // Assert
     assert.equal(dialogue.dialogue.speaker, '木乃香');
     assert.deepEqual(dialogue.dialogue.anchor, { type: 'actor', id: 'konoka' });
+    assert.equal(dialogue.phase.id, CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
+    assert.ok(dialogue.choices.some((choice) => choice.id === 'choose-outfit-casual'));
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     assert.equal(snapshot.phase.inputKind, 'choice');
     assert.equal(snapshot.prepareDate.hasCoordinated, true);
+    assert.equal(snapshot.player.outfit.label, 'カジュアルな服');
+    assert.equal(snapshot.prepareDate.preparationScore, 1);
   });
 
   test('CFP-UT-S12-C04 場所別のデート準備行動を選ぶと各状態が完了する', () => {
@@ -2782,15 +2861,13 @@ describe('CFP-UT-S12 デート前自由時間', () => {
 
   test('CFP-UT-S12-C09 好感度が閾値以上のデートはキスシーンとCG取得へ進む', () => {
     // Arrange
-    const scene = createSceneAtChaoSearch(() => 0);
-    for (let index = 0; index < 6; index += 1) {
-      selectLocationAction(scene, 'talk-classmate-nodoka');
-      selectChoice(scene, 'talk-classmate-nodoka');
-      advanceStory(scene);
-    }
+    const scene = createSceneAtPrepareDate(() => 0, { initialAffection: { nodoka: 60 } });
+    waitUntil(scene, 14, 5);
+    const nodokaArea = scene.createSnapshot().classmateStatus.find((entry) => entry.id === 'nodoka').areaId;
+    selectDestination(scene, nodokaArea);
+    advanceFreeExploreTravel(scene);
     assert.equal(scene.createSnapshot().affection.nodoka.current, 60);
-    visitChaoLocation(scene, 'airship');
-    completeChaoTutorial(scene);
+    completeDatePreparation(scene);
     waitUntil(scene, 16, 0);
     advanceStory(scene);
     selectDestination(scene, 'dining-street');

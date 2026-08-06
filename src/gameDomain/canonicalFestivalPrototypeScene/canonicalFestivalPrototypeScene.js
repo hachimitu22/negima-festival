@@ -52,6 +52,19 @@ const CLASSMATE_AFFECTION_MAX = 100;
 /** のどかとのキスシーンへ進む好感度の閾値。 */
 const NODOKA_AFFECTION_KISS_THRESHOLD = 60;
 
+/** のどかデートのキスルートへ進む準備評価値の閾値。 */
+const NODOKA_DATE_KISS_EVALUATION_THRESHOLD = 4;
+
+/** のどかデートで選択できる服装と評価補正。 */
+const DATE_OUTFITS = Object.freeze({
+  SUIT: Object.freeze({ id: 'suit', label: '背広', modifier: 0 }),
+  CASUAL: Object.freeze({ id: 'casual', label: 'カジュアルな服', modifier: 1 }),
+  CHUNIBYO: Object.freeze({ id: 'chunibyo', label: '厨二病な服', modifier: -1 }),
+});
+
+/** のどかデート準備で得られる最大評価値。 */
+const NODOKA_DATE_PREPARATION_SCORE_MAX = 5;
+
 /** クラスメイトとの会話1回で増える好感度。 */
 const CLASSMATE_AFFECTION_PER_CONVERSATION = 10;
 
@@ -74,7 +87,6 @@ const CANONICAL_PHASE_IDS = Object.freeze({
   TIME_TRAVEL_CONFIRMED: 'time-travel-confirmed',
   EVA_ESCAPE: 'eva-escape',
   FREE_EXPLORE: 'free-explore',
-  TRAVEL: 'travel',
   INTERRUPTION: 'interruption',
   LOCATION_ACTIONS: 'location-actions',
   LOCATION_ACTION_RESULT: 'location-action-result',
@@ -85,6 +97,7 @@ const CANONICAL_PHASE_IDS = Object.freeze({
   MEET_CHAO: 'meet-chao',
   REVIEW_SCHEDULE: 'review-schedule',
   PREPARE_DATE: 'prepare-date',
+  PREPARE_DATE_OUTFIT: 'prepare-date-outfit',
   NODOKA_DATE: 'nodoka-date',
   NODOKA_DATE_NO_CHAO: 'nodoka-date-no-chao',
   NODOKA_DATE_NORMAL: 'nodoka-date-normal',
@@ -133,7 +146,6 @@ const CANONICAL_TUTORIAL_PHASE_IDS = Object.freeze([
   CANONICAL_PHASE_IDS.TIME_TRAVEL_CONFIRMED,
   CANONICAL_PHASE_IDS.EVA_ESCAPE,
   CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
-  CANONICAL_PHASE_IDS.TRAVEL,
   CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT,
   CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION,
   CANONICAL_PHASE_IDS.SEARCH_CHAO,
@@ -406,7 +418,7 @@ const CHAO_SEARCH_LOCATIONS = Object.freeze([
     id: 'school-exhibit',
     label: '校舎側展示',
     kind: 'facility',
-    areaId: 'school-building',
+    areaId: 'hall',
     position: Object.freeze({ x: 10, y: 7 }),
     clueTags: Object.freeze(['北西', '校舎', '展示']),
     missText: '校舎側の展示を確認したが、チャオにつながる決定打はない。',
@@ -430,6 +442,7 @@ const PREPARE_DATE_SPOTS = Object.freeze([
     areaId: 'dining-street',
     position: Object.freeze({ x: 23, y: 24 }),
     completedKey: 'hasPrepared',
+    scoreValue: 1,
     text: 'カフェの近くで、のどかとの待ち合わせに向けた準備を整えた。',
   }),
   Object.freeze({
@@ -438,7 +451,26 @@ const PREPARE_DATE_SPOTS = Object.freeze([
     areaId: 'entrance-gate',
     position: Object.freeze({ x: 16, y: 5 }),
     completedKey: 'hasStrolled',
+    scoreValue: 1,
     text: 'パレード会場の様子を見て回り、麻帆良祭の賑わいを改めて感じた。',
+  }),
+  Object.freeze({
+    id: 'date-gift',
+    label: 'のどかへの贈り物を選ぶ',
+    areaId: 'stall-street',
+    position: Object.freeze({ x: 20, y: 13 }),
+    completedKey: 'hasGift',
+    scoreValue: 1,
+    text: '屋台を見て回り、のどかに渡す贈り物を選んだ。',
+  }),
+  Object.freeze({
+    id: 'date-topic',
+    label: 'デートの話題を考える',
+    areaId: 'hall',
+    position: Object.freeze({ x: 10, y: 14 }),
+    completedKey: 'hasTopic',
+    scoreValue: 1,
+    text: 'ホールの賑わいを眺めながら、のどかと話す内容を考えた。',
   }),
 ]);
 
@@ -454,7 +486,7 @@ const PREPARE_DATE_KONOKA = Object.freeze({
 const CHAO_HINT_ACTORS = Object.freeze([
   Object.freeze({ id: 'yuue', name: '夕映', position: Object.freeze({ x: 16, y: 6 }), areaId: 'entrance-gate', focus: 'facility' }),
   Object.freeze({ id: 'nodoka', name: 'のどか', position: Object.freeze({ x: 20, y: 22 }), areaId: 'dining-street', focus: 'direction' }),
-  Object.freeze({ id: 'hakase', name: '葉加瀬', position: Object.freeze({ x: 9, y: 7 }), areaId: 'school-building', focus: 'facility' }),
+  Object.freeze({ id: 'hakase', name: '葉加瀬', position: Object.freeze({ x: 9, y: 7 }), areaId: 'hall', focus: 'facility' }),
   Object.freeze({ id: 'chachamaru', name: '茶々丸', position: Object.freeze({ x: 27, y: 15 }), areaId: 'club-building', focus: 'direction' }),
   Object.freeze({ id: 'asuna', name: '明日菜', position: Object.freeze({ x: 15, y: 26 }), areaId: 'stall-street', focus: 'crowd' }),
 ]);
@@ -517,14 +549,14 @@ const CLASSMATE_SOCIAL_ACTORS = Object.freeze([
 
 /** Area and schedule metadata for fourth-loop classmate attractions. */
 const CLASSMATE_ATTRACTION_SCHEDULE = Object.freeze({
-  'ku-fei': Object.freeze({ areaId: 'ground', startMinute: 720, endMinute: 750 }),
-  asuna: Object.freeze({ areaId: 'club-building', startMinute: 710, endMinute: 745 }),
-  yue: Object.freeze({ areaId: 'school-building', startMinute: 730, endMinute: 760 }),
-  haruna: Object.freeze({ areaId: 'stall-street', startMinute: 745, endMinute: 775 }),
-  akira: Object.freeze({ areaId: 'stall-street', startMinute: 765, endMinute: 795 }),
-  'setsuna-attraction': Object.freeze({ areaId: 'club-building', startMinute: 790, endMinute: 825 }),
-  satsuki: Object.freeze({ areaId: 'dining-street', startMinute: 805, endMinute: 845 }),
-  'konoka-attraction': Object.freeze({ areaId: 'school-building', startMinute: 825, endMinute: 870 }),
+  'ku-fei': Object.freeze({ areaId: 'ground', startMinute: 600, endMinute: 840 }),
+  asuna: Object.freeze({ areaId: 'club-building', startMinute: 600, endMinute: 840 }),
+  yue: Object.freeze({ areaId: 'hall', startMinute: 600, endMinute: 840 }),
+  haruna: Object.freeze({ areaId: 'stall-street', startMinute: 600, endMinute: 840 }),
+  akira: Object.freeze({ areaId: 'stall-street', startMinute: 600, endMinute: 840 }),
+  'setsuna-attraction': Object.freeze({ areaId: 'club-building', startMinute: 600, endMinute: 840 }),
+  satsuki: Object.freeze({ areaId: 'dining-street', startMinute: 600, endMinute: 840 }),
+  'konoka-attraction': Object.freeze({ areaId: 'hall', startMinute: 600, endMinute: 840 }),
 });
 
 /** Timeline range used by Negi's schedule gantt chart. */
@@ -550,7 +582,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     id: 'haunted-house-flyer-ayaka',
     actorName: 'あやか',
     eventName: 'あやかとクラスメイトの出し物巡り',
-    areaId: 'school-building',
+    areaId: 'hall',
     startMinute: null,
     endMinute: 1080,
     loopCount: null,
@@ -560,7 +592,7 @@ const NEGI_SCHEDULE_EVENTS = Object.freeze([
     id: 'haunted-house-help',
     actorName: 'ネギ',
     eventName: '3-Aホラーハウス客引きの手伝い',
-    areaId: 'school-building',
+    areaId: 'hall',
     startMinute: 690,
     endMinute: 720,
     isAllDay: false,
@@ -633,7 +665,7 @@ const TOURNAMENT_INITIAL_OPPONENT_HP = 50;
 
 /** Festival schedule entries shown separately from classmate attraction schedules. */
 const FESTIVAL_STALL_SCHEDULE = Object.freeze([
-  Object.freeze({ id: 'haunted-house', title: '3-Aホラーハウス', areaId: 'school-building', startMinute: 600, endMinute: 960, isAllDay: true }),
+  Object.freeze({ id: 'haunted-house', title: '3-Aホラーハウス', areaId: 'hall', startMinute: 600, endMinute: 960, isAllDay: true }),
   Object.freeze({ id: 'gun-shooting', title: 'ガンシューティング', areaId: 'ground', startMinute: 600, endMinute: 960, isAllDay: true }),
   Object.freeze({ id: 'roller-coaster', title: 'ジェットコースター', areaId: 'ground', startMinute: 600, endMinute: 960, isAllDay: true }),
 ]);
@@ -710,6 +742,7 @@ const PHASE_LABELS = Object.freeze({
   [CANONICAL_PHASE_IDS.MEET_CHAO]: 'チャオとの遭遇',
   [CANONICAL_PHASE_IDS.REVIEW_SCHEDULE]: 'スケジュール見直し',
   [CANONICAL_PHASE_IDS.PREPARE_DATE]: 'デート準備',
+  [CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT]: '服装選択',
   [CANONICAL_PHASE_IDS.NODOKA_DATE]: 'のどかとデート',
   [CANONICAL_PHASE_IDS.NODOKA_DATE_END]: 'のどかデートの結末',
   [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: 'のどかとのキスシーン',
@@ -889,109 +922,72 @@ const SCHOOL_POSITIONS = Object.freeze({
 });
 
 /** のどか尾行の固定経路。 */
-/** Place-selection destinations used after the tutorial. */
+/** プロトタイプのエリア内で座標を持たない場所に割り当てる互換位置。 */
+const PROTOTYPE_AREA_DEFAULT_POSITION = Object.freeze({ x: 0, y: 0 });
+
+/** Place-selection destinations and their direct connections used after the tutorial. */
 const FREE_EXPLORE_DESTINATIONS = Object.freeze([
-  Object.freeze({
-    id: 'entrance-gate',
-    label: '入場門',
-    areaName: '入場門',
-    position: SCHOOL_POSITIONS.START,
-    routeAreas: Object.freeze(['入場門']),
-    description: '麻帆良祭の入口。正午まではパレードで賑わっている。',
-  }),
-  Object.freeze({
-    id: 'school-building',
-    label: '校舎内',
-    areaName: '校舎内',
-    position: SCHOOL_POSITIONS.CLASS_3A,
-    routeAreas: Object.freeze(['パレード会場', '校舎前広場']),
-    description: '教室展示や研究会を見て回る。',
-  }),
-  Object.freeze({
-    id: 'club-building',
-    label: 'クラブ棟',
-    areaName: 'クラブ棟',
-    position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'airship').position,
-    routeAreas: Object.freeze(['パレード会場', '北東通路']),
-    description: '文化部や空のアトラクションを確認する。',
-  }),
-  Object.freeze({
-    id: 'stall-street',
-    label: '屋台通り',
-    areaName: '屋台通り',
-    position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'stall-street').position,
-    routeAreas: Object.freeze(['パレード会場', '南側通路']),
-    description: '人混みの中で情報を探す。',
-  }),
-  Object.freeze({
-    id: 'dining-street',
-    label: '食堂街',
-    areaName: '食堂街',
-    position: SCHOOL_POSITIONS.CAFE,
-    routeAreas: Object.freeze(['パレード会場', '屋台通り']),
-    description: '食べ物の出し物や休憩場所を回る。',
-  }),
-  Object.freeze({
-    id: 'ground',
-    label: 'グラウンド',
-    areaName: 'グラウンド',
-    position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'gun-shooting').position,
-    routeAreas: Object.freeze(['パレード会場', '運動場通路']),
-    description: '屋外の催しや大きな人の流れを確認する。',
-  }),
-  Object.freeze({
-    id: 'ryugu-shrine',
-    label: '龍宮神社',
-    areaName: '龍宮神社',
-    position: SCHOOL_POSITIONS.RYUGU_SHRINE,
-    routeAreas: Object.freeze(['グラウンド', '龍宮神社前']),
-    description: 'まほら武道会の変更後の会場。',
-  }),
-  Object.freeze({
-    id: 'world-tree',
-    label: '世界樹周辺',
-    areaName: '世界樹周辺',
-    position: SCHOOL_POSITIONS.THIRD_LOOP_START,
-    routeAreas: Object.freeze(['パレード会場', '世界樹広場']),
-    description: '世界樹周辺の人の流れと魔力スポットを確認する。',
-  }),
-  Object.freeze({
-    id: 'library-island',
-    label: '図書館島',
-    areaName: '図書館島',
-    position: SCHOOL_POSITIONS.LIBRARY_ISLAND,
-    routeAreas: Object.freeze(['世界樹周辺', '図書館島前']),
-    description: '図書館島の地下へ続く入口。地下深くを探検できる。',
-  }),
+  ['library', '図書室', '校舎1階', ['library-hallway'], '図書室の展示や資料を確認する。'],
+  ['library-hallway', '図書室前廊下', '校舎1階', ['library', 'staff-room', 'hall'], '校舎内の各施設へつながる廊下。'],
+  ['staff-room', '職員室', '校舎1階', ['library-hallway'], '教師たちが集まる職員室。'],
+  ['hall', 'ホール', '校舎1階', ['library-hallway', 'girls-restroom', 'health-hallway', 'class-3a-hallway', 'other-class-hallway', 'gym-front'], '校舎内の人が行き交うホール。'],
+  ['girls-restroom', '女子トイレ', '校舎1階', ['hall'], '校舎1階の女子トイレ。'],
+  ['health-hallway', '保健室前廊下', '校舎1階', ['hall', 'health-room', 'other-class-hallway'], '保健室前の廊下。'],
+  ['health-room', '保健室', '校舎1階', ['health-hallway'], '保健室。'],
+  ['class-3a-hallway', '3-A前廊下', '校舎2階', ['hall', 'class-3a-classroom', 'other-class-hallway'], '3-A教室前の廊下。'],
+  ['class-3a-classroom', '3-A教室', '校舎2階', ['class-3a-hallway'], '3-Aの教室。', { position: SCHOOL_POSITIONS.CLASS_3A }],
+  ['other-class-hallway', '別クラス廊下', '校舎2階', ['hall', 'class-3a-hallway', 'health-hallway', 'rooftop'], '別クラスへ続く廊下。'],
+  ['rooftop', '屋上', '校舎屋上', ['other-class-hallway'], '校舎の屋上。'],
+  ['gym-arena', '体育館アリーナ', '体育館', ['gym-equipment', 'locker-room', 'gym-front'], '体育館アリーナ。'],
+  ['gym-equipment', '体育用具室', '体育館', ['gym-arena'], '体育用具室。'],
+  ['locker-room', '更衣室', '体育館', ['gym-arena'], '体育館の更衣室。'],
+  ['gym-front', '体育館前広場', '屋外', ['hall', 'gym-arena', 'rest-area', 'ground'], '体育館前の広場。'],
+  ['ground', 'グラウンド', '屋外', ['gym-front', 'dining-street'], '屋外の催しや大きな人の流れを確認する。', { position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'gun-shooting').position }],
+  ['dining-street', '食堂街', '屋外', ['ground', 'club-building', 'church-front'], '食べ物の出し物や休憩場所を回る。', { position: SCHOOL_POSITIONS.CAFE }],
+  ['rest-area', '休憩所', '屋外', ['gym-front', 'church-front'], '祭りの合間に休める場所。'],
+  ['church-front', '教会前', '屋外', ['dining-street', 'rest-area', 'david-square'], '教会前の広場。'],
+  ['david-square', 'ダビデ広場', '屋外', ['club-building', 'church-front', 'underground-waterway-c'], 'ダビデ広場。'],
+  ['club-building', 'クラブ棟', '屋外', ['dining-street', 'world-tree', 'david-square'], '文化部や空のアトラクションを確認する。', { position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'airship').position }],
+  ['world-tree', '世界樹', '祭り会場', ['club-building', 'world-tree-plaza', 'entrance-gate', 'stall-street', 'ryugu-shrine', 'library-island-route'], '世界樹周辺の人の流れと魔力スポットを確認する。', { position: SCHOOL_POSITIONS.THIRD_LOOP_START }],
+  ['world-tree-plaza', '世界樹広場', '祭り会場', ['world-tree', 'stall-street', 'underground-waterway-b'], '世界樹広場。'],
+  ['entrance-gate', '入場門', '祭り会場', ['world-tree', 'ryugu-shrine'], '麻帆良祭の入口。正午まではパレードで賑わっている。', { position: SCHOOL_POSITIONS.START }],
+  ['stall-street', '屋台通り', '祭り会場', ['world-tree', 'world-tree-plaza', 'library-island-route'], '人混みの中で情報を探す。', { position: CHAO_SEARCH_LOCATIONS.find((location) => location.id === 'stall-street').position }],
+  ['ryugu-shrine', '龍宮神社', '祭り会場', ['world-tree', 'entrance-gate', 'library-island-route', 'underground-waterway-a'], 'まほら武道会の変更後の会場。', { position: SCHOOL_POSITIONS.RYUGU_SHRINE }],
+  ['library-island-route', '図書館島連絡路', '祭り会場', ['world-tree', 'library-island', 'stall-street', 'ryugu-shrine'], '図書館島へ向かう連絡路。'],
+  ['library-island', '図書館島', '祭り会場', ['library-island-route'], '図書館島の地下へ続く入口。地下深くを探検できる。', { position: SCHOOL_POSITIONS.LIBRARY_ISLAND }],
+  ['underground-waterway-a', '地下水路A', '地下水路', ['ryugu-shrine', 'underground-waterway-b', 'underground-waterway-c'], '地下水路の入口。'],
+  ['underground-waterway-b', '地下水路B', '地下水路', ['world-tree-plaza', 'underground-waterway-a', 'underground-waterway-c'], '地下水路の分岐。'],
+  ['underground-waterway-c', '地下水路C', '地下水路', ['david-square', 'underground-waterway-a', 'underground-waterway-c'], '地下水路の奥。'],
+].map(([id, label, areaName, connectedAreaIds, description, options = {}]) => Object.freeze({
+  id,
+  label,
+  areaName: label,
+  category: areaName,
+  connectedAreaIds: Object.freeze(connectedAreaIds),
+  position: options.position ?? PROTOTYPE_AREA_DEFAULT_POSITION,
+  routeAreas: Object.freeze([label]),
+  description,
+  ...(options.legacyStateId ? { legacyStateId: options.legacyStateId } : {}),
+})));
+
+/** Classmate random movement areas that have prototype social content. */
+const CLASSMATE_FREE_EXPLORE_AREA_IDS = Object.freeze([
+  'entrance-gate',
+  'hall',
+  'club-building',
+  'stall-street',
+  'dining-street',
+  'ground',
+  'ryugu-shrine',
+  'world-tree',
+  'library-island',
 ]);
 
-/** Interruption choices shown when a travel or action interruption happens. */
+/** Interruption choices shown when an action interruption happens. */
 const FREE_EXPLORE_INTERRUPTION_CHOICES = Object.freeze([
   Object.freeze({ id: 'engage', label: '関わる', description: '元の行動を中断して巻き込みに対応する。' }),
   Object.freeze({ id: 'detour', label: '迂回する', description: '少し遠回りして元の目的を続ける。' }),
   Object.freeze({ id: 'ignore', label: '無視して進む', description: '足を止めずに元の目的を続ける。' }),
-]);
-
-/** Prototype travel interruptions selected by random roll. */
-const FREE_EXPLORE_TRAVEL_INTERRUPTION_DEFINITIONS = Object.freeze([
-  Object.freeze({
-    id: 'crowd-wave',
-    title: '人波に押される',
-    description: '通路の人波が急に強くなり、目的地とは別方向へ流されそうになる。',
-    resultText: '人波を手伝って整理し、会場の熱気を近くで感じた。',
-  }),
-  Object.freeze({
-    id: 'falling-stage',
-    title: '足場トラブル',
-    description: '近くの出し物で足場が揺れ、周囲から助けを求める声が上がる。',
-    resultText: '足場の周囲を落ち着かせ、教師としての仕事を一つ片付けた。',
-  }),
-  Object.freeze({
-    id: 'costume-rush',
-    title: '突発コスプレ行列',
-    description: '突然始まったコスプレ行列が通路を横切り、周囲の注目が集まる。',
-    resultText: '行列の誘導を手伝い、祭りの賑わいに巻き込まれた。',
-  }),
 ]);
 
 /** Prototype action interruptions selected by random roll. */
@@ -1323,6 +1319,7 @@ function createInitialState() {
       completedScheduleEventIds: [],
     },
     playerPosition: copyPosition(SCHOOL_POSITIONS.START),
+    outfitId: DATE_OUTFITS.SUIT.id,
     playerTrail: [copyPosition(SCHOOL_POSITIONS.START)],
     movementInput: { x: 0, y: 0 },
     companionPositions: {
@@ -1360,6 +1357,9 @@ function createInitialState() {
         hasPrepared: false,
         hasStrolled: false,
         hasCoordinated: false,
+        hasGift: false,
+        hasTopic: false,
+        preparationScore: 0,
         interactionDialogue: null,
       },
       festivalProgress: {
@@ -1367,7 +1367,7 @@ function createInitialState() {
         completedPatrolStepIds: [],
         attractionDialogue: null,
         completedAttractionActorIds: [],
-        currentAttractionAreaId: 'school-building',
+        currentAttractionAreaId: 'hall',
         isAyakaCompanion: false,
         hasHelpedHauntedHouse: false,
         tournamentNotificationShown: false,
@@ -1388,12 +1388,7 @@ function createInitialState() {
     },
     freeExplore: {
       currentLocationId: 'entrance-gate',
-      selectedDestinationId: null,
-      pendingDestinationId: null,
       selectedActionId: null,
-      travelProgress: 0,
-      travelDurationSeconds: 0,
-      travelInterruptionChecked: false,
       interruption: null,
       actionResult: null,
       libraryDungeon: {
@@ -1478,6 +1473,14 @@ class CanonicalFestivalPrototypeScene {
     }
     if (typeof options.initialPhaseId === 'string') {
       this.#state.phaseId = options.initialPhaseId;
+    }
+    // Apply optional affection fixtures used by focused domain tests.
+    if (options.initialAffection && typeof options.initialAffection === 'object') {
+      for (const [actorId, value] of Object.entries(options.initialAffection)) {
+        if (actorId in this.#state.affection && Number.isFinite(value)) {
+          this.#state.affection[actorId] = Math.max(0, Math.min(100, value));
+        }
+      }
     }
     this.#state.isFinalBattleRoute = options.isFinalBattleRoute === true;
     this.#rewindHistory = [];
@@ -1570,6 +1573,8 @@ class CanonicalFestivalPrototypeScene {
       this.#handleChaoSearchChoice(input.choiceId);
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION) {
       this.#handleClassmateConversationChoice(input.choiceId);
+    } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT) {
+      this.#handleDateOutfitChoice(input.choiceId);
     } else {
       this.#handleNovelChoice(input.choiceId);
     }
@@ -1820,6 +1825,29 @@ class CanonicalFestivalPrototypeScene {
     }
   }
 
+  /** Handle outfit selection after asking Konoka for date advice. */
+  #handleDateOutfitChoice(choiceId) {
+    const outfitByChoice = {
+      'choose-outfit-keep': null,
+      'choose-outfit-casual': DATE_OUTFITS.CASUAL,
+      'choose-outfit-chunibyo': DATE_OUTFITS.CHUNIBYO,
+    };
+    if (!Object.prototype.hasOwnProperty.call(outfitByChoice, choiceId)) {
+      return;
+    }
+    const selectedOutfit = outfitByChoice[choiceId] ?? this.#getCurrentOutfit();
+    this.#state.outfitId = selectedOutfit.id;
+    this.#state.prepareDate.hasCoordinated = true;
+    this.#increasePrepareDateScore(1);
+    this.#state.prepareDate.interactionDialogue = {
+      speaker: '木乃香',
+      text: `${selectedOutfit.label}で行くことにした。のどかも喜んでくれるはずや。`,
+      anchor: { type: 'actor', id: PREPARE_DATE_KONOKA.id },
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+    this.#addLog(`デートの服装を${selectedOutfit.label}に決めた。`);
+  }
+
   /** Handle classmate attraction choices. */
   #handleClassmateAttractionChoice(choiceId) {
     const areaId = choiceId.startsWith('go-attraction-area-')
@@ -1879,10 +1907,6 @@ class CanonicalFestivalPrototypeScene {
     }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT) {
       this.#returnToFreeExplore();
-      return;
-    }
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.TRAVEL) {
-      this.#resolveFreeExploreTravel();
       return;
     }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.CHAO_ATTRACTION) {
@@ -2322,7 +2346,10 @@ class CanonicalFestivalPrototypeScene {
       this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO);
       return;
     }
-    if (this.#getClassmateAffection('nodoka') >= NODOKA_AFFECTION_KISS_THRESHOLD) {
+    if (
+      this.#getClassmateAffection('nodoka') >= NODOKA_AFFECTION_KISS_THRESHOLD
+      && this.#getNodokaDatePreparationEvaluation() >= NODOKA_DATE_KISS_EVALUATION_THRESHOLD
+    ) {
       this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE_KISS);
       return;
     }
@@ -2332,6 +2359,11 @@ class CanonicalFestivalPrototypeScene {
   /** 会話に応じてのどかの好感度を増やす。 */
   #getClassmateAffection(actorId) {
     return this.#state.affection[actorId] ?? CLASSMATE_AFFECTION_INITIAL;
+  }
+
+  /** Calculate the preparation and outfit evaluation used by the date ending. */
+  #getNodokaDatePreparationEvaluation() {
+    return this.#state.prepareDate.preparationScore + this.#getCurrentOutfit().modifier;
   }
 
   /** Mark a schedule event as permanently completed across loops. */
@@ -2407,7 +2439,7 @@ class CanonicalFestivalPrototypeScene {
       this.#markScheduleEventCompleted('haunted-house-flyer-ayaka');
       this.#state.companionPositions.kotaro = null;
       this.#state.thirdLoop.isAyakaCompanion = false;
-      this.#resetFreeExploreState('school-building');
+      this.#resetFreeExploreState('hall');
       this.#placePlayer(SCHOOL_POSITIONS.CLASS_3A);
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       this.#addLog('あやかとクラスメイトの出し物巡りを終え、PM6:00に自由探索へ戻った。');
@@ -2721,12 +2753,7 @@ class CanonicalFestivalPrototypeScene {
   /** Reset the free-explore state around the current location. */
   #resetFreeExploreState(currentLocationId) {
     this.#state.freeExplore.currentLocationId = currentLocationId;
-    this.#state.freeExplore.selectedDestinationId = null;
-    this.#state.freeExplore.pendingDestinationId = null;
     this.#state.freeExplore.selectedActionId = null;
-    this.#state.freeExplore.travelProgress = 0;
-    this.#state.freeExplore.travelDurationSeconds = 0;
-    this.#state.freeExplore.travelInterruptionChecked = false;
     this.#state.freeExplore.interruption = null;
     this.#state.freeExplore.actionResult = null;
     this.#state.classmateConversation.actorId = null;
@@ -2893,8 +2920,10 @@ class CanonicalFestivalPrototypeScene {
 
   /** Pick a random free-explore area, optionally excluding one area. */
   #pickRandomClassmateArea(excludedAreaId) {
-    const candidates = FREE_EXPLORE_DESTINATIONS
-      .filter((destination) => destination.id !== excludedAreaId);
+    const candidates = CLASSMATE_FREE_EXPLORE_AREA_IDS
+      .filter((areaId) => areaId !== excludedAreaId)
+      .map((areaId) => this.#getFreeExploreDestination(areaId))
+      .filter(Boolean);
     const index = Math.min(
       candidates.length - 1,
       Math.max(0, Math.floor(this.#random() * candidates.length)),
@@ -3004,64 +3033,43 @@ class CanonicalFestivalPrototypeScene {
     };
   }
 
-  /** Select a free-explore destination and start the travel phase. */
+  /** Select a free-explore destination and arrive immediately. */
   #selectFreeExploreDestination(destinationId) {
-    if (this.#state.phaseId !== CANONICAL_PHASE_IDS.FREE_EXPLORE) {
+    if (![CANONICAL_PHASE_IDS.FREE_EXPLORE, CANONICAL_PHASE_IDS.LOCATION_ACTIONS].includes(this.#state.phaseId)) {
       return;
     }
     const destination = this.#getFreeExploreDestination(destinationId);
-    if (!destination || !this.#isChaoSearchDestinationAllowed(destination.id)) {
+    if (!destination) {
       return;
     }
     this.#clearCurrentFestivalNotification();
-    this.#startFreeExploreTravel(destinationId);
+    this.#moveToFreeExploreDestination(destinationId, true);
   }
 
-  /** Start travel to a free-explore destination. */
-  #startFreeExploreTravel(destinationId) {
+  /** Move to a free-explore destination after validating the connection and route. */
+  #moveToFreeExploreDestination(destinationId, allowUnconnectedDestination = false) {
     const destination = this.#getFreeExploreDestination(destinationId);
-    if (!destination || !this.#isChaoSearchDestinationAllowed(destination.id)) {
+    const connectedDestinationIds = this.#getConnectedFreeExploreDestinations(
+      this.#state.freeExplore.currentLocationId,
+    ).map((entry) => entry.id);
+    if (
+      !destination
+      || (!allowUnconnectedDestination
+        && !connectedDestinationIds.includes(this.#getCanonicalFreeExploreAreaId(destination.id)))
+      || (!allowUnconnectedDestination && !this.#isChaoSearchDestinationAllowed(destination.id))
+    ) {
       return;
     }
     if (destination.id === this.#state.freeExplore.currentLocationId) {
-      this.#state.freeExplore.selectedDestinationId = destination.id;
-      this.#state.freeExplore.pendingDestinationId = null;
       this.#state.freeExplore.selectedActionId = null;
       this.#state.freeExplore.actionResult = null;
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       return;
     }
     this.#rollRandomClassmateMovement();
-    this.#state.freeExplore.selectedDestinationId = destination.id;
-    this.#state.freeExplore.pendingDestinationId = destination.id;
     this.#state.freeExplore.selectedActionId = null;
-    this.#state.freeExplore.travelProgress = 0;
-    this.#state.freeExplore.travelDurationSeconds = 1;
-    this.#state.freeExplore.travelInterruptionChecked = false;
     this.#state.freeExplore.interruption = null;
     this.#state.freeExplore.actionResult = null;
-    this.#setPhase(CANONICAL_PHASE_IDS.TRAVEL);
-    this.#addLog(`${destination.label}へ向かい始めた。`);
-  }
-
-  /** Update travel progress and optionally raise a travel interruption. */
-  #updateFreeExploreTravel(deltaSeconds) {
-    void deltaSeconds;
-  }
-
-  /** Resolve selected destination travel from a story input. */
-  #resolveFreeExploreTravel() {
-    const destination = this.#getFreeExploreDestination(this.#state.freeExplore.pendingDestinationId);
-    if (!destination) {
-      this.#returnToFreeExplore();
-      return;
-    }
-    this.#rollRandomClassmateMovement();
-    this.#state.freeExplore.travelInterruptionChecked = true;
-    if (!this.#isTutorialPhase() && this.#random() >= 0.7) {
-      this.#startFreeExploreInterruption('travel', FREE_EXPLORE_TRAVEL_INTERRUPTION_DEFINITIONS);
-      return;
-    }
     this.#arriveFreeExploreDestination(destination);
   }
 
@@ -3079,7 +3087,7 @@ class CanonicalFestivalPrototypeScene {
     this.#state.freeExplore.selectedActionId = action.id;
     this.#state.freeExplore.actionResult = null;
     if (action.kind === 'destination') {
-      this.#startFreeExploreTravel(action.destinationId);
+      this.#moveToFreeExploreDestination(action.destinationId);
       return;
     }
     if (!this.#isTutorialPhase() && ![
@@ -3109,8 +3117,12 @@ class CanonicalFestivalPrototypeScene {
     }
     if (this.#isChaoSearchRouteActive()) {
       const nextLocation = this.#getNextChaoSearchLocation();
+      const nextTravelAreaId = this.#getNextFreeExploreRouteArea(
+        this.#state.freeExplore.currentLocationId,
+        nextLocation?.areaId,
+      );
       return Boolean(nextLocation) && (
-        (action.kind === 'destination' && action.destinationId === nextLocation.areaId)
+        (action.kind === 'destination' && action.destinationId === nextTravelAreaId)
         || (action.kind === 'chao-location' && action.locationId === nextLocation.id)
       );
     }
@@ -3139,7 +3151,6 @@ class CanonicalFestivalPrototypeScene {
         title: interruption.title,
         text: interruption.resultText,
       };
-      this.#state.freeExplore.pendingDestinationId = null;
       this.#state.freeExplore.selectedActionId = null;
       this.#state.freeExplore.interruption = null;
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT);
@@ -3147,11 +3158,6 @@ class CanonicalFestivalPrototypeScene {
       return;
     }
     this.#state.freeExplore.interruption = null;
-    if (interruption.source === 'travel') {
-      this.#setPhase(CANONICAL_PHASE_IDS.TRAVEL);
-      this.#addLog(`${interruption.title}を${choice.label}でやり過ごした。`);
-      return;
-    }
     const action = this.#createFreeExploreLocationActions()
       .find((entry) => entry.id === this.#state.freeExplore.selectedActionId);
     if (action) {
@@ -3160,7 +3166,7 @@ class CanonicalFestivalPrototypeScene {
     }
   }
 
-  /** Start a travel or action interruption from the provided definition list. */
+  /** Start an action interruption from the provided definition list. */
   #startFreeExploreInterruption(source, definitions) {
     const index = Math.min(
       definitions.length - 1,
@@ -3182,9 +3188,7 @@ class CanonicalFestivalPrototypeScene {
   /** Move the player to the selected free-explore destination. */
   #arriveFreeExploreDestination(destination) {
     this.#advanceFreeExploreTime(FREE_EXPLORE_TIME_STEP_MINUTES);
-    this.#state.freeExplore.currentLocationId = destination.id;
-    this.#state.freeExplore.pendingDestinationId = null;
-    this.#state.freeExplore.travelProgress = this.#state.freeExplore.travelDurationSeconds;
+    this.#state.freeExplore.currentLocationId = destination.legacyStateId ?? destination.id;
     this.#state.freeExplore.interruption = null;
     this.#placePlayer(destination.position);
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
@@ -3321,7 +3325,6 @@ class CanonicalFestivalPrototypeScene {
       && !this.#state.chaoSearch.foundLocationId
       && [
         CANONICAL_PHASE_IDS.FREE_EXPLORE,
-        CANONICAL_PHASE_IDS.TRAVEL,
         CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
       ].includes(this.#state.phaseId),
     );
@@ -3423,7 +3426,7 @@ class CanonicalFestivalPrototypeScene {
 
   /** Complete a haunted-house customer visit or start its timed help event. */
   #helpHauntedHouseFromFreeExplore() {
-    if (this.#state.freeExplore.currentLocationId !== 'school-building') {
+    if (this.#state.freeExplore.currentLocationId !== 'hall') {
       return;
     }
     if (this.#isHauntedHouseHelpTime()) {
@@ -3498,11 +3501,7 @@ class CanonicalFestivalPrototypeScene {
     if (this.#state.phaseId !== CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR) {
       this.#state.activeEvent = null;
     }
-    this.#state.freeExplore.pendingDestinationId = null;
     this.#state.freeExplore.selectedActionId = null;
-    this.#state.freeExplore.travelProgress = 0;
-    this.#state.freeExplore.travelDurationSeconds = 0;
-    this.#state.freeExplore.travelInterruptionChecked = false;
     this.#state.freeExplore.interruption = null;
     this.#state.freeExplore.actionResult = null;
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
@@ -3513,13 +3512,60 @@ class CanonicalFestivalPrototypeScene {
     return FREE_EXPLORE_DESTINATIONS.find((entry) => entry.id === destinationId) ?? null;
   }
 
+  /** Return the canonical area ID used for connection checks. */
+  #getCanonicalFreeExploreAreaId(areaId) {
+    const destination = this.#getFreeExploreDestination(areaId);
+    return destination?.isLegacyAlias ? destination.canonicalId : areaId;
+  }
+
+  /** Return direct destinations connected to the current area. */
+  #getConnectedFreeExploreDestinations(currentAreaId) {
+    const canonicalAreaId = this.#getCanonicalFreeExploreAreaId(currentAreaId);
+    const current = this.#getFreeExploreDestination(canonicalAreaId);
+    if (!current) {
+      return [];
+    }
+    return FREE_EXPLORE_DESTINATIONS.filter((destination) => (
+      !destination.isLegacyAlias
+      && destination.id !== canonicalAreaId
+      && current.connectedAreaIds.includes(destination.id)
+    ));
+  }
+
+  /** Return the first connected area on the shortest route to the target. */
+  #getNextFreeExploreRouteArea(currentAreaId, targetAreaId) {
+    const startId = this.#getCanonicalFreeExploreAreaId(currentAreaId);
+    const targetId = this.#getCanonicalFreeExploreAreaId(targetAreaId);
+    if (startId === targetId) {
+      return targetId;
+    }
+    const queue = [{ id: startId, firstStep: null }];
+    const visited = new Set([startId]);
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const destination = this.#getFreeExploreDestination(current.id);
+      for (const nextId of destination?.connectedAreaIds ?? []) {
+        if (visited.has(nextId)) {
+          continue;
+        }
+        const firstStep = current.firstStep ?? nextId;
+        if (nextId === targetId) {
+          return firstStep;
+        }
+        visited.add(nextId);
+        queue.push({ id: nextId, firstStep });
+      }
+    }
+    return null;
+  }
+
   /** Create the actions available at the current free-explore location. */
   #createFreeExploreLocationActions() {
     const currentLocationId = this.#state.freeExplore.currentLocationId;
     const actions = [
       {
         id: 'look-around',
-        label: '周辺を見る',
+        label: '周辺を調べる',
         kind: 'generic',
         resultText: '周囲の出し物、人の流れ、別の場所へ波及しそうな賑わいを確認した。',
       },
@@ -3618,7 +3664,7 @@ class CanonicalFestivalPrototypeScene {
         });
       }
     }
-    if (currentLocationId === 'school-building') {
+    if (currentLocationId === 'hall') {
       actions.push({
         id: 'visit-haunted-house',
         label: '3-Aホラーハウスを客として利用する',
@@ -3797,10 +3843,7 @@ class CanonicalFestivalPrototypeScene {
     }
     actions.push(...this.#createWaitActions());
     actions.push(...this.#createCassiopeiaActions());
-    for (const destination of FREE_EXPLORE_DESTINATIONS) {
-      if (destination.id === currentLocationId) {
-        continue;
-      }
+    for (const destination of this.#getConnectedFreeExploreDestinations(currentLocationId)) {
       actions.push({
         id: `move-to-${destination.id}`,
         label: `${destination.label}へ移動する`,
@@ -4361,22 +4404,43 @@ class CanonicalFestivalPrototypeScene {
       return;
     }
     if (target.type === 'konoka') {
-      this.#state.prepareDate.hasCoordinated = true;
       this.#state.prepareDate.interactionDialogue = {
         speaker: '木乃香',
-        text: 'ネギ君、のどかとのデートやろ？ ほな、服装と髪を少し整えよか。',
+        text: 'ネギ君、のどかとのデートやろ？ どの服装で行くか決めよか。',
         anchor: { type: 'actor', id: PREPARE_DATE_KONOKA.id },
       };
-      this.#addLog('木乃香に服装のコーディネートを手伝ってもらった。');
+      this.#setPhase(CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
+      this.#addLog('木乃香とデートの服装を相談した。');
       return;
     }
     this.#state.prepareDate[target.spot.completedKey] = true;
+    this.#increasePrepareDateScore(target.spot.scoreValue ?? 0);
     this.#state.prepareDate.interactionDialogue = {
       speaker: target.spot.label,
       text: target.spot.text,
       anchor: { type: 'location', id: target.spot.id },
     };
     this.#addLog(`${target.spot.label}を行った。`);
+  }
+
+  /** Increase the preparation score without exceeding its maximum. */
+  #increasePrepareDateScore(value) {
+    this.#state.prepareDate.preparationScore = Math.min(
+      NODOKA_DATE_PREPARATION_SCORE_MAX,
+      this.#state.prepareDate.preparationScore + value,
+    );
+  }
+
+  /** Return the current outfit definition, falling back to the initial suit. */
+  #getCurrentOutfit() {
+    return Object.values(DATE_OUTFITS).find((outfit) => outfit.id === this.#state.outfitId)
+      ?? DATE_OUTFITS.SUIT;
+  }
+
+  /** Return the outfit snapshot used by the status block and date evaluation. */
+  #createOutfitSnapshot() {
+    const outfit = this.#getCurrentOutfit();
+    return { id: outfit.id, label: outfit.label };
   }
 
   /** デート前自由時間中にinteractionできる最寄り対象を返す。 */
@@ -4471,7 +4535,7 @@ class CanonicalFestivalPrototypeScene {
     this.#state.thirdLoop.hasHelpedHauntedHouse = false;
     this.#state.classmateLocations.kotaro = 'ground';
     this.#state.companionPositions.kotaro = null;
-    this.#resetFreeExploreState('school-building');
+    this.#resetFreeExploreState('hall');
     this.#placePlayer(SCHOOL_POSITIONS.CLASS_3A);
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     this.#addLog('AM11:30へ進み、3-Aホラーハウスの行動を選べる。');
@@ -4515,7 +4579,7 @@ class CanonicalFestivalPrototypeScene {
   /** Start the fourth-loop classmate attraction tour. */
   #enterClassmateAttractionTour() {
     this.#state.thirdLoop.attractionDialogue = null;
-    this.#state.thirdLoop.currentAttractionAreaId = 'school-building';
+    this.#state.thirdLoop.currentAttractionAreaId = 'hall';
     this.#placePlayer(SCHOOL_POSITIONS.CLASS_3A);
     this.#setPhase(CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR);
     this.#addLog('クラスメイトの出し物巡りを始めた。');
@@ -4567,7 +4631,7 @@ class CanonicalFestivalPrototypeScene {
   /** Return the free-explore area assigned to a classmate attraction. */
   #getClassmateAttractionArea(actor) {
     const schedule = CLASSMATE_ATTRACTION_SCHEDULE[actor.id];
-    return this.#getFreeExploreDestination(schedule?.areaId) ?? this.#getFreeExploreDestination('school-building');
+    return this.#getFreeExploreDestination(schedule?.areaId) ?? this.#getFreeExploreDestination('hall');
   }
 
   /** Return whether every classmate attraction actor has been visited. */
@@ -4594,7 +4658,6 @@ class CanonicalFestivalPrototypeScene {
       'nodoka-date-normal': '\u306e\u3069\u304b\u30c7\u30fc\u30c8\u306e\u7d50\u672b',
       [CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION]: 'クラスメイトとの会話',
       [CANONICAL_PHASE_IDS.FREE_EXPLORE]: '自由探索',
-      [CANONICAL_PHASE_IDS.TRAVEL]: '移動中',
       [CANONICAL_PHASE_IDS.INTERRUPTION]: '巻き込み',
       [CANONICAL_PHASE_IDS.LOCATION_ACTIONS]: '現地行動',
       [CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT]: '行動結果',
@@ -4627,9 +4690,6 @@ class CanonicalFestivalPrototypeScene {
       return 'choice';
     }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT) {
-      return 'story';
-    }
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.TRAVEL) {
       return 'story';
     }
     if (this.#createChoiceSnapshots().length > 0) {
@@ -4833,7 +4893,6 @@ class CanonicalFestivalPrototypeScene {
     }
     if ([
       CANONICAL_PHASE_IDS.FREE_EXPLORE,
-      CANONICAL_PHASE_IDS.TRAVEL,
       CANONICAL_PHASE_IDS.INTERRUPTION,
       CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
       CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION,
@@ -4991,7 +5050,6 @@ class CanonicalFestivalPrototypeScene {
     }
     if ([
       CANONICAL_PHASE_IDS.FREE_EXPLORE,
-      CANONICAL_PHASE_IDS.TRAVEL,
       CANONICAL_PHASE_IDS.INTERRUPTION,
       CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
       CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION,
@@ -5197,6 +5255,13 @@ class CanonicalFestivalPrototypeScene {
         { id: 'tournament-give-up', label: '予選を諦める', description: '予選を終了し、PM8:00まで進める。', isRecommended: false },
       ];
     }
+    if (this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT) {
+      return [
+        { id: 'choose-outfit-keep', label: '変更なし', description: `${this.#getCurrentOutfit().label}のまま行く。`, isRecommended: true },
+        { id: 'choose-outfit-casual', label: 'カジュアルな服', description: 'のどかとのデートで高評価を得やすい服装にする。', isRecommended: false },
+        { id: 'choose-outfit-chunibyo', label: '厨二病な服', description: '個性的な服装にする。', isRecommended: false },
+      ];
+    }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE) {
       const choices = [];
       if (!this.#state.prepareDate.hasCoordinated) {
@@ -5342,8 +5407,6 @@ class CanonicalFestivalPrototypeScene {
       routeAreas: [],
       description: '麻帆良祭の入口。',
     };
-    const pendingDestination = this.#getFreeExploreDestination(this.#state.freeExplore.pendingDestinationId);
-    const travelDuration = this.#state.freeExplore.travelDurationSeconds;
     return {
       currentLocation: {
         id: currentLocation.id,
@@ -5351,23 +5414,14 @@ class CanonicalFestivalPrototypeScene {
         areaName: currentLocation.areaName,
       },
       destinations: this.#state.phaseId === CANONICAL_PHASE_IDS.FREE_EXPLORE
-        ? FREE_EXPLORE_DESTINATIONS.map((destination) => ({
+        ? this.#getConnectedFreeExploreDestinations(currentLocation.id).map((destination) => ({
           id: destination.id,
           label: destination.label,
           areaName: destination.areaName,
           description: destination.description,
           isCurrent: destination.id === currentLocation.id,
-          isSelected: destination.id === this.#state.freeExplore.selectedDestinationId,
         }))
         : [],
-      travel: pendingDestination
-        ? {
-          destinationId: pendingDestination.id,
-          destinationLabel: pendingDestination.label,
-          routeAreas: [...pendingDestination.routeAreas],
-          progress: travelDuration === 0 ? 0 : this.#state.freeExplore.travelProgress / travelDuration,
-        }
-        : null,
       interruption: this.#state.freeExplore.interruption
         ? {
           id: this.#state.freeExplore.interruption.id,
@@ -5382,6 +5436,7 @@ class CanonicalFestivalPrototypeScene {
           id: action.id,
           label: action.label,
           kind: action.kind,
+          destinationId: action.destinationId ?? null,
           targetMinute: action.targetMinute ?? null,
           isEnabled: this.#isTutorialLocationActionEnabled(action),
         }))
@@ -5458,11 +5513,9 @@ class CanonicalFestivalPrototypeScene {
     if (!this.#state.prepareDate.hasCoordinated) {
       return { title: '木乃香に服装の相談をする', position: PREPARE_DATE_KONOKA.position };
     }
-    if (!this.#state.prepareDate.hasPrepared) {
-      return { title: 'デートの準備をする', position: PREPARE_DATE_SPOTS[0].position };
-    }
-    if (!this.#state.prepareDate.hasStrolled) {
-      return { title: '麻帆良祭を見て回る', position: PREPARE_DATE_SPOTS[1].position };
+    const nextSpot = PREPARE_DATE_SPOTS.find((spot) => !this.#state.prepareDate[spot.completedKey]);
+    if (nextSpot) {
+      return { title: nextSpot.label, position: nextSpot.position };
     }
     return { title: 'PM4:00まで自由に過ごす', position: null };
   }
@@ -5472,12 +5525,20 @@ class CanonicalFestivalPrototypeScene {
     const availableInteraction = this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE
       ? this.#findPrepareDateInteractionTarget(null)
       : null;
-    const canStartDate = this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE
+    const canStartDate = [
+      CANONICAL_PHASE_IDS.PREPARE_DATE,
+      CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT,
+    ].includes(this.#state.phaseId)
       || this.#createActiveMainEventIds().includes(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE);
     return {
       hasPrepared: this.#state.prepareDate.hasPrepared,
       hasStrolled: this.#state.prepareDate.hasStrolled,
       hasCoordinated: this.#state.prepareDate.hasCoordinated,
+      hasGift: this.#state.prepareDate.hasGift,
+      hasTopic: this.#state.prepareDate.hasTopic,
+      outfit: this.#createOutfitSnapshot(),
+      preparationScore: this.#state.prepareDate.preparationScore,
+      preparationScoreMax: NODOKA_DATE_PREPARATION_SCORE_MAX,
       canStartDate,
       spots: PREPARE_DATE_SPOTS.map((spot) => ({
         id: spot.id,
@@ -5937,6 +5998,7 @@ class CanonicalFestivalPrototypeScene {
       player: {
         position: copyPosition(this.#state.playerPosition),
         speed: CANONICAL_PLAYER_SPEED_CELLS_PER_SECOND,
+        outfit: this.#createOutfitSnapshot(),
         magicPower: {
           current: this.#state.magicPower,
           max: MAGIC_POWER_MAX,
@@ -5996,7 +6058,6 @@ class CanonicalFestivalPrototypeScene {
     ].includes(this.#state.phaseId);
     const freeExploreLocation = [
       CANONICAL_PHASE_IDS.FREE_EXPLORE,
-      CANONICAL_PHASE_IDS.TRAVEL,
       CANONICAL_PHASE_IDS.INTERRUPTION,
       CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
       CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION,
@@ -6009,7 +6070,6 @@ class CanonicalFestivalPrototypeScene {
       ...SCHOOL_LANDMARKS,
       ...([
         CANONICAL_PHASE_IDS.FREE_EXPLORE,
-        CANONICAL_PHASE_IDS.TRAVEL,
         CANONICAL_PHASE_IDS.INTERRUPTION,
         CANONICAL_PHASE_IDS.LOCATION_ACTIONS,
         CANONICAL_PHASE_IDS.LOCATION_ACTION_RESULT,

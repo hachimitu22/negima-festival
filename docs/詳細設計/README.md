@@ -44,8 +44,7 @@
 - [TitleScene（タイトルシーン）](ドメイン/シーン/TitleScene.md)
 - [MainGameScene（メインゲームシーン）](ドメイン/シーン/MainGameScene.md)
 - [ConversationScene（会話シーン）](ドメイン/シーン/ConversationScene.md)
-- [PrototypeFestivalScene（プロトタイプ体験シーン）](ドメイン/シーン/PrototypeFestivalScene.md)
-- [FestivalHappeningDirector（連鎖型ハプニング進行）](ドメイン/シーン/FestivalHappeningDirector.md)
+- [CanonicalFestivalPrototypeScene（原作導入プロトタイプシーン）](ドメイン/シーン/CanonicalFestivalPrototypeScene.md)
 
 ### 会話
 

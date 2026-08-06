@@ -100,6 +100,7 @@ class CanonicalFestivalPrototypeView {
             <div><dt>DAY</dt><dd data-view-role="day"></dd></div>
             <div><dt>LOOP</dt><dd data-view-role="loop"></dd></div>
             <div><dt>TIME</dt><dd data-view-role="time"></dd></div>
+            <div><dt>OUTFIT</dt><dd data-view-role="outfit"></dd></div>
             <div><dt>PHONE</dt><dd data-view-role="phone"></dd></div>
             <div><dt>MP</dt><dd><span data-view-role="mp"></span><meter data-view-role="mp-meter" min="0"></meter></dd></div>
             <div><dt>PARTY</dt><dd data-view-role="party"></dd></div>
@@ -126,6 +127,7 @@ class CanonicalFestivalPrototypeView {
     this.#getElement('day').textContent = `${snapshot.gameTime.festivalDay}日目`;
     this.#getElement('loop').textContent = `${snapshot.gameTime.loopCount}ループ目`;
     this.#getElement('time').textContent = snapshot.gameTime.label;
+    this.#getElement('outfit').textContent = snapshot.player.outfit?.label ?? '背広';
     this.#getElement('phone').textContent = snapshot.phoneTime ?? '-';
     this.#getElement('mp').textContent = `${snapshot.player.magicPower.current}/${snapshot.player.magicPower.max}`;
     this.#getElement('mp-meter').max = snapshot.player.magicPower.max;
@@ -295,9 +297,6 @@ class CanonicalFestivalPrototypeView {
       freeExplore: {
         currentLocationId: snapshot.freeExplore.currentLocation.id,
         destinationIds: snapshot.freeExplore.destinations.map((entry) => `${entry.id}:${entry.isCurrent}`),
-        travel: snapshot.freeExplore.travel
-          ? `${snapshot.freeExplore.travel.destinationId}:${snapshot.freeExplore.travel.progress}`
-          : null,
         interruption: snapshot.freeExplore.interruption
           ? `${snapshot.freeExplore.interruption.id}:${snapshot.freeExplore.interruption.source}`
           : null,
@@ -310,6 +309,10 @@ class CanonicalFestivalPrototypeView {
         hasPrepared: snapshot.prepareDate.hasPrepared,
         hasStrolled: snapshot.prepareDate.hasStrolled,
         hasCoordinated: snapshot.prepareDate.hasCoordinated,
+        hasGift: snapshot.prepareDate.hasGift,
+        hasTopic: snapshot.prepareDate.hasTopic,
+        outfit: snapshot.prepareDate.outfit,
+        preparationScore: snapshot.prepareDate.preparationScore,
       },
       thirdLoop: {
         currentAttractionAreaId: snapshot.events['classmate-attraction-tour'].data.currentAttractionAreaId,
@@ -423,7 +426,7 @@ class CanonicalFestivalPrototypeView {
 
   /** Create free-explore actions when that subsystem is active. */
   #createFreeExploreHtml(snapshot) {
-    if (!['free-explore', 'travel', 'interruption', 'location-actions', 'location-action-result'].includes(snapshot.phase.id)) {
+    if (!['free-explore', 'interruption', 'location-actions', 'location-action-result'].includes(snapshot.phase.id)) {
       return '';
     }
     const freeExplore = snapshot.freeExplore;
@@ -435,10 +438,7 @@ class CanonicalFestivalPrototypeView {
         html += `<p>結界解除に${escapeHtml(freeExplore.libraryDungeon.pendingBarrierCost)}MP必要</p>`;
       }
     }
-    if (snapshot.phase.id === 'travel' && freeExplore.travel) {
-      html += `<p>${escapeHtml(freeExplore.travel.destinationLabel)}へ移動中</p>`;
-      html += `<button type="button" ${ACTION_ATTRIBUTE}="advance">次へ</button>`;
-    } else if (snapshot.phase.id === 'interruption' && freeExplore.interruption) {
+    if (snapshot.phase.id === 'interruption' && freeExplore.interruption) {
       html += `<p><b>${escapeHtml(freeExplore.interruption.title)}</b>: ${escapeHtml(freeExplore.interruption.description)}</p>`;
       for (const choice of freeExplore.interruption.choices) {
         html += `<button type="button" ${ACTION_ATTRIBUTE}="interruption" data-choice-id="${escapeHtml(choice.id)}">${escapeHtml(choice.label)}</button>`;

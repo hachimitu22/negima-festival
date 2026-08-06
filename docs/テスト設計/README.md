@@ -79,7 +79,6 @@ table-drivenな実装を使用する場合も、各caseを個別のtestとして
 - [RewardSystem（報酬System）](単体テスト/ドメイン/シーン/RewardSystem.md)
 - [TimeControlSystem（時間制御System）](単体テスト/ドメイン/シーン/TimeControlSystem.md)
 - [GridMap（グリッドマップ）](単体テスト/ドメイン/マップ/GridMap.md)
-- [PrototypeFestivalScene（プロトタイプ体験シーン）](単体テスト/ドメイン/シーン/PrototypeFestivalScene.md)
 - [CanonicalFestivalPrototypeScene（原作導入プロトタイプシーン）](単体テスト/ドメイン/シーン/CanonicalFestivalPrototypeScene.md)
 
 ## 統合テスト
