@@ -307,7 +307,6 @@ class CanonicalFestivalPrototypeView {
       },
       prepareDate: {
         hasPrepared: snapshot.prepareDate.hasPrepared,
-        hasStrolled: snapshot.prepareDate.hasStrolled,
         hasCoordinated: snapshot.prepareDate.hasCoordinated,
         hasGift: snapshot.prepareDate.hasGift,
         hasTopic: snapshot.prepareDate.hasTopic,
@@ -521,10 +520,11 @@ class CanonicalFestivalPrototypeView {
       return '';
     }
     let html = '<section class="canonical-action-group">';
-    html += '<h3>自由時間</h3>';
+    html += '<h3>デート準備</h3>';
     html += `<p>服装コーディネート: ${snapshot.prepareDate.hasCoordinated ? '完了' : '未実施'}</p>`;
     html += `<p>デート準備: ${snapshot.prepareDate.hasPrepared ? '完了' : '未実施'}</p>`;
-    html += `<p>祭り見物: ${snapshot.prepareDate.hasStrolled ? '完了' : '未実施'}</p>`;
+    html += `<p>贈り物: ${snapshot.prepareDate.hasGift ? '完了' : '未実施'}</p>`;
+    html += `<p>話題: ${snapshot.prepareDate.hasTopic ? '完了' : '未実施'}</p>`;
     html += '</section>';
     return html;
   }

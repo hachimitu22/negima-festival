@@ -32,6 +32,8 @@ test('CFP-UT-S33 主要イベントのスナップショットにチャオ探索
   assert.equal(snapshot.events['chao-search'].type, 'episode');
   assert.equal(snapshot.events['chao-search'].label, 'チャオ探索');
   assert.equal(snapshot.events['haunted-house'].type, 'episode');
+  assert.equal(snapshot.events['nodoka-date-prepare'].type, 'episode');
+  assert.equal(snapshot.events['nodoka-date'].type, 'episode');
   assert.equal(snapshot.events['mahora-budokai'].type, 'episode');
   assert.ok(snapshot.events['chao-search'].data);
 });
@@ -939,24 +941,27 @@ function createSceneAtPrepareDate(random = () => 0, options = {}) {
   return scene;
 }
 
-/** Complete four preparation actions with the selected outfit. */
-function completeDatePreparation(scene, outfitChoice = 'choose-outfit-casual') {
-  selectDestination(scene, 'dining-street');
-  advanceFreeExploreTravel(scene);
-  selectLocationAction(scene, 'prepare-konoka');
-  selectChoice(scene, outfitChoice);
-  advanceStory(scene);
+/** Start the preparation conversation and choose the outfit. */
+function startDatePreparation(scene, outfitChoice = 'choose-outfit-casual') {
   selectDestination(scene, 'stall-street');
   advanceFreeExploreTravel(scene);
-  selectLocationAction(scene, 'prepare-date-gift');
+  selectLocationAction(scene, 'start-nodoka-date-prepare');
+  assert.equal(scene.createSnapshot().phase.id, CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
   advanceStory(scene);
-  selectDestination(scene, 'hall');
-  advanceFreeExploreTravel(scene);
-  selectLocationAction(scene, 'prepare-date-topic');
+  selectChoice(scene, outfitChoice);
   advanceStory(scene);
-  selectDestination(scene, 'dining-street');
-  advanceFreeExploreTravel(scene);
-  selectLocationAction(scene, 'prepare-date-prep');
+}
+
+/** Complete the three preparation choices inside the conversation scene. */
+function completeDatePreparation(scene, outfitChoice = 'choose-outfit-casual') {
+  startDatePreparation(scene, outfitChoice);
+  selectChoice(scene, 'prepare-date-prep');
+  advanceStory(scene);
+  selectChoice(scene, 'prepare-date-gift');
+  advanceStory(scene);
+  selectChoice(scene, 'prepare-date-topic');
+  advanceStory(scene);
+  selectChoice(scene, 'finish-date-prepare');
   advanceStory(scene);
 }
 
@@ -1126,7 +1131,7 @@ describe('CFP-UT-S15 tutorial skip', () => {
     assert.equal(snapshot.phoneTime, '20:06');
     assert.equal(snapshot.player.magicPower.current, 179);
     assert.equal(snapshot.freeExplore.currentLocation.id, 'entrance-gate');
-    assert.equal(snapshot.mainEvent.activeEventId, CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE);
+    assert.equal(snapshot.mainEvent.activeEventId, null);
     assert.equal(snapshot.chaoSearch.isChaoFound, true);
     assert.equal(snapshot.chaoSearch.hasCassiopeiaManual, true);
     assert.equal(snapshot.chaoSearch.isSetsunaWaiting, false);
@@ -1152,7 +1157,7 @@ describe('CFP-UT-S15 tutorial skip', () => {
     assert.equal(snapshot.gameTime.label, 'PM2:00');
     assert.equal(snapshot.player.magicPower.current, 179);
     assert.equal(snapshot.freeExplore.currentLocation.id, 'entrance-gate');
-    assert.equal(snapshot.mainEvent.activeEventId, CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE);
+    assert.equal(snapshot.mainEvent.activeEventId, null);
   });
 
   test('CFP-UT-S15-C03 ignores skip after tutorial completion', () => {
@@ -2369,7 +2374,7 @@ test('CFP-UT-S11-C29 PM3:00以降のネギの予定を返す', () => {
   );
 });
 
-test('CFP-UT-S11-C30 チャオ発見後ののどかデート予定はPM8:00までになる', () => {
+test('CFP-UT-S11-C30 のどかとのデート予定はPM5:30までになる', () => {
   // Arrange
   const scene = createSceneAtPrepareDate(() => 0);
 
@@ -2379,8 +2384,8 @@ test('CFP-UT-S11-C30 チャオ発見後ののどかデート予定はPM8:00ま�
 
   // Assert
   assert.equal(entry.startTimeLabel, 'PM4:00');
-  assert.equal(entry.endTimeLabel, 'PM8:00');
-  assert.equal(entry.endMinute, 1200);
+  assert.equal(entry.endTimeLabel, 'PM5:30');
+  assert.equal(entry.endMinute, 1050);
 });
 
 test('CFP-UT-S11-C31 AM10:00からAM11:30のチラシ配りを全エリア行動として返す', () => {
@@ -2665,7 +2670,7 @@ test('CFP-UT-S13-C18 40以下へ下がった出店は再び60以上で通知す�
   });
 
 describe('CFP-UT-S12 デート前自由時間', () => {
-  test('CFP-UT-S12-C01 スケジュール見直し後はAM11:30のまま現地行動へ戻る', () => {
+  test('CFP-UT-S12-C01 PM2:00になっても木乃香へ話しかけるまで開始しない', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
 
@@ -2676,11 +2681,12 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     assert.equal(snapshot.phase.inputKind, 'choice');
     assert.equal(snapshot.gameTime.label, 'PM2:00');
-    assert.equal(snapshot.mainEvent.activeEventId, 'nodoka-date-prepare');
+    assert.equal(snapshot.mainEvent.activeEventId, null);
+    assert.ok(!snapshot.freeExplore.locationActions.some((action) => action.id === 'start-nodoka-date-prepare'));
     assert.ok(snapshot.freeExplore.locationActions.some((action) => action.kind === 'wait-until'));
   });
 
-  test('CFP-UT-S12-C02 デート準備中も場所移動を現地行動から選べる', () => {
+  test('CFP-UT-S12-C02 屋台通り以外では準備イベントを開始しない', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
 
@@ -2691,17 +2697,21 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     // Assert
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     assert.equal(snapshot.freeExplore.currentLocation.id, 'dining-street');
+    assert.ok(!snapshot.freeExplore.locationActions.some((action) => action.id === 'start-nodoka-date-prepare'));
   });
 
-  test('CFP-UT-S12-C03 食堂街で木乃香に相談すると服装コーディネートが完了する', () => {
+  test('CFP-UT-S12-C03 屋台通りで木乃香に相談すると服装コーディネートが完了する', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
-    selectDestination(scene, 'dining-street');
+    selectDestination(scene, 'stall-street');
     advanceFreeExploreTravel(scene);
 
     // Act
-    selectLocationAction(scene, 'prepare-konoka');
+    selectLocationAction(scene, 'start-nodoka-date-prepare');
     const dialogue = scene.createSnapshot();
+    assert.equal(dialogue.phase.id, CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
+    assert.equal(dialogue.mainEvent.activeEventId, CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE);
+    advanceStory(scene);
     selectChoice(scene, 'choose-outfit-casual');
     advanceStory(scene);
     const snapshot = scene.createSnapshot();
@@ -2711,56 +2721,64 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     assert.deepEqual(dialogue.dialogue.anchor, { type: 'actor', id: 'konoka' });
     assert.equal(dialogue.phase.id, CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
     assert.ok(dialogue.choices.some((choice) => choice.id === 'choose-outfit-casual'));
-    assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+    assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.PREPARE_DATE);
     assert.equal(snapshot.phase.inputKind, 'choice');
     assert.equal(snapshot.prepareDate.hasCoordinated, true);
     assert.equal(snapshot.player.outfit.label, 'カジュアルな服');
     assert.equal(snapshot.prepareDate.preparationScore, 1);
   });
 
-  test('CFP-UT-S12-C04 場所別のデート準備行動を選ぶと各状態が完了する', () => {
+  test('CFP-UT-S12-C04 3つの準備行動を会話内で完了できる', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
 
     // Act
-    selectDestination(scene, 'dining-street');
-    advanceFreeExploreTravel(scene);
-    selectLocationAction(scene, 'prepare-date-prep');
+    startDatePreparation(scene);
+    selectChoice(scene, 'prepare-date-prep');
     advanceStory(scene);
-    selectDestination(scene, 'entrance-gate');
-    advanceFreeExploreTravel(scene);
-    selectLocationAction(scene, 'prepare-festival-stroll');
+    selectChoice(scene, 'prepare-date-gift');
+    advanceStory(scene);
+    selectChoice(scene, 'prepare-date-topic');
     advanceStory(scene);
     const snapshot = scene.createSnapshot();
 
     // Assert
     assert.equal(snapshot.prepareDate.hasPrepared, true);
-    assert.equal(snapshot.prepareDate.hasStrolled, true);
+    assert.equal(snapshot.prepareDate.hasGift, true);
+    assert.equal(snapshot.prepareDate.hasTopic, true);
+    assert.ok(!snapshot.choices.some((choice) => choice.id === 'prepare-festival-stroll'));
   });
 
-  test('CFP-UT-S12-C05 任意イベント未実施でも指定時刻まで待てる', () => {
+  test('CFP-UT-S12-C05 準備終了を選ぶと会話イベントを完了する', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
 
     // Act
-    waitUntil(scene, 16, 0);
+    startDatePreparation(scene);
+    selectChoice(scene, 'finish-date-prepare');
+    advanceStory(scene);
     const snapshot = scene.createSnapshot();
 
     // Assert
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(snapshot.gameTime.label, 'PM4:00');
+    assert.equal(snapshot.gameTime.label, 'PM2:05');
     assert.equal(snapshot.prepareDate.hasPrepared, false);
-    assert.equal(snapshot.prepareDate.hasStrolled, false);
-    assert.equal(snapshot.prepareDate.hasCoordinated, false);
+    assert.equal(snapshot.prepareDate.hasCoordinated, true);
+    assert.equal(snapshot.prepareDate.isLoopCompleted, true);
+    assert.equal(snapshot.mainEvent.activeEventId, null);
+    assert.ok(!snapshot.freeExplore.locationActions.some((action) => action.id === 'start-nodoka-date-prepare'));
+    selectDestination(scene, 'dining-street');
+    selectDestination(scene, 'stall-street');
+    assert.ok(!scene.createSnapshot().freeExplore.locationActions.some((action) => action.id === 'start-nodoka-date-prepare'));
   });
 
   test('CFP-UT-S12-C06 PM4:00からPM5:30の食堂街でのどかデートを開始できる', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
-    waitUntil(scene, 16, 0);
-    advanceStory(scene);
     selectDestination(scene, 'dining-street');
     advanceFreeExploreTravel(scene);
+    waitUntil(scene, 16, 0);
+    advanceStory(scene);
 
     // Act
     const before = scene.createSnapshot();
@@ -2795,45 +2813,6 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     assert.deepEqual(nodokaActor.position, { x: 24, y: 24 });
   });
 
-  test('CFP-UT-S12-C11 チャオ未発見でもデート時間帯ののどかは食堂街に配置される', () => {
-    // Arrange
-    const scene = createSceneAtChaoSearch(() => 0);
-    waitUntil(scene, 16, 0);
-    advanceStory(scene);
-    selectDestination(scene, 'dining-street');
-    advanceFreeExploreTravel(scene);
-
-    // Act
-    const before = scene.createSnapshot();
-    selectLocationAction(scene, 'talk-nodoka-date');
-    const after = scene.createSnapshot();
-
-    // Assert
-    return;
-    const nodokaStatus = before.classmateStatus.find((entry) => entry.id === 'nodoka');
-    const nodokaActor = before.actors.find((actor) => actor.id === 'nodoka-date');
-    assert.equal(before.chaoSearch.isChaoFound, false);
-    assert.deepEqual(
-      { areaId: nodokaStatus.areaId, statusLabel: nodokaStatus.statusLabel },
-      { areaId: 'dining-street', statusLabel: 'デート待ち' },
-    );
-    assert.deepEqual(nodokaActor.position, { x: 24, y: 24 });
-    assert.equal(after.phase.id, CANONICAL_PHASE_IDS.NODOKA_DATE);
-
-    // Act: complete the no-Chao branch.
-    advanceCurrentDialogue(scene);
-    selectChoice(scene, 'escape-patrol');
-    const ending = scene.createSnapshot();
-    advanceCurrentDialogue(scene);
-    const freeExplore = scene.createSnapshot();
-
-    // Assert
-    assert.equal(ending.phase.id, CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO);
-    assert.equal(freeExplore.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(freeExplore.gameTime.label, 'PM5:30');
-    assert.equal(freeExplore.mainEvent.activeEventId, CANONICAL_MAIN_EVENT_IDS.CHAO_SEARCH);
-  });
-
   test('CFP-UT-S12-C08 好感度が閾値未満のデートは通常終了する', () => {
     // Arrange
     const scene = createSceneAtPrepareDate(() => 0);
@@ -2855,7 +2834,7 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     assert.equal(escape.phase.id, CANONICAL_PHASE_IDS.ESCAPE_PATROL_STUDENTS);
     assert.equal(ending.phase.id, CANONICAL_PHASE_IDS.NODOKA_DATE_END);
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(snapshot.gameTime.label, 'PM8:00');
+    assert.equal(snapshot.gameTime.label, 'PM5:30');
     assert.equal(snapshot.cgFlags.nodokaKiss, false);
   });
 
@@ -2920,6 +2899,7 @@ describe('CFP-UT-S12 デート前自由時間', () => {
     }
     visitChaoLocation(scene, 'airship');
     completeChaoTutorial(scene);
+    completeDatePreparation(scene);
     waitUntil(scene, 16, 0);
     advanceStory(scene);
     selectDestination(scene, 'dining-street');
@@ -2969,18 +2949,19 @@ describe('CFP-UT-S12 デート前自由時間', () => {
 
   test('CFP-UT-S12-C07 PM5:30を過ぎるとのどかデートを開始できない', () => {
     // Arrange
-    const scene = createSceneAtChaoSearch(() => 0);
-    waitUntil(scene, 17, 30);
-    advanceStory(scene);
+    const scene = createSceneAtPrepareDate(() => 0);
     selectDestination(scene, 'dining-street');
     advanceFreeExploreTravel(scene);
+    waitUntil(scene, 16, 0);
+    advanceStory(scene);
+    waitUntil(scene, 17, 30);
 
     // Act
     const snapshot = scene.createSnapshot();
 
     // Assert
     assert.equal(snapshot.gameTime.label, 'PM5:30');
-    assert.equal(snapshot.chaoSearch.hasMissedNodokaDate, false);
+    assert.equal(snapshot.chaoSearch.hasMissedNodokaDate, true);
     assert.equal(snapshot.freeExplore.locationActions.some((action) => action.id === 'talk-nodoka-date'), false);
   });
 
@@ -3044,7 +3025,7 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
     assert.equal(snapshot.mainEvent.isManual, true);
   });
 
-  test('CFP-UT-S13-C04 チャオ探索成功時にPM4:00前ならデート準備を自動設定する', () => {
+  test('CFP-UT-S13-C04 チャオ探索成功後も木乃香への会話までデート準備を開始しない', () => {
     // Arrange
     const scene = createSceneAtChaoSearch(() => 0);
 
@@ -3055,8 +3036,32 @@ describe('CFP-UT-S13 メインイベントとチャオ探索中の時刻指定',
 
     // Assert
     assert.equal(snapshot.phase.id, CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
-    assert.equal(snapshot.mainEvent.activeEventId, 'nodoka-date-prepare');
-    assert.ok(snapshot.mainEvent.events.some((event) => event.id === 'nodoka-date-prepare'));
+    assert.equal(snapshot.mainEvent.activeEventId, null);
+    assert.ok(!snapshot.mainEvent.events.some((event) => event.id === 'nodoka-date-prepare'));
+  });
+
+  test('CFP-UT-S13-C04-2 カシオペアで新ループへ移るとのどかデート準備を再発生できる', () => {
+    // Arrange
+    const scene = new CanonicalFestivalPrototypeScene({ random: () => 0 });
+    skipTutorial(scene);
+    completeDatePreparation(scene);
+    waitUntil(scene, 16, 0);
+    assert.equal(scene.createSnapshot().prepareDate.isLoopCompleted, true);
+    assert.equal(scene.createSnapshot().gameTime.label, 'PM4:00');
+    assert.ok(scene.createSnapshot().freeExplore.locationActions.some((action) => action.targetMinute === 14 * 60));
+
+    // Act
+    sendInput(scene, {
+      type: CANONICAL_INPUT_TYPES.CASSIOPEIA_REWIND,
+      targetMinute: 14 * 60,
+    });
+    const snapshot = scene.createSnapshot();
+
+    // Assert
+    assert.equal(snapshot.gameTime.loopCount, 3);
+    assert.equal(snapshot.prepareDate.isLoopCompleted, false);
+    assert.ok(snapshot.freeExplore.locationActions.some((action) => action.id === 'start-nodoka-date-prepare'));
+    assert.equal(snapshot.mainEvent.activeEventId, null);
   });
 
   test.skip('CFP-UT-S13-C05 チャオ探索中にPM3:30へ進めるとカモがデート接近を警告する（旧仕様）', () => {

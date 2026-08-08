@@ -36,6 +36,7 @@ const CANONICAL_MAIN_EVENT_IDS = Object.freeze({
 const CANONICAL_EVENT_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'haunted-house', label: '3-Aホラーハウス', type: 'episode' }),
   Object.freeze({ id: 'chao-search', label: 'チャオ探索', type: 'episode' }),
+  Object.freeze({ id: 'nodoka-date-prepare', label: 'のどかデート準備', type: 'episode' }),
   Object.freeze({ id: 'nodoka-date', label: 'のどかとのデート', type: 'episode' }),
   Object.freeze({ id: 'mahora-budokai', label: 'まほら武道会', type: 'episode' }),
   Object.freeze({ id: 'classmate-attraction-tour', label: 'クラスメイト出し物巡り', type: 'episode' }),
@@ -98,8 +99,8 @@ const CANONICAL_PHASE_IDS = Object.freeze({
   REVIEW_SCHEDULE: 'review-schedule',
   PREPARE_DATE: 'prepare-date',
   PREPARE_DATE_OUTFIT: 'prepare-date-outfit',
+  NODOKA_DATE_PREPARE_FINISH: 'date-finish',
   NODOKA_DATE: 'nodoka-date',
-  NODOKA_DATE_NO_CHAO: 'nodoka-date-no-chao',
   NODOKA_DATE_NORMAL: 'nodoka-date-normal',
   // Keep the legacy name as an alias for the normal ending phase.
   NODOKA_DATE_END: 'nodoka-date-normal',
@@ -439,20 +440,11 @@ const PREPARE_DATE_SPOTS = Object.freeze([
   Object.freeze({
     id: 'date-prep',
     label: 'デート準備',
-    areaId: 'dining-street',
-    position: Object.freeze({ x: 23, y: 24 }),
+    areaId: 'stall-street',
+    position: Object.freeze({ x: 20, y: 13 }),
     completedKey: 'hasPrepared',
     scoreValue: 1,
-    text: 'カフェの近くで、のどかとの待ち合わせに向けた準備を整えた。',
-  }),
-  Object.freeze({
-    id: 'festival-stroll',
-    label: '麻帆良祭見物',
-    areaId: 'entrance-gate',
-    position: Object.freeze({ x: 16, y: 5 }),
-    completedKey: 'hasStrolled',
-    scoreValue: 1,
-    text: 'パレード会場の様子を見て回り、麻帆良祭の賑わいを改めて感じた。',
+    text: '屋台通りで、のどかとの待ち合わせに向けた準備を整えた。',
   }),
   Object.freeze({
     id: 'date-gift',
@@ -478,8 +470,8 @@ const PREPARE_DATE_SPOTS = Object.freeze([
 const PREPARE_DATE_KONOKA = Object.freeze({
   id: 'konoka',
   name: '木乃香',
-  areaId: 'dining-street',
-  position: Object.freeze({ x: 22, y: 23 }),
+  areaId: 'stall-street',
+  position: Object.freeze({ x: 16, y: 27 }),
 });
 
 /** チャオ探索中に聞き込みできる人物。 */
@@ -743,6 +735,7 @@ const PHASE_LABELS = Object.freeze({
   [CANONICAL_PHASE_IDS.REVIEW_SCHEDULE]: 'スケジュール見直し',
   [CANONICAL_PHASE_IDS.PREPARE_DATE]: 'デート準備',
   [CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT]: '服装選択',
+  [CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH]: 'デート準備の終了',
   [CANONICAL_PHASE_IDS.NODOKA_DATE]: 'のどかとデート',
   [CANONICAL_PHASE_IDS.NODOKA_DATE_END]: 'のどかデートの結末',
   [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: 'のどかとのキスシーン',
@@ -772,12 +765,6 @@ const PHASE_LABELS = Object.freeze({
 const NODOKA_DATE_END_DIALOGUES = Object.freeze([
   Object.freeze({ speaker: '\u306e\u3069\u304b', text: '\u4eca\u65e5\u306f\u3068\u3066\u3082\u697d\u3057\u304b\u3063\u305f\u3067\u3059\u3002' }),
   Object.freeze({ speaker: '\u30ab\u30e2', text: '\u30c7\u30fc\u30c8\u306f\u3053\u3053\u307e\u3067\u3067\u3059\u3000\u5144\u8cb4\u3002' }),
-]);
-
-/** Dialogue shown when Nodoka's date ends before Chao is found. */
-const NODOKA_DATE_NO_CHAO_DIALOGUES = Object.freeze([
-  Object.freeze({ speaker: 'のどか', text: '今日は楽しかったです。でも、ネギ先生は何か探しているみたいですね。' }),
-  Object.freeze({ speaker: 'カモ', text: '兄貴、チャオを見つけるまではここまでですぜ。まだ探索を続けましょう。' }),
 ]);
 
 /** Dialogue shown during the separate Kotaro and Ayaka attraction tour. */
@@ -843,7 +830,6 @@ const PHASE_DIALOGUES = Object.freeze({
     Object.freeze({ speaker: 'のどか', text: 'ネギ先生と一緒に回れるなんて、夢みたいです。' }),
     Object.freeze({ speaker: 'カモ', text: '兄貴、世界樹周辺のパトロール中だった魔法生徒に見つかりましたぜ！' }),
   ]),
-  [CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO]: NODOKA_DATE_NO_CHAO_DIALOGUES,
   [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: Object.freeze([
     Object.freeze({ speaker: 'のどか', text: 'ネギ先生……今日は、もう少しだけ一緒にいてください。' }),
     Object.freeze({ speaker: 'カモ', text: '兄貴、これは大切な思い出になりそうですぜ。' }),
@@ -1273,7 +1259,7 @@ function attachCanonicalSnapshotAliases(snapshot) {
   const aliases = {
     hauntedHouse: ['haunted-house'],
     chaoSearch: ['chao-search'],
-    prepareDate: ['nodoka-date'],
+    prepareDate: ['nodoka-date-prepare'],
     thirdLoop: ['classmate-attraction-tour'],
   };
   for (const [alias, eventId] of Object.entries(aliases)) {
@@ -1354,8 +1340,9 @@ function createInitialState() {
         hasCassiopeiaManual: false,
       },
       nodokaDate: {
+        hasStarted: false,
+        isLoopCompleted: false,
         hasPrepared: false,
-        hasStrolled: false,
         hasCoordinated: false,
         hasGift: false,
         hasTopic: false,
@@ -1814,8 +1801,8 @@ class CanonicalFestivalPrototypeScene {
 
   /** Handle preparation-time choices before Nodoka's date. */
   #handlePrepareDateChoice(choiceId) {
-    if (choiceId === 'prepare-konoka') {
-      this.#interactInPrepareDate(PREPARE_DATE_KONOKA.id);
+    if (choiceId === 'finish-date-prepare') {
+      this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH);
       return;
     }
     const spot = PREPARE_DATE_SPOTS.find((entry) => choiceId === `prepare-${entry.id}`);
@@ -1844,7 +1831,7 @@ class CanonicalFestivalPrototypeScene {
       text: `${selectedOutfit.label}で行くことにした。のどかも喜んでくれるはずや。`,
       anchor: { type: 'actor', id: PREPARE_DATE_KONOKA.id },
     };
-    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+    this.#setPhase(CANONICAL_PHASE_IDS.PREPARE_DATE);
     this.#addLog(`デートの服装を${selectedOutfit.label}に決めた。`);
   }
 
@@ -1913,9 +1900,11 @@ class CanonicalFestivalPrototypeScene {
       this.#completeChaoAttraction();
       return;
     }
-    const dialogues = this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO
-      ? NODOKA_DATE_NO_CHAO_DIALOGUES
-      : this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR
+    if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH) {
+      this.#finishNodokaDatePreparation();
+      return;
+    }
+    const dialogues = this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR
         ? KOTARO_AYAKA_ATTRACTION_DIALOGUES
       : this.#state.phaseId === CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR
         ? YUE_FESTIVAL_TOUR_DIALOGUES
@@ -2058,7 +2047,6 @@ class CanonicalFestivalPrototypeScene {
     this.#state.chaoSearch.hasCassiopeiaManual = true;
     this.#state.chaoSearch.isSetsunaWaiting = false;
     this.#resetFreeExploreState('entrance-gate');
-    this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     this.#recordRewindCheckpoint();
     this.#state.gameTime = {
@@ -2307,10 +2295,10 @@ class CanonicalFestivalPrototypeScene {
       this.#resetFreeExploreState('ryugu-shrine');
       this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
       this.#addLog('まほら武道会の受付を完了した。予選はPM7:00から始まる。');
+    } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH) {
+      this.#finishNodokaDatePreparation();
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE) {
       this.#enterEscapePatrolStudents();
-    } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO) {
-      this.#finishNodokaDate();
     } else if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_KISS) {
       this.#state.cgFlags.nodokaKiss = true;
       this.#state.persistentEvents.hasUnlockedYueFestivalTour = true;
@@ -2326,26 +2314,50 @@ class CanonicalFestivalPrototypeScene {
   /** のどかとのデート終了後の共通進行を実行する。 */
   #finishNodokaDate() {
     this.#state.chaoSearch.isNodokaDateCompleted = true;
-    if (this.#state.chaoSearch.foundLocationId) {
-      this.#markScheduleEventCompleted('nodoka-date');
-    }
+    this.#markScheduleEventCompleted('nodoka-date');
     this.#state.chaoSearch.returnAfterNodokaDatePhaseId = null;
     this.#advanceGameTime(this.#getNodokaDateEndTime());
     this.#returnToFreeExplore();
-    if (this.#state.chaoSearch.foundLocationId) {
-      this.#clearMainEvent(false);
-    } else {
-      this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.CHAO_SEARCH, false);
+    this.#clearMainEvent(false);
+  }
+
+  /** デート準備イベントを終了し、PM4:00の自由探索へ戻る。 */
+  #finishNodokaDatePreparation() {
+    this.#state.prepareDate.interactionDialogue = null;
+    this.#state.prepareDate.hasStarted = false;
+    this.#state.prepareDate.isLoopCompleted = true;
+    this.#clearMainEvent(false);
+    this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
+    this.#addLog('デート準備を終了し、のどかとのデートを受け付ける状態になった。');
+  }
+
+  /** 屋台通りで木乃香に話しかけ、デート準備の会話を開始する。 */
+  #startNodokaDatePreparation() {
+    const currentMinute = getMinuteOfDay(this.#state.gameTime);
+    if (
+      this.#state.prepareDate.hasStarted
+      || this.#state.prepareDate.isLoopCompleted
+      || this.#state.chaoSearch.hasMissedNodokaDate
+      || currentMinute < 14 * 60
+      || currentMinute >= 16 * 60
+      || this.#state.freeExplore.currentLocationId !== PREPARE_DATE_KONOKA.areaId
+    ) {
+      return;
     }
+    this.#state.prepareDate.hasStarted = true;
+    this.#setMainEvent(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE, false);
+    this.#state.prepareDate.interactionDialogue = {
+      speaker: '木乃香',
+      text: 'ネギ君、のどかとのデートやろ？ どの服装で行くか決めよか。',
+      anchor: { type: 'actor', id: PREPARE_DATE_KONOKA.id },
+    };
+    this.#setPhase(CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT);
+    this.#addLog('屋台通りで木乃香に話しかけ、のどかデート準備を開始した。');
   }
 
   /** Select the date ending after the patrol students are shaken off. */
   #completeNodokaDateEscape() {
     this.#placePlayer(SCHOOL_POSITIONS.ESCAPE_GOAL);
-    if (!this.#state.chaoSearch.foundLocationId) {
-      this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO);
-      return;
-    }
     if (
       this.#getClassmateAffection('nodoka') >= NODOKA_AFFECTION_KISS_THRESHOLD
       && this.#getNodokaDatePreparationEvaluation() >= NODOKA_DATE_KISS_EVALUATION_THRESHOLD
@@ -2817,6 +2829,7 @@ class CanonicalFestivalPrototypeScene {
 
   /** Advance the second-loop free-explore clock by whole minutes. */
   #advanceFreeExploreTime(minutes) {
+    const previousMinute = getMinuteOfDay(this.#state.gameTime);
     const steps = Math.floor(minutes / FREE_EXPLORE_TIME_STEP_MINUTES);
     for (let index = 0; index < steps; index += 1) {
       this.#updateRandomFestivalStallExcitement();
@@ -2828,7 +2841,15 @@ class CanonicalFestivalPrototypeScene {
       minute: totalMinutes % 60,
       label: createTimeLabelFromMinute(totalMinutes),
     });
-    if (getMinuteOfDay(this.#state.gameTime) > getMinuteOfDay(this.#getNodokaDateEndTime())
+    if (
+      previousMinute < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)
+      && getMinuteOfDay(this.#state.gameTime) >= getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)
+      && this.#state.mainEvent.activeEventId === CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE
+    ) {
+      this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH);
+      return;
+    }
+    if (getMinuteOfDay(this.#state.gameTime) > getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE_START_END)
       && !this.#state.chaoSearch.isNodokaDateCompleted) {
       this.#state.chaoSearch.hasMissedNodokaDate = true;
       if (this.#state.mainEvent.activeEventId === CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE) {
@@ -2864,7 +2885,7 @@ class CanonicalFestivalPrototypeScene {
 
   /** Return the current Nodoka date schedule and deadline end time. */
   #getNodokaDateEndTime() {
-    const sourceTime = this.#state.chaoSearch.foundLocationId
+    const sourceTime = this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_KISS
       ? CANONICAL_TIMES.NODOKA_DATE_EXTENDED_END
       : CANONICAL_TIMES.NODOKA_DATE_END;
     return createCurrentLoopTime(this.#state.gameTime, sourceTime.hour, sourceTime.minute);
@@ -3191,6 +3212,10 @@ class CanonicalFestivalPrototypeScene {
     this.#state.freeExplore.currentLocationId = destination.legacyStateId ?? destination.id;
     this.#state.freeExplore.interruption = null;
     this.#placePlayer(destination.position);
+    if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH) {
+      this.#addLog(`${destination.label}に到着し、デート準備の終了時刻になった。`);
+      return;
+    }
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     this.#addLog(`${destination.label}に到着した。`);
   }
@@ -3278,8 +3303,11 @@ class CanonicalFestivalPrototypeScene {
       this.#startTournamentBattle();
       return;
     }
+    if (action.kind === 'start-nodoka-date-prepare') {
+      this.#startNodokaDatePreparation();
+      return;
+    }
     if (action.kind === 'prepare-date-target') {
-      this.#advanceFreeExploreTime(FREE_EXPLORE_TIME_STEP_MINUTES);
       this.#interactInPrepareDate(action.targetId);
       return;
     }
@@ -3819,27 +3847,22 @@ class CanonicalFestivalPrototypeScene {
         resultText: '',
       });
     }
-    if (this.#createActiveMainEventIds().includes(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE)) {
-      if (currentLocationId === PREPARE_DATE_KONOKA.areaId && !this.#state.prepareDate.hasCoordinated) {
-        actions.push({
-          id: `prepare-${PREPARE_DATE_KONOKA.id}`,
-          label: '木乃香に相談する',
-          kind: 'prepare-date-target',
-          targetId: PREPARE_DATE_KONOKA.id,
-          resultText: '',
-        });
-      }
-      for (const spot of PREPARE_DATE_SPOTS) {
-        if (spot.areaId === currentLocationId && !this.#state.prepareDate[spot.completedKey]) {
-          actions.push({
-            id: `prepare-${spot.id}`,
-            label: spot.label,
-            kind: 'prepare-date-target',
-            targetId: spot.id,
-            resultText: '',
-          });
-        }
-      }
+    if (
+      !this.#state.prepareDate.hasStarted
+      && !this.#state.prepareDate.isLoopCompleted
+      && currentLocationId === PREPARE_DATE_KONOKA.areaId
+      && getMinuteOfDay(this.#state.gameTime) >= 14 * 60
+      && getMinuteOfDay(this.#state.gameTime) < 16 * 60
+      && !this.#state.chaoSearch.hasMissedNodokaDate
+      && !this.#state.chaoSearch.isNodokaDateCompleted
+    ) {
+      actions.push({
+        id: 'start-nodoka-date-prepare',
+        label: '木乃香に話しかける',
+        kind: 'start-nodoka-date-prepare',
+        targetId: PREPARE_DATE_KONOKA.id,
+        resultText: '',
+      });
     }
     actions.push(...this.#createWaitActions());
     actions.push(...this.#createCassiopeiaActions());
@@ -4044,9 +4067,7 @@ class CanonicalFestivalPrototypeScene {
     if (this.#state.freeExplore.currentLocationId !== 'dining-street' || !this.#canTalkToNodokaDate()) {
       return;
     }
-    this.#state.chaoSearch.returnAfterNodokaDatePhaseId = this.#state.chaoSearch.foundLocationId
-      ? null
-      : CANONICAL_PHASE_IDS.FREE_EXPLORE;
+    this.#state.chaoSearch.returnAfterNodokaDatePhaseId = null;
     this.#startNodokaDate();
   }
 
@@ -4106,6 +4127,10 @@ class CanonicalFestivalPrototypeScene {
     this.#clearCurrentFestivalNotification();
     this.#advanceFreeExploreTime(nextMinute - currentMinute);
     this.#state.freeExplore.actionResult = null;
+    if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH) {
+      this.#addLog(`${this.#state.gameTime.label}になり、デート準備の受付を終了した。`);
+      return;
+    }
     this.#setPhase(CANONICAL_PHASE_IDS.LOCATION_ACTIONS);
     this.#addLog(`${this.#state.gameTime.label}まで待機した。`);
   }
@@ -4153,6 +4178,7 @@ class CanonicalFestivalPrototypeScene {
     this.#state.persistentEvents = persistentState.persistentEvents;
     this.#state.chaoSearch.hasCassiopeiaManual = persistentState.hasCassiopeiaManual
       || Boolean(persistentState.foundLocationId);
+    this.#state.prepareDate.isLoopCompleted = false;
     this.#state.gameTime = {
       ...this.#state.gameTime,
       loopCount: this.#state.gameTime.loopCount + 1,
@@ -4162,7 +4188,7 @@ class CanonicalFestivalPrototypeScene {
     };
     this.#resetFreeExploreState(currentLocationId);
     this.#state.mainEvent.activeEventId = this.#state.chaoSearch.foundLocationId
-      ? CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE
+      ? null
       : CANONICAL_MAIN_EVENT_IDS.CHAO_SEARCH;
     this.#state.mainEvent.isManual = false;
     this.#resetFreeExploreState(currentLocationId);
@@ -4477,7 +4503,9 @@ class CanonicalFestivalPrototypeScene {
   #startNodokaDate() {
     this.#state.movementInput = { x: 0, y: 0 };
     this.#state.prepareDate.interactionDialogue = null;
-    this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
+    if (getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)) {
+      this.#advanceGameTime(createCurrentLoopTime(this.#state.gameTime, 16, 0));
+    }
     this.#setPhase(CANONICAL_PHASE_IDS.NODOKA_DATE);
     this.#addLog('PM4:00になり、のどかとのデートを開始した。');
   }
@@ -4654,7 +4682,6 @@ class CanonicalFestivalPrototypeScene {
   #getPhaseLabel() {
     const freeExploreLabels = {
       'nodoka-date-end': '\u306e\u3069\u304b\u30c7\u30fc\u30c8\u306e\u7d50\u672b',
-      'nodoka-date-no-chao': '\u30c1\u30e3\u30aa\u672a\u767a\u898b\u306e\u30c7\u30fc\u30c8\u7d50\u672b',
       'nodoka-date-normal': '\u306e\u3069\u304b\u30c7\u30fc\u30c8\u306e\u7d50\u672b',
       [CANONICAL_PHASE_IDS.CLASSMATE_CONVERSATION]: 'クラスメイトとの会話',
       [CANONICAL_PHASE_IDS.FREE_EXPLORE]: '自由探索',
@@ -4712,9 +4739,9 @@ class CanonicalFestivalPrototypeScene {
     }
     if (
       this.#state.activeScare
-      || this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO
       || this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR
       || this.#state.phaseId === CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR
+      || this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH
       || this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_END
       || (PHASE_DIALOGUES[this.#state.phaseId] ?? []).length > 0
     ) {
@@ -4777,9 +4804,7 @@ class CanonicalFestivalPrototypeScene {
         total: 1,
       };
     }
-    const dialogues = this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO
-      ? NODOKA_DATE_NO_CHAO_DIALOGUES
-      : this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR
+    const dialogues = this.#state.phaseId === CANONICAL_PHASE_IDS.KOTARO_AYAKA_ATTRACTION_TOUR
         ? KOTARO_AYAKA_ATTRACTION_DIALOGUES
       : this.#state.phaseId === CANONICAL_PHASE_IDS.YUE_FESTIVAL_TOUR
         ? YUE_FESTIVAL_TOUR_DIALOGUES
@@ -4904,13 +4929,6 @@ class CanonicalFestivalPrototypeScene {
         completionRadius: CANONICAL_COMPLETION_RADIUS,
       };
     }
-    if (this.#state.phaseId === CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO) {
-      return {
-        title: 'チャオ未発見のデート結末',
-        position: null,
-        completionRadius: CANONICAL_COMPLETION_RADIUS,
-      };
-    }
     const objectives = {
       [CANONICAL_PHASE_IDS.PROLOGUE]: { title: 'プロローグを読む', position: null },
       [CANONICAL_PHASE_IDS.OPENING]: { title: '麻帆良祭の説明を聞く', position: null },
@@ -4943,6 +4961,7 @@ class CanonicalFestivalPrototypeScene {
       [CANONICAL_PHASE_IDS.MEET_CHAO]: { title: 'チャオから説明を聞く', position: null },
       [CANONICAL_PHASE_IDS.REVIEW_SCHEDULE]: { title: 'スケジュールを見直す', position: null },
       [CANONICAL_PHASE_IDS.PREPARE_DATE]: this.#createPrepareDateObjective(),
+      [CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH]: { title: 'デート準備を終える', position: null },
       [CANONICAL_PHASE_IDS.NODOKA_DATE]: { title: 'のどかとデートする', position: null },
       [CANONICAL_PHASE_IDS.NODOKA_DATE_END]: { title: 'のどかとのデートを終える', position: null },
       [CANONICAL_PHASE_IDS.NODOKA_DATE_KISS]: { title: 'のどかとのキスシーンを見る', position: null },
@@ -5004,7 +5023,15 @@ class CanonicalFestivalPrototypeScene {
       this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE
       || (
         this.#state.phaseId === CANONICAL_PHASE_IDS.LOCATION_ACTIONS
-        && this.#createActiveMainEventIds().includes(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE)
+        && (
+          this.#state.prepareDate.hasStarted
+          || (
+            this.#state.freeExplore.currentLocationId === PREPARE_DATE_KONOKA.areaId
+            && !this.#state.prepareDate.hasStarted
+            && getMinuteOfDay(this.#state.gameTime) >= 14 * 60
+            && getMinuteOfDay(this.#state.gameTime) < 16 * 60
+          )
+        )
       )
     ) {
       actors.push({
@@ -5264,14 +5291,12 @@ class CanonicalFestivalPrototypeScene {
     }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.PREPARE_DATE) {
       const choices = [];
-      if (!this.#state.prepareDate.hasCoordinated) {
-        choices.push({ id: 'prepare-konoka', label: '木乃香に相談する', description: '服装のコーディネートをしてもらう。', isRecommended: true });
-      }
       for (const spot of PREPARE_DATE_SPOTS) {
         if (!this.#state.prepareDate[spot.completedKey]) {
           choices.push({ id: `prepare-${spot.id}`, label: spot.label, description: spot.text, isRecommended: choices.length === 0 });
         }
       }
+      choices.push({ id: 'finish-date-prepare', label: '準備を終了する', description: 'のどかデート準備を終える。', isRecommended: choices.length === 0 });
       return choices;
     }
     if (this.#state.phaseId === CANONICAL_PHASE_IDS.CLASSMATE_ATTRACTION_TOUR) {
@@ -5510,6 +5535,9 @@ class CanonicalFestivalPrototypeScene {
 
   /** デート前自由時間の目的snapshotを生成する。 */
   #createPrepareDateObjective() {
+    if (!this.#state.prepareDate.hasStarted) {
+      return { title: '屋台通りで木乃香に話しかける', position: PREPARE_DATE_KONOKA.position };
+    }
     if (!this.#state.prepareDate.hasCoordinated) {
       return { title: '木乃香に服装の相談をする', position: PREPARE_DATE_KONOKA.position };
     }
@@ -5529,10 +5557,10 @@ class CanonicalFestivalPrototypeScene {
       CANONICAL_PHASE_IDS.PREPARE_DATE,
       CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT,
     ].includes(this.#state.phaseId)
-      || this.#createActiveMainEventIds().includes(CANONICAL_MAIN_EVENT_IDS.NODOKA_DATE_PREPARE);
+      || this.#state.prepareDate.hasStarted;
     return {
       hasPrepared: this.#state.prepareDate.hasPrepared,
-      hasStrolled: this.#state.prepareDate.hasStrolled,
+      isLoopCompleted: this.#state.prepareDate.isLoopCompleted,
       hasCoordinated: this.#state.prepareDate.hasCoordinated,
       hasGift: this.#state.prepareDate.hasGift,
       hasTopic: this.#state.prepareDate.hasTopic,
@@ -5825,7 +5853,7 @@ class CanonicalFestivalPrototypeScene {
       eventIds.push(CANONICAL_MAIN_EVENT_IDS.CHAO_SEARCH);
     }
     if (
-      this.#state.chaoSearch.foundLocationId
+      this.#state.prepareDate.hasStarted
       && getMinuteOfDay(this.#state.gameTime) < getMinuteOfDay(CANONICAL_TIMES.NODOKA_DATE)
       && !this.#state.chaoSearch.isNodokaDateCompleted
       && !this.#state.chaoSearch.hasMissedNodokaDate
@@ -5935,10 +5963,13 @@ class CanonicalFestivalPrototypeScene {
         CANONICAL_PHASE_IDS.AIRSHIP_OVERVIEW,
         CANONICAL_PHASE_IDS.MEET_CHAO,
       ],
-      'nodoka-date': [
+      'nodoka-date-prepare': [
         CANONICAL_PHASE_IDS.PREPARE_DATE,
+        CANONICAL_PHASE_IDS.PREPARE_DATE_OUTFIT,
+        CANONICAL_PHASE_IDS.NODOKA_DATE_PREPARE_FINISH,
+      ],
+      'nodoka-date': [
         CANONICAL_PHASE_IDS.NODOKA_DATE,
-        CANONICAL_PHASE_IDS.NODOKA_DATE_NO_CHAO,
         CANONICAL_PHASE_IDS.NODOKA_DATE_NORMAL,
         CANONICAL_PHASE_IDS.NODOKA_DATE_KISS,
       ],
@@ -5972,6 +6003,7 @@ class CanonicalFestivalPrototypeScene {
         data: state[{
           'haunted-house': 'hauntedHouse',
           'chao-search': 'chaoSearch',
+          'nodoka-date-prepare': 'nodokaDate',
           'nodoka-date': 'nodokaDate',
           'mahora-budokai': 'mahoraBudokai',
           'classmate-attraction-tour': 'classmateAttractionTour',
