@@ -19,6 +19,27 @@ export default withMermaid({
       { text: '実装状況', link: '/実装状況' },
       { text: 'ゲーム概要', link: '/ゲーム概要' },
       {
+        text: 'プロトタイプver3',
+        link: '/プロトタイプver3/基本設計/README',
+        collapsed: false,
+        items: [
+          {
+            text: '基本設計',
+            link: '/プロトタイプver3/基本設計/README',
+            collapsed: false,
+            items: [
+              { text: 'やりたいこと', link: '/プロトタイプver3/基本設計/やりたいこと' },
+              { text: 'ゲーム体験範囲', link: '/プロトタイプver3/基本設計/ゲーム体験範囲' },
+              { text: 'システム構成', link: '/プロトタイプver3/基本設計/システム構成' },
+              { text: '時間とカシオペア', link: '/プロトタイプver3/基本設計/時間とカシオペア' },
+              { text: '世界樹前の明日菜イベント', link: '/プロトタイプver3/基本設計/世界樹前の明日菜イベント' },
+            ],
+          },
+          { text: '詳細設計', link: '/プロトタイプver3/詳細設計/README' },
+          { text: 'テスト設計', link: '/プロトタイプver3/テスト設計/README' },
+        ],
+      },
+      {
         text: '基本設計',
         link: '/基本設計/README',
         collapsed: false,

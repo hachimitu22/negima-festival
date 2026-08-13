@@ -1,0 +1,49 @@
+import { GameObject } from '../../gameEngine/gameObject.js';
+
+/**
+ * ゲーム上のアクター（キャラクター）。自動移動や位置管理を行う GameObject。
+ * @public
+ */
+class Actor extends GameObject {
+  /**
+   * アクターをインスタンス化する。
+   * @public
+   * @param {string} id - アクター ID
+   * @param {string} name - アクター名
+   * @param {string} areaId - 初期エリア ID
+   */
+  constructor({
+    id,
+    name,
+    areaId,
+  }) {
+    super();
+    this.id = id;
+    this.name = name;
+    this.areaId = areaId;
+  }
+
+  /**
+   * 毎フレーム更新。自動移動を処理。
+   * @public
+   * @param {Object} context - 更新コンテキスト
+   * @returns {void}
+   */
+  update(context) {
+  }
+
+  /**
+   * アクター状態のスナップショット。
+   * @public
+   * @returns {Object} スナップショット
+   */
+  createSnapshot() {
+    return {
+      id: this.id,
+      name: this.name,
+      areaId: this.areaId,
+    };
+  }
+}
+
+export default Actor;

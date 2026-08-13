@@ -10,6 +10,7 @@
     "dev": "vite --host 127.0.0.1",
     "check:view": "node scripts/check-view.mjs",
     "test": "node --test",
+    "test:prototype3": "node --test test/prototype3/prototype3.test.js",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
