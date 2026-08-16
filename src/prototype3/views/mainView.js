@@ -1,4 +1,5 @@
 import createCurrentAreaView from './currentAreaView.js';
+import createCurrentAreaVisitorsView from './currentAreaVisitorsView.js';
 import createDialogueView from './dialogueView.js';
 import createMoveableAreasView from './moveableAreasView.js';
 // Debug
@@ -56,6 +57,8 @@ class MainView {
 
     // 現在地
     this.#containerElement.appendChild(createCurrentAreaView(this.#submitInput.bind(this), snapshot));
+    // 滞在者
+    this.#containerElement.appendChild(createCurrentAreaVisitorsView(this.#submitInput.bind(this), snapshot));
 
     if (snapshot.dialogue) {
       // ダイアログ
