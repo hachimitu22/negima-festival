@@ -62,8 +62,9 @@ class MainScene extends GameScene {
 
     return {
       sceneId: 'prototype3-main',
+      actors: actors,
       player: { ...player },
-      actors,
+      NPCs: actors.filter(actor => actor.id !== ACTOR_IDS.PLAYER),
       areas,
       moveableAreas,
       dialogue: dialogueSystem.createDialogueSnapshot(),

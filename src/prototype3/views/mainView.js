@@ -3,6 +3,7 @@ import createDialogueView from './dialogueView.js';
 import createMoveableAreasView from './moveableAreasView.js';
 // Debug
 import createEventsView from './debug/eventsView.js'
+import createActorsView from './debug/actorsView.js'
 
 /** SceneSnapshotを操作確認用DOMへ描画する。 */
 class MainView {
@@ -64,7 +65,9 @@ class MainView {
       this.#containerElement.appendChild(createMoveableAreasView(this.#submitInput.bind(this), snapshot));
     }
 
+    // デバッグ
     this.#containerElement.appendChild(createEventsView(this.#submitInput.bind(this), snapshot));
+    this.#containerElement.appendChild(createActorsView(this.#submitInput.bind(this), snapshot));
   }
 
   /**

@@ -35,9 +35,9 @@ class ActorSystem extends GameSystem {
    * @returns {void}
    */
   update({ context }) {
-    for (const actor of this.#actors.values()) {
-      actor.update(context);
-    }
+    // for (const actor of this.#actors.values()) {
+    //   actor.update(context);
+    // }
   }
 
   /**

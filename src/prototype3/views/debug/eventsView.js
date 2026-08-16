@@ -6,6 +6,11 @@
  */
 function createEventsView(submitInput, { events }) {
   const elm = document.createElement('div');
+
+  const label = document.createElement('span');
+  label.textContent = 'イベント一覧';
+  elm.append(label);
+
   const elms = events.map(event => {
     const text = document.createElement('p');
     text.textContent = `ID: ${event?.id}, status: ${event?.status}`;
