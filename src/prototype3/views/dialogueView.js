@@ -8,6 +8,10 @@ import INPUT_IDS from '../inputIds.js';
 function createDialogueView(submitInput, dialogue) {
   const elm = document.createElement('div');
 
+  const heading = document.createElement('h2');
+  heading.textContent = 'ダイアログ';
+  elm.appendChild(heading);
+
   const text = document.createElement('p');
   text.textContent = `${dialogue.speaker}「${dialogue.text}」`;
   elm.appendChild(text);

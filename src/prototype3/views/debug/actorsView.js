@@ -7,7 +7,7 @@
 function createActorsView(submitInput, { actors }) {
   const elm = document.createElement('div');
 
-  const label = document.createElement('span');
+  const label = document.createElement('h2');
   label.textContent = 'アクター一覧';
   elm.append(label);
 

@@ -7,7 +7,7 @@
 function createEventsView(submitInput, { events }) {
   const elm = document.createElement('div');
 
-  const label = document.createElement('span');
+  const label = document.createElement('h2');
   label.textContent = 'イベント一覧';
   elm.append(label);
 
