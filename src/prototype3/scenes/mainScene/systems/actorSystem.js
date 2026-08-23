@@ -1,6 +1,7 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
 import INPUT_IDS from '../../../inputIds.js';
+import TALKS from '../talks/talks.js';
 
 /** Actorと現在地を所有する。 */
 class ActorSystem extends GameSystem {
@@ -24,6 +25,13 @@ class ActorSystem extends GameSystem {
       handler: (params, context) => {
         this.moveActor(params, context);
         context.getSystem(SYSTEM_IDS.EVENT).onActorAreaMoved(params, context);
+      },
+    });
+
+    context.inputDispatcher.register({
+      inputId: INPUT_IDS.ACTOR.TALK_START,
+      handler: (params, context) => {
+        this.startTalk(params, context);
       },
     });
   }
@@ -69,6 +77,28 @@ class ActorSystem extends GameSystem {
     }
 
     actor.areaId = areaId;
+  }
+
+  startTalk({ actorId }, context) {
+    const actor = this.#actors.get(actorId);
+    if (!actor) {
+      throw new Error('actor-not-found');
+    }
+    const talkId = actor.getTalkId();
+    if (!talkId) {
+      throw new Error('talkId-not-found');
+    }
+    const talk = TALKS[talkId];
+    if (!talk) {
+      throw new Error('talk-not-found');
+    }
+
+    const dialogue = talk.dialogue;
+    context.getSystem(SYSTEM_IDS.DIALOGUE).start({
+      ownerId: talkId,
+      dialogue: dialogue,
+      complete: () => {},
+    }, context);
   }
 
   /**

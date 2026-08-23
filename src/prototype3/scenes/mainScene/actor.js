@@ -16,11 +16,13 @@ class Actor extends GameObject {
     id,
     name,
     areaId,
+    talks,
   }) {
     super();
     this.id = id;
     this.name = name;
     this.areaId = areaId;
+    this.talks = talks || [];
   }
 
   /**
@@ -30,6 +32,10 @@ class Actor extends GameObject {
    * @returns {void}
    */
   update(context) {
+  }
+
+  getTalkId() {
+    return this.talks?.length && this.talks[0];
   }
 
   /**
@@ -42,6 +48,7 @@ class Actor extends GameObject {
       id: this.id,
       name: this.name,
       areaId: this.areaId,
+      hasTalk: this.talks.length > 0,
     };
   }
 }

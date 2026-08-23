@@ -9,6 +9,7 @@ import AreaSystem from './systems/areaSystem.js';
 import DialogueSystem from './systems/dialogueSystem.js';
 import EventSystem from './systems/eventSystem.js';
 import SYSTEM_IDS from './systems/systemIds.js';
+import TALK_IDS from './talks/talkIds.js';
 
 /** 移動と明日菜イベントを提供するプロトタイプver3のMainScene。 */
 class MainScene extends GameScene {
@@ -33,11 +34,13 @@ class MainScene extends GameScene {
       id: ACTOR_IDS.ASUNA,
       name: '明日菜',
       areaId: AREA_IDS.WORLD_TREE,
+      talks: [TALK_IDS.ASUNA_NORMAL],
     }));
     actorSystem.addActor(new Actor({
       id: ACTOR_IDS.NODOKA,
       name: 'のどか',
       areaId: AREA_IDS.PLAZA,
+      talks: [TALK_IDS.NODOKA_NORMAL],
     }));
 
     this.addSystem(actorSystem);
