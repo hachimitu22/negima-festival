@@ -9,6 +9,7 @@ import ActorSystem from './systems/actorSystem.js';
 import AreaSystem from './systems/areaSystem.js';
 import DialogueSystem from './systems/dialogueSystem.js';
 import EventSystem from './systems/eventSystem.js';
+import ClockSystem from './systems/clockSystem.js';
 import SYSTEM_IDS from './systems/systemIds.js';
 import TALK_IDS from './talks/talkIds.js';
 
@@ -25,6 +26,7 @@ class MainScene extends GameScene {
     const areaSystem = new AreaSystem({ areas: AreaList });
     const eventSystem = new EventSystem({ events: Events });
     const dialogueSystem = new DialogueSystem();
+    const clockSystem = new ClockSystem();
 
     actorSystem.addActor(new Negi({
       areaId: AREA_IDS.SCHOOL_ENTRANCE,
@@ -42,6 +44,7 @@ class MainScene extends GameScene {
       talks: [TALK_IDS.NODOKA_NORMAL],
     }));
 
+    this.addSystem(clockSystem);
     this.addSystem(actorSystem);
     this.addSystem(areaSystem);
     this.addSystem(eventSystem);
@@ -54,6 +57,7 @@ class MainScene extends GameScene {
    * @returns {Object} SceneSnapshot。
    */
   createSnapshot() {
+    const clockSystem = this.getSystem(SYSTEM_IDS.CLOCK);
     const actorSystem = this.getSystem(SYSTEM_IDS.ACTOR);
     const areaSystem = this.getSystem(SYSTEM_IDS.AREA);
     const dialogueSystem = this.getSystem(SYSTEM_IDS.DIALOGUE);
@@ -64,6 +68,7 @@ class MainScene extends GameScene {
 
     return {
       sceneId: 'prototype3-main',
+      clock: clockSystem.createClockSnapshot(),
       actors: actors,
       player: { ...player },
       NPCs: actors.filter(actor => actor.id !== ACTOR_IDS.PLAYER),

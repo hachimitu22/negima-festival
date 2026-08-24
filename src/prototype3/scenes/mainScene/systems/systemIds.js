@@ -6,6 +6,7 @@ const SYSTEM_IDS = Object.freeze({
   AREA: 'area',
   EVENT: 'event',
   DIALOGUE: 'dialogue',
+  CLOCK: 'clock',
 });
 
 export default SYSTEM_IDS;

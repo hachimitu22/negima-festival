@@ -1,3 +1,4 @@
+import createClockView from './clockView.js';
 import createCurrentAreaView from './currentAreaView.js';
 import createCurrentAreaVisitorsView from './currentAreaVisitorsView.js';
 import createDialogueView from './dialogueView.js';
@@ -55,6 +56,8 @@ class MainView {
     title.textContent = '麻帆良祭 プロトタイプver3';
     this.#containerElement.appendChild(title);
 
+    // 時刻
+    this.#containerElement.appendChild(createClockView(this.#submitInput.bind(this), snapshot));
     // 現在地
     this.#containerElement.appendChild(createCurrentAreaView(this.#submitInput.bind(this), snapshot));
     // 滞在者
