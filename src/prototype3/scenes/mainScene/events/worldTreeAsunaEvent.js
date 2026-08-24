@@ -8,8 +8,12 @@ const WorldTreeAsunaEvent = {
   id: EventIds.WORLD_TREE_ASUNA,
   trigger: {
     type: EventTriggerTypes.AREA_ENTER,
-    actorId: ActorIds.PLAYER,
-    areaId: AREA_IDS.WORLD_TREE,
+    // 誰が移動した
+    enteringActorId: ActorIds.PLAYER,
+    // どこに移動した
+    enteredAreaId: AREA_IDS.WORLD_TREE,
+    // 移動先に誰が居れば
+    presentActorId: ActorIds.ASUNA,
   },
   dialogue: {
     steps: [

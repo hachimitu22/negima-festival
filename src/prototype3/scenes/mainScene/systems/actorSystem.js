@@ -86,6 +86,15 @@ class ActorSystem extends GameSystem {
     actor.moveTo(areaId);
   }
 
+  isActorInArea({ actorId, areaId }) {
+    const actor = this.#actors.get(actorId);
+    if (!actor) {
+      return false;
+    }
+
+    return actor.areaId === areaId;
+  }
+
   startTalk({ actorId }, context) {
     const actor = this.#actors.get(actorId);
     if (!actor) {

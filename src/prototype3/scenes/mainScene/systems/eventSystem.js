@@ -38,8 +38,12 @@ class EventSystem extends GameSystem {
     const state = this.#eventStates.values().find(state =>
       state.status === 'waiting'
       && state.definition.trigger.type === EventTriggerTypes.AREA_ENTER
-      && state.definition.trigger.actorId === actorId
-      && state.definition.trigger.areaId === areaId
+      && state.definition.trigger.enteringActorId === actorId
+      && state.definition.trigger.enteredAreaId === areaId
+      && context.getSystem(SYSTEM_IDS.ACTOR).isActorInArea({
+        actorId: state.definition.trigger.presentActorId,
+        areaId: state.definition.trigger.enteredAreaId,
+      })
     );
 
     // イベントが見つからなければ何もしない

@@ -79,8 +79,12 @@ const PlazaNodokaEvent = Object.freeze({
   id: EventIds.PLAZA_NODOKA,
   trigger: Object.freeze({
     type: EventTriggerTypes.AREA_ENTER,
-    actorId: ActorIds.PLAYER,
-    areaId: AREA_IDS.PLAZA,
+    // 誰が移動した
+    enteringActorId: ActorIds.PLAYER,
+    // どこに移動した
+    enteredAreaId: AREA_IDS.PLAZA,
+    // 移動先に誰が居れば
+    presentActorId: ActorIds.NODOKA,
   }),
   dialogue: {
     steps: [
