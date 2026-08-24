@@ -38,14 +38,21 @@ class ActorSystem extends GameSystem {
 
   /**
    * Actorを更新する。
-   * @param {Object} options - 更新情報。
-   * @param {Object} options.context - フレームコンテキスト。
+   * @param {Object} context - フレームコンテキスト。
    * @returns {void}
    */
-  update({ context }) {
-    // for (const actor of this.#actors.values()) {
-    //   actor.update(context);
-    // }
+  update(context) {
+    // ダイアログ表示中は何もしない
+    if (context.getSystem(SYSTEM_IDS.DIALOGUE).hasActiveDialogue()) {
+      return;
+    }
+
+    const actorContext = {
+      areas: context.getSystem(SYSTEM_IDS.AREA).getAreaIds(),
+    };
+    for (const actor of this.#actors.values()) {
+      actor.update(actorContext);
+    }
   }
 
   /**
@@ -76,7 +83,7 @@ class ActorSystem extends GameSystem {
       throw new Error('area-not-found');
     }
 
-    actor.areaId = areaId;
+    actor.moveTo(areaId);
   }
 
   startTalk({ actorId }, context) {

@@ -71,6 +71,10 @@ class GameScene {
     context.getSystem = this.getSystem.bind(this);
 
     this.#inputDispatcher.dispatchAll(context.inputs, context);
+
+    for (const system of this.#systems) {
+      system.update(context);
+    }
   }
 
   /**

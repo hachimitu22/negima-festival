@@ -19,14 +19,13 @@ class GameSystem {
   attach(context) {
   }
 
-  // /**
-  //  * Systemを更新する。
-  //  * @param {Object} options - 更新情報。
-  //  * @param {Object} options.context - フレームコンテキスト。
-  //  * @returns {void}
-  //  */
-  // update({ context }) {
-  // }
+  /**
+   * Systemを更新する。
+   * @param {Object} context - フレームコンテキスト。
+   * @returns {void}
+   */
+  update(context) {
+  }
 }
 
 export default GameSystem;

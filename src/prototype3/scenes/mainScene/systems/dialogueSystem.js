@@ -137,6 +137,10 @@ class DialogueSystem extends GameSystem {
     this.#activeDialogue.choice(params, context);
   }
 
+  hasActiveDialogue() {
+    return this.#activeDialogue !== null;
+  }
+
   /**
    * 表示中会話のsnapshotを返す。
    * @returns {Object|null} 会話snapshot。
@@ -161,11 +165,10 @@ class DialogueSystem extends GameSystem {
 
   /**
    * 会話状態を更新する。現在は同期要求だけのため処理しない。
-   * @param {Object} options - 更新情報。
-   * @param {Object} options.context - フレームコンテキスト。
+   * @param {Object} context - フレームコンテキスト。
    * @returns {void}
    */
-  update({ context }) {
+  update(context) {
   }
 }
 

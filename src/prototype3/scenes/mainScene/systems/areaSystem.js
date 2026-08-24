@@ -33,6 +33,10 @@ class AreaSystem extends GameSystem {
     return this.#areas.has(areaId);
   }
 
+  getAreaIds() {
+    return [...this.#areas.keys()];
+  }
+
   /**
    * エリア一覧をsnapshot形式で返す。
    * @returns {Object} エリア一覧。

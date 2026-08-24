@@ -1,5 +1,6 @@
 import GameScene from '../../gameEngine/gameScene.js';
 import Actor from './actor.js';
+import Negi from './actors/negi.js';
 import ACTOR_IDS from './actorIds.js';
 import AreaList from './AreaList.js';
 import AREA_IDS from './areaIds.js';
@@ -25,9 +26,7 @@ class MainScene extends GameScene {
     const eventSystem = new EventSystem({ events: Events });
     const dialogueSystem = new DialogueSystem();
 
-    actorSystem.addActor(new Actor({
-      id: ACTOR_IDS.PLAYER,
-      name: 'ネギ',
+    actorSystem.addActor(new Negi({
       areaId: AREA_IDS.SCHOOL_ENTRANCE,
     }));
     actorSystem.addActor(new Actor({

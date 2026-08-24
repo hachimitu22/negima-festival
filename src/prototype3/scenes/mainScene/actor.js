@@ -26,16 +26,25 @@ class Actor extends GameObject {
   }
 
   /**
-   * 毎フレーム更新。自動移動を処理。
+   * 更新処理
    * @public
    * @param {Object} context - 更新コンテキスト
    * @returns {void}
    */
-  update(context) {
+  update({ areas }) {
+    const index = Math.floor(Math.random() * areas.length);
+    const nextAreaId = areas[index];
+    if (nextAreaId) {
+      this.moveTo(nextAreaId);
+    }
   }
 
   getTalkId() {
     return this.talks?.length && this.talks[0];
+  }
+
+  moveTo(areaId) {
+    this.areaId = areaId;
   }
 
   /**
