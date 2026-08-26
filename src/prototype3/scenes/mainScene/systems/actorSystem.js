@@ -25,6 +25,7 @@ class ActorSystem extends GameSystem {
       handler: (params, context) => {
         this.moveActor(params, context);
         context.getSystem(SYSTEM_IDS.EVENT).onActorAreaMoved(params, context);
+        context.getSystem(SYSTEM_IDS.CLOCK).setStep();
       },
     });
 

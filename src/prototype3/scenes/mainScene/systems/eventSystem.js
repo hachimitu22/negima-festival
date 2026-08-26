@@ -67,6 +67,40 @@ class EventSystem extends GameSystem {
     this.#activeEventState = null;
   }
 
+  onTimeReached({ day, hour, min }, context) {
+    // イベント中は新しいイベントを開始しない
+    if (this.#activeEventState) {
+      return;
+    }
+
+    // 条件に一致する待機中イベントを探す
+    const state = this.#eventStates.values().find(state => {
+      if (state.status !== 'waiting') return false;
+      if (state.definition.trigger.type !== EventTriggerTypes.TIME_REACHED) return false;
+
+      const tTime = state.definition.trigger.time;
+      const d = tTime?.day === undefined ? true : tTime.day === day;
+      const h = tTime?.hour === undefined ? true : tTime.hour === hour;
+      const m = tTime?.min === undefined ? true : tTime.min === min;
+      return d && h && m;
+    });
+
+    // イベントが見つからなければ何もしない
+    if (!state) {
+      return;
+    }
+
+    this.#activeEventState = state;
+    this.#activeEventState.status = 'executing';
+
+    const dialogue = this.#activeEventState.definition.dialogue;
+    context.getSystem(SYSTEM_IDS.DIALOGUE).start({
+      ownerId: this.#activeEventState.definition.id,
+      dialogue: dialogue,
+      complete: this.complete.bind(this),
+    }, context);
+  }
+
   /**
    * 実行中会話の完了確認または待機中イベントの開始を行う。
    * @param {Object} options - 更新情報。

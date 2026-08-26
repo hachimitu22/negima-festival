@@ -1,13 +1,20 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
 
+const CLOCK_STATUS = {
+  STOP: 'stop',
+  RUN: 'run',
+  STEP: 'step',
+};
+
 class ClockSystem extends GameSystem {
   #clock;
+  #status
 
   constructor() {
     super(SYSTEM_IDS.CLOCK);
-    
     this.#clock = new Date('2003/06/20 10:00');
+    this.#status = CLOCK_STATUS.STOP;
   }
 
   /**
@@ -25,12 +32,21 @@ class ClockSystem extends GameSystem {
    * @returns {void}
    */
   update(context) {
-    // ダイアログ表示中は時間を経過させない
-    if (context.getSystem(SYSTEM_IDS.DIALOGUE).hasActiveDialogue()) {
-      return;
-    }
+    if (this.#status === CLOCK_STATUS.STOP) return;
+    if (this.#status === CLOCK_STATUS.STEP) this.#status = CLOCK_STATUS.STOP;
 
     this.#clock.setMinutes(this.#clock.getMinutes() + 5);
+
+    // イベントシステムに時刻経過を通知する
+    context.getSystem(SYSTEM_IDS.EVENT).onTimeReached({
+      day: this.#clock.getDate(),
+      hour: this.#clock.getHours(),
+      min: this.#clock.getMinutes(),
+    }, context)
+  }
+
+  setStep() {
+    this.#status = CLOCK_STATUS.STEP;
   }
 
   createClockSnapshot() {
