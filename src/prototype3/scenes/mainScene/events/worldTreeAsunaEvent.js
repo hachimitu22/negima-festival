@@ -1,11 +1,11 @@
 import ActorIds from '../actorIds.js';
 import AREA_IDS from '../areaIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
-import EventIds from './eventIds.js';
+import EVENT_IDS from './eventIds.js';
 
 /** 世界樹への進入で開始する明日菜との会話イベントデータ。 */
 const WorldTreeAsunaEvent = {
-  id: EventIds.WORLD_TREE_ASUNA,
+  id: EVENT_IDS.WORLD_TREE_ASUNA,
   trigger: {
     type: EventTriggerTypes.AREA_ENTER,
     // 誰が移動した

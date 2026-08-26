@@ -1,7 +1,7 @@
 import ActorIds from '../actorIds.js';
 import AREA_IDS from '../areaIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
-import EventIds from './eventIds.js';
+import EVENT_IDS from './eventIds.js';
 import SYSTEM_IDS from '../systems/systemIds.js';
 
 // のどかからの質問ステップ定義
@@ -76,7 +76,7 @@ const questionSteps = Object.freeze([
 
 /** 広場でのどかと会話するイベントデータ。 */
 const PlazaNodokaEvent = Object.freeze({
-  id: EventIds.PLAZA_NODOKA,
+  id: EVENT_IDS.PLAZA_NODOKA,
   trigger: Object.freeze({
     type: EventTriggerTypes.AREA_ENTER,
     // 誰が移動した

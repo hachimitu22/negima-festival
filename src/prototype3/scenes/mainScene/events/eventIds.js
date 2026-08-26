@@ -1,8 +1,8 @@
 /** プロトタイプver3で使用するイベントID。 */
-const EventIds = Object.freeze({
+const EVENT_IDS = Object.freeze({
   WORLD_TREE_ASUNA: 'world-tree-asuna',
   PLAZA_NODOKA: 'plaza-nodoka',
   FESTIVAL_ANNOUNCEMENT: 'festival-announcement',
 });
 
-export default EventIds;
+export default EVENT_IDS;
