@@ -1,4 +1,4 @@
-import { GameObject } from '../../gameEngine/gameObject.js';
+import { GameObject } from '../../../gameEngine/gameObject.js';
 
 /**
  * ゲーム上のアクター（キャラクター）。自動移動や位置管理を行う GameObject。

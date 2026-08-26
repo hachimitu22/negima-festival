@@ -1,4 +1,4 @@
-import ACTOR_IDS from '../actorIds.js';
+import ACTOR_IDS from '../actors/actorIds.js';
 import AREA_IDS from '../areaIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';

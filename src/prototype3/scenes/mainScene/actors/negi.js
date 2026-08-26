@@ -1,5 +1,5 @@
-import Actor from '../actor.js';
-import ACTOR_IDS from '../actorIds.js';
+import Actor from './actor.js';
+import ACTOR_IDS from './actorIds.js';
 
 class Negi extends Actor {
   constructor({ areaId }) {
