@@ -1,4 +1,4 @@
-import ActorIds from '../actorIds.js';
+import ACTOR_IDS from '../actorIds.js';
 import AREA_IDS from '../areaIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
@@ -80,11 +80,11 @@ const PlazaNodokaEvent = Object.freeze({
   trigger: Object.freeze({
     type: EventTriggerTypes.AREA_ENTER,
     // 誰が移動した
-    enteringActorId: ActorIds.PLAYER,
+    enteringActorId: ACTOR_IDS.PLAYER,
     // どこに移動した
     enteredAreaId: AREA_IDS.PLAZA,
     // 移動先に誰が居れば
-    presentActorId: ActorIds.NODOKA,
+    presentActorId: ACTOR_IDS.NODOKA,
   }),
   dialogue: {
     steps: [
