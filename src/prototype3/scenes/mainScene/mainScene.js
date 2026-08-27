@@ -36,12 +36,26 @@ class MainScene extends GameScene {
       name: '明日菜',
       areaId: AREA_IDS.WORLD_TREE,
       talks: [TALK_IDS.ASUNA_NORMAL],
+      schedules: [
+        {
+          from: { date: 20, hour: 10, min: 0 },
+          to: { date: 20, hour: 11, min: 0 },
+          areaId: AREA_IDS.WORLD_TREE,
+        },
+      ],
     }));
     actorSystem.addActor(new Actor({
       id: ACTOR_IDS.NODOKA,
       name: 'のどか',
       areaId: AREA_IDS.PLAZA,
       talks: [TALK_IDS.NODOKA_NORMAL],
+      schedules: [
+        {
+          from: { date: 20, hour: 10, min: 0 },
+          to: { date: 20, hour: 11, min: 0 },
+          areaId: AREA_IDS.PLAZA,
+        },
+      ],
     }));
 
     this.addSystem(clockSystem);

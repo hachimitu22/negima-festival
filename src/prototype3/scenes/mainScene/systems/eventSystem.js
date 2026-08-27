@@ -2,6 +2,7 @@ import GameSystem from '../../../gameEngine/gameSystem.js';
 import { EventTriggerTypes } from '../events/eventDataTypes.js';
 import SYSTEM_IDS from './systemIds.js';
 import INPUT_IDS from '../../../inputIds.js';
+import ClockDateTime from '../clockDateTime.js';
 
 /** 宣言されたイベントの開始条件と完了状態を管理する。 */
 class EventSystem extends GameSystem {
@@ -67,7 +68,7 @@ class EventSystem extends GameSystem {
     this.#activeEventState = null;
   }
 
-  onTimeReached({ day, hour, min }, context) {
+  onTimeReached({ dateTime }, context) {
     // イベント中は新しいイベントを開始しない
     if (this.#activeEventState) {
       return;
@@ -78,11 +79,9 @@ class EventSystem extends GameSystem {
       if (state.status !== 'waiting') return false;
       if (state.definition.trigger.type !== EventTriggerTypes.TIME_REACHED) return false;
 
-      const tTime = state.definition.trigger.time;
-      const d = tTime?.day === undefined ? true : tTime.day === day;
-      const h = tTime?.hour === undefined ? true : tTime.hour === hour;
-      const m = tTime?.min === undefined ? true : tTime.min === min;
-      return d && h && m;
+      const currentTime = dateTime.getTime();
+      const eventTime = new ClockDateTime(state.definition.trigger.time).getTime();
+      return currentTime === eventTime;
     });
 
     // イベントが見つからなければ何もしない

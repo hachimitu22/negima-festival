@@ -1,5 +1,6 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
+import ClockDateTime from '../clockDateTime.js';
 
 const CLOCK_STATUS = {
   STOP: 'stop',
@@ -13,7 +14,7 @@ class ClockSystem extends GameSystem {
 
   constructor() {
     super(SYSTEM_IDS.CLOCK);
-    this.#clock = new Date('2003/06/20 10:00');
+    this.#clock = new ClockDateTime();
     this.#status = CLOCK_STATUS.STOP;
   }
 
@@ -35,13 +36,11 @@ class ClockSystem extends GameSystem {
     if (this.#status === CLOCK_STATUS.STOP) return;
     if (this.#status === CLOCK_STATUS.STEP) this.#status = CLOCK_STATUS.STOP;
 
-    this.#clock.setMinutes(this.#clock.getMinutes() + 5);
+    this.#clock = this.#clock.add({ min: 5 });
 
     // イベントシステムに時刻経過を通知する
     context.getSystem(SYSTEM_IDS.EVENT).onTimeReached({
-      day: this.#clock.getDate(),
-      hour: this.#clock.getHours(),
-      min: this.#clock.getMinutes(),
+      dateTime: this.getDateTime(),
     }, context)
   }
 
@@ -49,15 +48,12 @@ class ClockSystem extends GameSystem {
     this.#status = CLOCK_STATUS.STEP;
   }
 
+  getDateTime() {
+    return this.#clock;
+  }
+
   createClockSnapshot() {
-    const timeOptions = {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    };
-    return Intl.DateTimeFormat('ja-JP', timeOptions).format(this.#clock);
+    return this.#clock.toString();
   }
 }
 

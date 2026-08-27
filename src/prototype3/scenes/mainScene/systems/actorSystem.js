@@ -50,6 +50,7 @@ class ActorSystem extends GameSystem {
 
     const actorContext = {
       areas: context.getSystem(SYSTEM_IDS.AREA).getAreaIds(),
+      dateTime: context.getSystem(SYSTEM_IDS.CLOCK).getDateTime(),
     };
     for (const actor of this.#actors.values()) {
       actor.update(actorContext);

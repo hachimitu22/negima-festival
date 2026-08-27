@@ -6,7 +6,7 @@ const FestivalAnnouncementEvent = Object.freeze({
   id: EVENT_IDS.FESTIVAL_ANNOUNCEMENT,
   trigger: Object.freeze({
     type: EventTriggerTypes.TIME_REACHED,
-    time: { day: 20, hour: 10, min: 15 },
+    time: { date: 20, hour: 10, min: 15 },
   }),
   dialogue: {
     steps: [
