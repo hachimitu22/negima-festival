@@ -37,12 +37,7 @@ class Actor extends GameObject {
   update({ areas, dateTime }) {
     if (this.schedules.length) {
       // スケジュールの時間帯はエリアを固定化
-      const time = dateTime.getTime();
-      const schedule = this.schedules.find(schedule => {
-        const from = new ClockDateTime(schedule.from).getTime();
-        const to = new ClockDateTime(schedule.to).getTime();
-        return from <= time && time <= to;
-      });
+      const schedule = this.schedules.find(schedule => schedule?.dateTimeRange?.contains(dateTime));
       if (schedule) {
         this.moveTo(schedule.areaId);
         return;
