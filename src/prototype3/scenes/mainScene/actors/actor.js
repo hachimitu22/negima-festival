@@ -71,6 +71,12 @@ class Actor extends GameObject {
       name: this.name,
       areaId: this.areaId,
       hasTalk: this.talks.length > 0,
+      schedules: this.schedules.map(schedule => {
+        return {
+          dateTimeRange: schedule.dateTimeRange.createSnapshot(),
+          areaId: schedule.areaId,
+        };
+      }),
     };
   }
 }

@@ -13,6 +13,13 @@ class ClockDateTimeRange {
     const to = this.#to.getTime();
     return from <= time && time <= to;
   }
+
+  createSnapshot() {
+    return {
+      from: this.#from.toString(),
+      to: this.#to.toString(),
+    };
+  }
 }
 
 export default ClockDateTimeRange;
