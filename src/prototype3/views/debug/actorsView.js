@@ -22,7 +22,7 @@ function createActorsView(submitInput, { actors }) {
     // スケジュール
     const schedules = actor.schedules.map((schedule, i) => {
       const p = document.createElement('p');
-      p.textContent = `${i + 1}: ${schedule.dateTimeRange.from} - ${schedule.dateTimeRange.to}: ${schedule.areaId}`
+      p.textContent = `${i + 1}: ${schedule.dateTimeRange.from} - ${schedule.dateTimeRange.to}: ${schedule.areaId}: ${schedule.enabled ? 'enable' : 'disable'}`
       return p;
     });
     if (schedules.length > 0) {

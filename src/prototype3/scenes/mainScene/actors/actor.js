@@ -37,7 +37,10 @@ class Actor extends GameObject {
   update({ areas, dateTime }) {
     if (this.schedules.length) {
       // スケジュールの時間帯はエリアを固定化
-      const schedule = this.schedules.find(schedule => schedule?.dateTimeRange?.contains(dateTime));
+      const schedule = this.schedules.find(schedule => {
+        if (!schedule.enabled) return false;
+        return schedule?.dateTimeRange?.contains(dateTime);
+      });
       if (schedule) {
         this.moveTo(schedule.areaId);
         return;
@@ -60,6 +63,15 @@ class Actor extends GameObject {
     this.areaId = areaId;
   }
 
+  enableSchedule(scheduleId) {
+    const schedule = this.schedules.find(schedule => {
+      return schedule.id === scheduleId;
+    });
+    if (schedule) {
+      schedule.enabled = true;
+    }
+  }
+
   /**
    * アクター状態のスナップショット。
    * @public
@@ -75,6 +87,7 @@ class Actor extends GameObject {
         return {
           dateTimeRange: schedule.dateTimeRange.createSnapshot(),
           areaId: schedule.areaId,
+          enabled: schedule.enabled,
         };
       }),
     };

@@ -7,6 +7,7 @@ class Dialogue {
   #steps = [];
   #complete = () => { };
   #index = 0;
+  #nextAction = null;
 
   constructor({ id, steps, complete }) {
     this.id = id;
@@ -35,8 +36,14 @@ class Dialogue {
     }
 
     this.#setCurrentStep();
+
+    if (this.#nextAction) {
+      this.#nextAction(context);
+      this.next(params, context);
+    }
   }
 
+  // TODO: 選択したあとの操作なので choiced に近いニュアンスが良い
   choice({ choiceId }, context) {
     const choice = this.choices.find(choice => choice.id === choiceId);
     if (!choice) {
@@ -52,14 +59,20 @@ class Dialogue {
   #setCurrentStep() {
     const step = this.#steps[this.#index];
 
+    this.currentMessage = '';
+    this.choices = [];
+    this.#nextAction = null;
+
     switch (step.type) {
       case 'message':
         this.currentMessage = step.message;
-        this.choices = [];
         break;
       case 'choice':
         this.currentMessage = step.message;
         this.choices = step.choices;
+        break;
+      case 'action':
+        this.#nextAction = step.action;
         break;
       default:
         throw new Error('dialogue-none-step-type');

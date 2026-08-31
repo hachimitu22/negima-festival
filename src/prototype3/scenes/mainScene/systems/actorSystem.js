@@ -119,6 +119,14 @@ class ActorSystem extends GameSystem {
     }, context);
   }
 
+  enableSchedule(actorId, scheduleId) {
+    const actor = this.#actors.get(actorId);
+    if (!actor) {
+      throw new Error('actor-not-found');
+    }
+    actor.enableSchedule(scheduleId);
+  }
+
   /**
    * 全Actorのsnapshotを返す。
    * @returns {Array<Object>} Actor一覧。

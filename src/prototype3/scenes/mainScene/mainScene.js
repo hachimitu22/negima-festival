@@ -14,6 +14,8 @@ import SYSTEM_IDS from './systems/systemIds.js';
 import TALK_IDS from './talks/talkIds.js';
 import ClockDateTimeRange from './clockDateTimeRange.js';
 import ClockDateTime from './clockDateTime.js';
+import SCHEDULE_IDS from './schedules/scheduleIds.js';
+import SCHEDULES from './schedules/schedules.js';
 
 /** 移動と明日菜イベントを提供するプロトタイプver3のMainScene。 */
 class MainScene extends GameScene {
@@ -40,11 +42,12 @@ class MainScene extends GameScene {
       talks: [TALK_IDS.ASUNA_NORMAL],
       schedules: [
         {
-          dateTimeRange: new ClockDateTimeRange({
-            from: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
-            to: new ClockDateTime({ date: 20, hour: 11, min: 0 }),
-          }),
-          areaId: AREA_IDS.WORLD_TREE,
+          ...SCHEDULES[SCHEDULE_IDS.ASUNA.WORLD_TREE_WAITING],
+          enabled: true,
+        },
+        {
+          ...SCHEDULES[SCHEDULE_IDS.ASUNA.PLAZA_WAITING],
+          enabled: false,
         },
       ],
     }));
@@ -55,11 +58,8 @@ class MainScene extends GameScene {
       talks: [TALK_IDS.NODOKA_NORMAL],
       schedules: [
         {
-          dateTimeRange: new ClockDateTimeRange({
-            from: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
-            to: new ClockDateTime({ date: 20, hour: 11, min: 0 }),
-          }),
-          areaId: AREA_IDS.PLAZA,
+          ...SCHEDULES[SCHEDULE_IDS.NODOKA.PLAZA_WAITING],
+          enabled: true,
         },
       ],
     }));

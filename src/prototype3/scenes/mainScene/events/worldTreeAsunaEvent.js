@@ -1,5 +1,7 @@
 import ACTOR_IDS from '../actors/actorIds.js';
 import AREA_IDS from '../areaIds.js';
+import SCHEDULE_IDS from '../schedules/scheduleIds.js';
+import SYSTEM_IDS from '../systems/systemIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
 
@@ -46,6 +48,12 @@ const WorldTreeAsunaEvent = {
               {
                 type: 'message',
                 message: { speaker: '明日菜', text: 'な、何よ急に。' },
+              },
+              {
+                type: 'action',
+                action: (context) => {
+                  context.getSystem(SYSTEM_IDS.ACTOR).enableSchedule(ACTOR_IDS.ASUNA, SCHEDULE_IDS.ASUNA.PLAZA_WAITING);
+                },
               },
             ],
           },
