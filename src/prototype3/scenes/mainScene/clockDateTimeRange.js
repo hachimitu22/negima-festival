@@ -7,11 +7,15 @@ class ClockDateTimeRange {
     this.#to = to;
   }
 
-  contains(dateTime) {
+  contains(dateTime, { includeFrom = true, includeTo = true } = {}) {
     const time = dateTime.getTime();
     const from = this.#from.getTime();
     const to = this.#to.getTime();
-    return from <= time && time <= to;
+
+    const afterFrom = includeFrom ? from <= time : from < time;
+    const beforeTo = includeTo ? time <= to : time < to;
+
+    return afterFrom && beforeTo;
   }
 
   createSnapshot() {

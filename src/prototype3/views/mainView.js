@@ -3,6 +3,7 @@ import createCurrentAreaView from './currentAreaView.js';
 import createCurrentAreaVisitorsView from './currentAreaVisitorsView.js';
 import createDialogueView from './dialogueView.js';
 import createMoveableAreasView from './moveableAreasView.js';
+import createScheduleTimelineView from './scheduleTimelineView.js';
 // Debug
 import createEventsView from './debug/eventsView.js'
 import createActorsView from './debug/actorsView.js'
@@ -70,6 +71,9 @@ class MainView {
       // 移動可能なエリア一覧
       this.#containerElement.appendChild(createMoveableAreasView(this.#submitInput.bind(this), snapshot));
     }
+
+    // スケジュール表
+    this.#containerElement.appendChild(createScheduleTimelineView(this.#submitInput.bind(this), snapshot));
 
     // デバッグ
     this.#containerElement.appendChild(createEventsView(this.#submitInput.bind(this), snapshot));

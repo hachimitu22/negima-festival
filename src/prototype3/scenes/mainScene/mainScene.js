@@ -12,10 +12,9 @@ import EventSystem from './systems/eventSystem.js';
 import ClockSystem from './systems/clockSystem.js';
 import SYSTEM_IDS from './systems/systemIds.js';
 import TALK_IDS from './talks/talkIds.js';
-import ClockDateTimeRange from './clockDateTimeRange.js';
-import ClockDateTime from './clockDateTime.js';
 import SCHEDULE_IDS from './schedules/scheduleIds.js';
 import SCHEDULES from './schedules/schedules.js';
+import Schedule from './schedule.js';
 
 /** 移動と明日菜イベントを提供するプロトタイプver3のMainScene。 */
 class MainScene extends GameScene {
@@ -32,6 +31,7 @@ class MainScene extends GameScene {
     const dialogueSystem = new DialogueSystem();
     const clockSystem = new ClockSystem();
 
+    const clock = clockSystem.getDateTime();
     actorSystem.addActor(new Negi({
       areaId: AREA_IDS.SCHOOL_ENTRANCE,
     }));
@@ -41,14 +41,8 @@ class MainScene extends GameScene {
       areaId: AREA_IDS.WORLD_TREE,
       talks: [TALK_IDS.ASUNA_NORMAL],
       schedules: [
-        {
-          ...SCHEDULES[SCHEDULE_IDS.ASUNA.WORLD_TREE_WAITING],
-          enabled: true,
-        },
-        {
-          ...SCHEDULES[SCHEDULE_IDS.ASUNA.PLAZA_WAITING],
-          enabled: false,
-        },
+        new Schedule(SCHEDULES[SCHEDULE_IDS.ASUNA.WORLD_TREE_WAITING], true, clock),
+        new Schedule(SCHEDULES[SCHEDULE_IDS.ASUNA.PLAZA_WAITING], false, clock),
       ],
     }));
     actorSystem.addActor(new Actor({
@@ -57,10 +51,7 @@ class MainScene extends GameScene {
       areaId: AREA_IDS.PLAZA,
       talks: [TALK_IDS.NODOKA_NORMAL],
       schedules: [
-        {
-          ...SCHEDULES[SCHEDULE_IDS.NODOKA.PLAZA_WAITING],
-          enabled: true,
-        },
+        new Schedule(SCHEDULES[SCHEDULE_IDS.NODOKA.PLAZA_WAITING], true, clock),
       ],
     }));
 
