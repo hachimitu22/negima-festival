@@ -7,6 +7,9 @@ const SCHEDULE_IDS = Object.freeze({
   NODOKA: {
     PLAZA_WAITING: 'nodoka.plaza-waiting',
   },
+  KONOKA: {
+    CAFETERIA_HELP: 'konoka.cafeteria-help',
+  },
 });
 
 export default SCHEDULE_IDS;

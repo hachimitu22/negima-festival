@@ -2,6 +2,7 @@ import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
 import INPUT_IDS from '../../../inputIds.js';
 import TALKS from '../talks/talks.js';
+import ACTOR_IDS from '../actors/actorIds.js';
 
 /** Actorと現在地を所有する。 */
 class ActorSystem extends GameSystem {
@@ -31,8 +32,16 @@ class ActorSystem extends GameSystem {
 
     context.inputDispatcher.register({
       inputId: INPUT_IDS.ACTOR.TALK_START,
-      handler: (params, context) => {
-        this.startTalk(params, context);
+      handler: ({ actorId }, context) => {
+        const eventStarted = context.getSystem(SYSTEM_IDS.EVENT).onTalkStarted({
+          initiatingActorId: ACTOR_IDS.PLAYER,
+          actorId: actorId,
+        }, context);
+        if (eventStarted) {
+          return;
+        }
+
+        this.startTalk({ actorId }, context);
       },
     });
   }

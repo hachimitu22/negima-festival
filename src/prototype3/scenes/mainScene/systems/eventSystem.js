@@ -63,6 +63,54 @@ class EventSystem extends GameSystem {
     }, context);
   }
 
+  /**
+   * Actorへの会話開始時に、条件へ一致するイベントを通常会話より優先して開始する。
+   * @param {Object} params - 会話開始情報。
+   * @param {string} params.initiatingActorId - 会話を開始したActor ID。
+   * @param {string} params.actorId - 会話相手のActor ID。
+   * @param {Object} context - System参照を持つ更新コンテキスト。
+   * @returns {boolean} イベントを開始した場合はtrue。
+   */
+  onTalkStarted({ initiatingActorId, actorId }, context) {
+    if (this.#activeEventState) {
+      return false;
+    }
+
+    const actorSystem = context.getSystem(SYSTEM_IDS.ACTOR);
+    const currentDateTime = context.getSystem(SYSTEM_IDS.CLOCK).getDateTime();
+    const state = [...this.#eventStates.values()].find(candidate => {
+      const trigger = candidate.definition.trigger;
+
+      return candidate.status === 'waiting'
+        && trigger.type === EventTriggerTypes.TALK_START
+        && trigger.initiatingActorId === initiatingActorId
+        && trigger.actorId === actorId
+        && trigger.dateTimeRange.contains(currentDateTime,  { includeFrom: true, includeTo: false })
+        && actorSystem.isActorInArea({ actorId: initiatingActorId, areaId: trigger.areaId })
+        && actorSystem.isActorInArea({ actorId, areaId: trigger.areaId });
+    });
+
+    if (!state) {
+      return false;
+    }
+
+    this.#activeEventState = state;
+    state.status = 'executing';
+    context.getSystem(SYSTEM_IDS.DIALOGUE).start({
+      ownerId: state.definition.id,
+      dialogue: state.definition.dialogue,
+      complete: this.complete.bind(this),
+    }, context);
+
+    return true;
+  }
+
+  /**
+   * 実行中イベントを完了する。
+   * @param {Object} params - 会話完了情報。
+   * @param {Object} context - 更新コンテキスト。
+   * @returns {void}
+   */
   complete(params, context) {
     this.#activeEventState.status = 'complete';
     this.#activeEventState = null;

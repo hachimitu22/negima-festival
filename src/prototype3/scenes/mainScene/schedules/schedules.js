@@ -28,6 +28,14 @@ const SCHEDULES = {
     }),
     areaId: AREA_IDS.PLAZA,
   },
+  [SCHEDULE_IDS.KONOKA.CAFETERIA_HELP]: {
+    id: SCHEDULE_IDS.KONOKA.CAFETERIA_HELP,
+    dateTimeRange: new ClockDateTimeRange({
+      from: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
+      to: new ClockDateTime({ date: 20, hour: 10, min: 15 }),
+    }),
+    areaId: AREA_IDS.CAFETERIA,
+  },
 };
 
 export default SCHEDULES;

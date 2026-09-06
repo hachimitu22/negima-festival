@@ -5,7 +5,10 @@ const EventTriggerTypes = Object.freeze({
    * 対象アクターと同時にエリアに入った場合は発生しない。
    */
   AREA_ENTER: 'area.enter',
-  CONVERSATION_START: 'conversation.start', // 会話が開始されたとき
+  /**
+   * 会話が開始されたとき
+   */
+  TALK_START: 'talk.start',
   /**
    * 特定の時間になった時のイベント
    */

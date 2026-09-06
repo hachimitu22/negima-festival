@@ -21,6 +21,7 @@ MainSceneで使用するIDは`SYSTEM_IDS`定数へ集約し、Systemのコンス
 | ActorSystem | `requestMoveActor({ actorId, areaId })` | `accepted`、`succeeded`と必要に応じて`reason` |
 | AreaSystem | `hasArea(areaId)` | 存在判定 |
 | EventSystem | `requestAreaEntered(areaId)` | イベント開始の受付結果 |
+| EventSystem | `onTalkStarted({ initiatingActorId, actorId }, context)` | 会話開始条件に一致するイベントを開始した場合は`true`、それ以外は`false` |
 | DialogueSystem | `requestStart({ ownerId, messages, choices })` | 受付結果とrequestId |
 | DialogueSystem | `requestAdvance()` | 受付結果 |
 | DialogueSystem | `requestChoose(choiceId)` | 選択受付結果 |
@@ -33,7 +34,7 @@ DialogueSystemは同時に1会話だけを実行する。選択肢がある共�
 
 ## イベントデータと実行
 
-イベント固有のID、発生エリア、会話は`events`フォルダのデータモジュールへ定義し、MainSceneが配列としてEventSystemへ渡す。
+イベント固有のID、開始条件、会話は`events`フォルダのデータモジュールへ定義し、MainSceneが配列としてEventSystemへ渡す。
 
 ```js
 {
@@ -47,6 +48,8 @@ DialogueSystemは同時に1会話だけを実行する。選択肢がある共�
 ```
 
 EventSystemは登録時にIDの重複と発生エリアを検証する。会話と選択肢の形式はDialogueSystemが開始要求時に検証する。
+
+会話開始イベントは、対象Actor、エリア、開始日時、終了日時を開始条件に持つ。ActorSystemは通常会話を開始する前にEventSystemへ通知し、条件に一致するイベントが開始された場合は通常会話を開始しない。日時範囲は両端を含む。
 
 同時に実行するイベントは一つとする。待機中の複数イベントが同じ進入条件を満たした場合は、登録順で最初のイベントを開始する。完了済みイベントは再度開始しない。
 
@@ -77,7 +80,7 @@ EventSystemは登録時にIDの重複と発生エリアを検証する。会話�
 ```
 
 イベント状態は`waiting`、`executing`、`completed`のいずれかとする。
-エリアIDは`school-entrance`、`world-tree`、`plaza`、Actor IDは`player`、`asuna`を使用する。
+エリアIDは`school-entrance`、`world-tree`、`plaza`、`cafeteria`、Actor IDは`player`、`asuna`、`nodoka`、`konoka`を使用する。
 
 ## View
 

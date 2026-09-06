@@ -29,6 +29,20 @@ const TALKS = {
       ],
     },
   },
+  [TALK_IDS.KONOKA_NORMAL]: {
+    dialogue: {
+      steps: [
+        {
+          type: 'message',
+          message: { speaker: '木乃香', text: 'ネギ君、麻帆良祭楽しんどる？' },
+        },
+        {
+          type: 'message',
+          message: { speaker: 'ネギ', text: 'はい、木乃香さんも楽しんでくださいね。' },
+        },
+      ],
+    },
+  },
 };
 
 export default TALKS;

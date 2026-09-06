@@ -54,6 +54,15 @@ class MainScene extends GameScene {
         new Schedule(SCHEDULES[SCHEDULE_IDS.NODOKA.PLAZA_WAITING], true, clock),
       ],
     }));
+    actorSystem.addActor(new Actor({
+      id: ACTOR_IDS.KONOKA,
+      name: '木乃香',
+      areaId: AREA_IDS.CAFETERIA,
+      talks: [TALK_IDS.KONOKA_NORMAL],
+      schedules: [
+        new Schedule(SCHEDULES[SCHEDULE_IDS.KONOKA.CAFETERIA_HELP], true, clock),
+      ],
+    }));
 
     this.addSystem(clockSystem);
     this.addSystem(actorSystem);
