@@ -89,6 +89,7 @@ class MainScene extends GameScene {
     return {
       sceneId: 'prototype3-main',
       clock: clockSystem.createClockSnapshot(),
+      canRewindTime: clockSystem.canRewindToStart(),
       actors: actors,
       player: { ...player },
       NPCs: actors.filter(actor => actor.id !== ACTOR_IDS.PLAYER),

@@ -6,9 +6,10 @@
 初期化時に渡す`requireSystem(systemId)`は、未登録のSystemを要求した場合に例外を送出する。
 MainSceneで使用するIDは`SYSTEM_IDS`定数へ集約し、Systemのコンストラクタ、`requireSystem`、`getSystem`から参照する。
 
-更新順は次のとおりとする。
+入力を配信した後、Systemを登録順に更新し、全Systemの更新後に登録順で`cleanup()`を呼ぶ。
+MainSceneのSystem更新順は次のとおりとする。
 
-1. PlayerControlSystem
+1. ClockSystem
 2. ActorSystem
 3. AreaSystem
 4. EventSystem
@@ -22,6 +23,9 @@ MainSceneで使用するIDは`SYSTEM_IDS`定数へ集約し、Systemのコンス
 | AreaSystem | `hasArea(areaId)` | 存在判定 |
 | EventSystem | `requestAreaEntered(areaId)` | イベント開始の受付結果 |
 | EventSystem | `onTalkStarted({ initiatingActorId, actorId }, context)` | 会話開始条件に一致するイベントを開始した場合は`true`、それ以外は`false` |
+| ClockSystem | `rewindToStart()` | 巻き戻しを実行した場合は`true`、実行不可の場合は`false` |
+| ClockSystem | `canRewindToStart()` | 現在時刻が1日目10:00より後かを返す |
+| ClockSystem | `isRewinding()` | 簡易巻き戻しが成立した更新のSystem更新中だけ`true`を返す |
 | DialogueSystem | `requestStart({ ownerId, messages, choices })` | 受付結果とrequestId |
 | DialogueSystem | `requestAdvance()` | 受付結果 |
 | DialogueSystem | `requestChoose(choiceId)` | 選択受付結果 |
@@ -61,15 +65,20 @@ EventSystemは登録時にIDの重複と発生エリアを検証する。会話�
 { type: 'area.move', areaId: 'world-tree' }
 { type: 'dialogue.next' }
 { type: 'dialogue.choose', choiceId: 'look-around-festival' }
+{ inputId: 'clock.rewind-to-start' }
 ```
 
 会話中は`dialogue.next`または`dialogue.choose`を処理し、それ以外の入力を無視する。通常時は1回の更新につき最初の有効な移動入力だけを処理する。
+
+ClockSystemは`clock.rewind-to-start`を受け付け、会話中または1日目10:00の場合は状態を変更しない。成功時は時刻を1日目10:00へ置き換えて時計を停止し、`isRewinding()`が`true`になる。各Systemはこの値を参照して自身が所有する状態を処理し、ClockSystemから他Systemの状態を変更しない。現在のActorSystemは同じ更新でActorのスケジュール更新と自動移動を行わない。フラグは全Systemの更新後にClockSystemの`cleanup()`で解除する。
 
 ## SceneSnapshot
 
 ```js
 {
   sceneId: 'prototype3-main',
+  clock: string,
+  canRewindTime: boolean,
   player: { id, name, areaId },
   actors: [{ id, name, areaId }],
   areas: [{ id, name }],
@@ -87,3 +96,4 @@ EventSystemは登録時にIDの重複と発生エリアを検証する。会話�
 MainViewは`configure`、`init`、`render`、`destroy`を実装する。表示操作は入力をenqueueしてから`requestRenderStep`を呼ぶ。
 操作要素は生成時に各要素へ`click`リスナーを設定し、その要素に対応する入力を直接生成する。
 ゲーム状態やルールをDOMへ保持せず、毎回SceneSnapshotから表示を作る。
+時刻欄は「10:00に戻す」ボタンを表示し、`canRewindTime`が`false`の場合は無効化する。

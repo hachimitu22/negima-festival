@@ -26,6 +26,14 @@ class GameSystem {
    */
   update(context) {
   }
+
+  /**
+   * Systemを更新後に呼ばれる。Systemが保持する状態をクリアする。
+   * @param {Object} context - フレームコンテキスト。
+   * @returns {void}
+   */
+  cleanup(context) {
+  }
 }
 
 export default GameSystem;

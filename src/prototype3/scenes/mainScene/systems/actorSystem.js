@@ -52,6 +52,11 @@ class ActorSystem extends GameSystem {
    * @returns {void}
    */
   update(context) {
+    const clockSystem = context.getSystem(SYSTEM_IDS.CLOCK);
+    if (clockSystem.isRewinding()) {
+      return;
+    }
+
     // ダイアログ表示中は何もしない
     if (context.getSystem(SYSTEM_IDS.DIALOGUE).hasActiveDialogue()) {
       return;
@@ -59,7 +64,7 @@ class ActorSystem extends GameSystem {
 
     const actorContext = {
       areas: context.getSystem(SYSTEM_IDS.AREA).getAreaIds(),
-      dateTime: context.getSystem(SYSTEM_IDS.CLOCK).getDateTime(),
+      dateTime: clockSystem.getDateTime(),
     };
     for (const actor of this.#actors.values()) {
       actor.update(actorContext);

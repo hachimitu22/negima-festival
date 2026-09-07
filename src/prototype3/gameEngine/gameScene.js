@@ -75,6 +75,10 @@ class GameScene {
     for (const system of this.#systems) {
       system.update(context);
     }
+
+    for (const system of this.#systems) {
+      system.cleanup(context);
+    }
   }
 
   /**

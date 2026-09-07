@@ -2,20 +2,20 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import GameScene from '../../src/prototype3/gameEngine/gameScene.js';
 import GameSystem from '../../src/prototype3/gameEngine/gameSystem.js';
-import Actor from '../../src/prototype3/scenes/mainScene/actor.js';
+import INPUT_IDS from '../../src/prototype3/inputIds.js';
+import ACTOR_IDS from '../../src/prototype3/scenes/mainScene/actors/actorIds.js';
 import AREA_IDS from '../../src/prototype3/scenes/mainScene/areaIds.js';
+import EVENT_IDS from '../../src/prototype3/scenes/mainScene/events/eventIds.js';
 import MainScene from '../../src/prototype3/scenes/mainScene/mainScene.js';
 import ActorSystem from '../../src/prototype3/scenes/mainScene/systems/actorSystem.js';
-import AreaSystem from '../../src/prototype3/scenes/mainScene/systems/areaSystem.js';
-import DialogueSystem from '../../src/prototype3/scenes/mainScene/systems/dialogueSystem.js';
-import EventSystem from '../../src/prototype3/scenes/mainScene/systems/eventSystem.js';
+import ClockSystem from '../../src/prototype3/scenes/mainScene/systems/clockSystem.js';
+import SYSTEM_IDS from '../../src/prototype3/scenes/mainScene/systems/systemIds.js';
 
-const CONTEXT = Object.freeze({
+const BASE_CONTEXT = Object.freeze({
   deltaFrames: 0,
   deltaTimeMs: 0,
   frameCount: 1,
   targetFrameTimeMs: 1000 / 60,
-  inputs: [],
 });
 
 /** テスト用の具体Scene。 */
@@ -32,309 +32,403 @@ class TestScene extends GameScene {
 /** テスト用の具体System。 */
 class TestSystem extends GameSystem {
   /**
+   * 指定IDのSystemを生成する。
    * @param {string} systemId - System ID。
-   * @param {string|null} requiredSystemId - 要求するSystem ID。
    */
-  constructor(systemId, requiredSystemId = null) {
+  constructor(systemId) {
     super(systemId);
-    this.requiredSystemId = requiredSystemId;
-    this.dependency = null;
+  }
+}
+
+/** ClockSystemの時刻到達通知を受けるテスト用System。 */
+class TestEventSystem extends GameSystem {
+  constructor() {
+    super(SYSTEM_IDS.EVENT);
   }
 
-  /**
-   * 任意の依存を取得する。
-   * @param {Object} dependencies - 依存解決API。
-   * @param {Function} dependencies.requireSystem - System取得関数。
-   * @returns {void}
-   */
-  attach({ requireSystem }) {
-    if (this.requiredSystemId) {
-      this.dependency = requireSystem(this.requiredSystemId);
-    }
+  onTimeReached() {
+  }
+}
+
+/** ClockSystemの巻き戻し状態をSystem更新中に記録するテスト用System。 */
+class RewindObserverSystem extends GameSystem {
+  states = [];
+
+  constructor() {
+    super('rewind-observer');
+  }
+
+  update(context) {
+    this.states.push(context.getSystem(SYSTEM_IDS.CLOCK).isRewinding());
   }
 }
 
 /**
- * MainSceneを入力付きで1回更新する。
- * @param {MainScene} scene - 対象Scene。
+ * Sceneを入力付きで1回更新する。
+ * @param {GameScene} scene - 対象Scene。
  * @param {Array<Object>} inputs - 入力一覧。
  * @returns {void}
  */
 function updateScene(scene, inputs = []) {
-  scene.update({ context: { ...CONTEXT, inputs } });
+  scene.update({ ...BASE_CONTEXT, inputs: [...inputs] });
+}
+
+/**
+ * 会話の次送り入力を作る。
+ * @returns {Object} 次送り入力。
+ */
+function nextDialogueInput() {
+  return { inputId: INPUT_IDS.DIALOGUE.NEXT, params: {} };
+}
+
+/**
+ * 会話選択入力を作る。
+ * @param {string} choiceId - 選択肢ID。
+ * @returns {Object} 選択入力。
+ */
+function chooseDialogueInput(choiceId) {
+  return { inputId: INPUT_IDS.DIALOGUE.CHOOSE, params: { choiceId } };
+}
+
+/**
+ * Actor移動入力を作る。
+ * @param {string} areaId - 移動先エリアID。
+ * @returns {Object} 移動入力。
+ */
+function moveInput(areaId) {
+  return {
+    inputId: INPUT_IDS.ACTOR.AREA_MOVE,
+    params: { actorId: ACTOR_IDS.PLAYER, areaId },
+  };
+}
+
+/**
+ * Actorへの会話開始入力を作る。
+ * @param {string} actorId - 会話相手のActor ID。
+ * @returns {Object} 会話開始入力。
+ */
+function talkInput(actorId) {
+  return { inputId: INPUT_IDS.ACTOR.TALK_START, params: { actorId } };
+}
+
+/**
+ * 1日目10:00への簡易巻き戻し入力を作る。
+ * @returns {Object} 巻き戻し入力。
+ */
+function rewindTimeInput() {
+  return { inputId: INPUT_IDS.CLOCK.REWIND_TO_START };
+}
+
+/**
+ * 実行中会話を最後まで文章送りする。
+ * @param {MainScene} scene - 対象Scene。
+ * @returns {void}
+ */
+function finishLinearDialogue(scene) {
+  while (scene.createSnapshot().dialogue) {
+    updateScene(scene, [nextDialogueInput()]);
+  }
+}
+
+/**
+ * 指定回数だけ時計を5分進め、定時会話があれば完了する。
+ * @param {MainScene} scene - 対象Scene。
+ * @param {number} count - 進める回数。
+ * @returns {void}
+ */
+function advanceClock(scene, count) {
+  const clockSystem = scene.getSystem(SYSTEM_IDS.CLOCK);
+  for (let index = 0; index < count; index += 1) {
+    clockSystem.setStep();
+    updateScene(scene);
+    finishLinearDialogue(scene);
+  }
+}
+
+/**
+ * 木乃香イベントを選択直前まで進める。
+ * @param {MainScene} scene - 対象Scene。
+ * @returns {Object} 選択肢を表示したsnapshot。
+ */
+function startKonokaHelpEvent(scene) {
+  updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+  advanceClock(scene, 5);
+  updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
+  updateScene(scene, [nextDialogueInput()]);
+  return scene.createSnapshot();
 }
 
 describe('GameScene', () => {
-  test('SystemをIDで取得し、全登録後に依存を解決する', () => {
+  test('SystemをIDで取得し、同じIDの二重登録を拒否する', () => {
     // Arrange
     const scene = new TestScene();
-    const provider = new TestSystem('provider');
-    const consumer = new TestSystem('consumer', 'provider');
-    scene.addSystem(consumer);
-    scene.addSystem(provider);
+    const system = new TestSystem('system');
 
     // Act
+    scene.addSystem(system);
+    const duplicate = () => scene.addSystem(new TestSystem('system'));
+
+    // Assert
+    assert.equal(scene.getSystem('system'), system);
+    assert.throws(duplicate, /Duplicate systemId/);
+  });
+
+  test('巻き戻し状態をSystem更新中だけ公開する', () => {
+    // Arrange
+    const scene = new TestScene();
+    const clockSystem = new ClockSystem();
+    const observerSystem = new RewindObserverSystem();
+    scene.addSystem(clockSystem);
+    scene.addSystem(new TestEventSystem());
+    scene.addSystem(observerSystem);
     scene.initializeSystems();
-
-    // Assert
-    assert.equal(scene.getSystem('provider'), provider);
-    assert.equal(consumer.dependency, provider);
-  });
-
-  test('同じSystem IDを二重登録できない', () => {
-    // Arrange
-    const scene = new TestScene();
-    scene.addSystem(new TestSystem('same'));
-
-    // Act
-    const action = () => scene.addSystem(new TestSystem('same'));
-
-    // Assert
-    assert.throws(action, /Duplicate systemId/);
-  });
-});
-
-describe('ActorSystemとAreaSystem', () => {
-  test('存在するエリアへ移動し、snapshotへ反映する', () => {
-    // Arrange
-    const scene = new TestScene();
-    const actorSystem = new ActorSystem();
-    const areaSystem = new AreaSystem({
-      areas: [
-        { id: 'one', name: '一' },
-        { id: 'two', name: '二' },
-      ],
-    });
-    actorSystem.addActor(new Actor({ id: 'player', name: 'Player', areaId: 'one' }));
-    scene.addSystem(actorSystem);
-    scene.addSystem(areaSystem);
-    scene.initializeSystems();
-
-    // Act
-    const moved = actorSystem.requestMoveActor({ actorId: 'player', areaId: 'two' });
-    const actors = actorSystem.createActorsSnapshot();
-    const areas = areaSystem.createAreasSnapshot();
-    const rejected = actorSystem.requestMoveActor({ actorId: 'player', areaId: 'missing' });
-
-    // Assert
-    assert.deepEqual(moved, { accepted: true, succeeded: true });
-    assert.equal(actors[0].areaId, 'two');
-    assert.deepEqual(areas.map(area => area.id), ['one', 'two']);
-    assert.equal(rejected.reason, 'area-not-found');
-  });
-});
-
-describe('DialogueSystem', () => {
-  test('会話を順に進め、完了結果を一度だけ返す', () => {
-    // Arrange
-    const dialogueSystem = new DialogueSystem();
-    const messages = [
-      { speaker: 'A', text: 'one' },
-      { speaker: 'B', text: 'two' },
-    ];
-
-    // Act
-    const started = dialogueSystem.requestStart({ ownerId: 'event', messages });
-    const duplicate = dialogueSystem.requestStart({ ownerId: 'other', messages });
-    const firstAdvance = dialogueSystem.requestAdvance();
-    const secondAdvance = dialogueSystem.requestAdvance();
-    const result = dialogueSystem.takeRequestResult(started.requestId);
-
-    // Assert
-    assert.equal(started.accepted, true);
-    assert.equal(duplicate.accepted, false);
-    assert.deepEqual(firstAdvance, { accepted: true, completed: false });
-    assert.deepEqual(secondAdvance, { accepted: true, completed: true });
-    assert.deepEqual(result, { succeeded: true });
-    assert.equal(dialogueSystem.takeRequestResult(started.requestId), null);
-  });
-
-  test('選択が必要な会話で選んだ分岐へ進む', () => {
-    // Arrange
-    const dialogueSystem = new DialogueSystem();
-    dialogueSystem.requestStart({
-      ownerId: 'event',
-      messages: [{ speaker: 'A', text: 'question' }],
-      choices: [
-        { id: 'first', text: 'First', messages: [{ speaker: 'B', text: 'first result' }] },
-        { id: 'second', text: 'Second', messages: [{ speaker: 'B', text: 'second result' }] },
-      ],
-    });
-
-    // Act
-    const choiceSnapshot = dialogueSystem.createDialogueSnapshot();
-    const advanceRejected = dialogueSystem.requestAdvance();
-    const unknownRejected = dialogueSystem.requestChoose('unknown');
-    const selected = dialogueSystem.requestChoose('second');
-    const branchSnapshot = dialogueSystem.createDialogueSnapshot();
-
-    // Assert
-    assert.deepEqual(choiceSnapshot.choices, [
-      { id: 'first', text: 'First' },
-      { id: 'second', text: 'Second' },
-    ]);
-    assert.equal(advanceRejected.reason, 'choice-required');
-    assert.equal(unknownRejected.reason, 'choice-not-found');
-    assert.deepEqual(selected, { accepted: true });
-    assert.equal(branchSnapshot.text, 'second result');
-    assert.deepEqual(branchSnapshot.choices, []);
-  });
-});
-
-describe('EventSystem', () => {
-  test('任意のイベントデータに記述されたエリアと会話を実行する', () => {
-    // Arrange
-    const events = [{
-      id: 'plaza-greeting',
-      areaId: AREA_IDS.PLAZA,
-      dialogue: {
-        messages: [{ speaker: '案内役', text: '広場へようこそ。' }],
-      },
-    }];
-    const scene = new TestScene();
-    const eventSystem = new EventSystem({ events });
-    const dialogueSystem = new DialogueSystem();
-    scene.addSystem(eventSystem);
-    scene.addSystem(dialogueSystem);
-    scene.initializeSystems();
-
-    // Act
-    eventSystem.requestAreaEntered(AREA_IDS.WORLD_TREE);
-    const beforeTrigger = dialogueSystem.createDialogueSnapshot();
-    eventSystem.requestAreaEntered(AREA_IDS.PLAZA);
-    const executing = dialogueSystem.createDialogueSnapshot();
-    dialogueSystem.requestAdvance();
+    clockSystem.setStep();
     updateScene(scene);
-    const completed = eventSystem.createEventsSnapshot();
+
+    // Act
+    updateScene(scene, [rewindTimeInput()]);
+    const afterCleanup = clockSystem.isRewinding();
+    updateScene(scene, [rewindTimeInput()]);
 
     // Assert
-    assert.equal(beforeTrigger, null);
-    assert.deepEqual(executing, {
-      speaker: '案内役',
-      text: '広場へようこそ。',
-      messageIndex: 0,
-      messageCount: 1,
-      choices: [],
+    assert.deepEqual(observerSystem.states, [false, true, false]);
+    assert.equal(afterCleanup, false);
+    assert.equal(clockSystem.isRewinding(), false);
+  });
+});
+
+describe('ActorSystem', () => {
+  test('巻き戻し状態ではActorを更新しない', () => {
+    // Arrange
+    const actorSystem = new ActorSystem();
+    let updateCount = 0;
+    actorSystem.addActor({
+      id: 'test-actor',
+      update: () => {
+        updateCount += 1;
+      },
     });
-    assert.deepEqual(completed, [{ id: 'plaza-greeting', status: 'completed' }]);
-  });
-
-  test('重複したイベントIDを拒否する', () => {
-    // Arrange
-    const event = {
-      id: 'duplicate',
-      areaId: AREA_IDS.PLAZA,
-      dialogue: { messages: [{ speaker: 'A', text: 'message' }] },
+    const context = {
+      getSystem: systemId => {
+        assert.equal(systemId, SYSTEM_IDS.CLOCK);
+        return { isRewinding: () => true };
+      },
     };
 
     // Act
-    const action = () => new EventSystem({ events: [event, event] });
+    actorSystem.update(context);
 
     // Assert
-    assert.throws(action, /Duplicate event id/);
-  });
-
-  test('発生エリアのないイベントデータを拒否する', () => {
-    // Arrange
-    const event = {
-      id: 'unsupported',
-      dialogue: { messages: [{ speaker: 'A', text: 'message' }] },
-    };
-
-    // Act
-    const action = () => new EventSystem({ events: [event] });
-
-    // Assert
-    assert.throws(action, /must have an areaId/);
+    assert.equal(updateCount, 0);
   });
 });
 
 describe('MainScene', () => {
-  test('世界樹への移動で会話を開始し、完了後は再実行しない', () => {
+  test('世界樹への進入で明日菜イベントを開始して選択結果へ分岐する', () => {
     // Arrange
     const scene = new MainScene();
 
     // Act
-    const initial = scene.createSnapshot();
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.WORLD_TREE }]);
-    const asunaDialogue = scene.createSnapshot();
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.PLAZA }]);
-    const moveBlocked = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.next' }]);
-    const advanceBlocked = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.choose', choiceId: 'look-around-festival' }]);
-    const negiDialogue = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.next' }]);
-    const branchDialogue = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.next' }]);
-    const completed = scene.createSnapshot();
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.PLAZA }]);
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.WORLD_TREE }]);
-    const revisited = scene.createSnapshot();
+    updateScene(scene, [moveInput(AREA_IDS.WORLD_TREE)]);
+    updateScene(scene, [nextDialogueInput()]);
+    updateScene(scene, [nextDialogueInput()]);
+    const choices = scene.createSnapshot();
+    updateScene(scene, [chooseDialogueInput('looking-for-asuna')]);
+    const result = scene.createSnapshot();
 
     // Assert
-    assert.equal(initial.player.areaId, AREA_IDS.SCHOOL_ENTRANCE);
-    assert.deepEqual(initial.moveableAreas.map(area => area.id), [AREA_IDS.WORLD_TREE, AREA_IDS.PLAZA]);
-    assert.equal(asunaDialogue.dialogue.speaker, '明日菜');
-    assert.deepEqual(asunaDialogue.dialogue.choices.map(choice => choice.id), [
+    assert.deepEqual(choices.dialogue.choices.map(choice => choice.id), [
       'look-around-festival',
       'looking-for-asuna',
+      'forget',
     ]);
-    assert.equal(moveBlocked.player.areaId, AREA_IDS.WORLD_TREE);
-    assert.equal(advanceBlocked.dialogue.speaker, '明日菜');
-    assert.equal(negiDialogue.dialogue.speaker, 'ネギ');
-    assert.equal(negiDialogue.dialogue.text, '麻帆良祭の様子を見て回っているんです。');
-    assert.equal(branchDialogue.dialogue.text, '相変わらず真面目ね。');
-    assert.equal(completed.dialogue, null);
-    assert.equal(completed.events[0].status, 'completed');
-    assert.equal(revisited.dialogue, null);
-    assert.equal(revisited.events[0].status, 'completed');
+    assert.equal(result.dialogue.text, 'な、何よ急に。');
   });
 
-  test('明日菜を探す選択肢で異なる会話へ分岐する', () => {
+  test('10:30に木乃香へ話しかけると手伝いイベントを開始する', () => {
     // Arrange
     const scene = new MainScene();
 
     // Act
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.WORLD_TREE }]);
-    updateScene(scene, [{ type: 'dialogue.choose', choiceId: 'looking-for-asuna' }]);
-    const negiDialogue = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.next' }]);
-    const asunaDialogue = scene.createSnapshot();
-    updateScene(scene, [{ type: 'dialogue.next' }]);
-    const completed = scene.createSnapshot();
+    const snapshot = startKonokaHelpEvent(scene);
 
     // Assert
-    assert.equal(negiDialogue.dialogue.text, '明日菜さんを探していたんです。');
-    assert.equal(asunaDialogue.dialogue.text, 'な、何よ急に。');
-    assert.equal(completed.events[0].status, 'completed');
+    assert.match(snapshot.clock, /10:30/);
+    assert.equal(snapshot.dialogue.text, 'どっちを手伝ってくれる？');
+    assert.deepEqual(snapshot.dialogue.choices, [
+      { id: 'serve-food', text: '料理を運びます' },
+      { id: 'clear-dishes', text: '食器を片づけます' },
+    ]);
   });
 
-  test('広場への移動ではイベントを開始しない', () => {
+  test('料理を運ぶ選択結果を表示して完了後は通常会話へ戻る', () => {
     // Arrange
     const scene = new MainScene();
+    startKonokaHelpEvent(scene);
 
     // Act
-    updateScene(scene, [{ type: 'area.move', areaId: AREA_IDS.PLAZA }]);
+    updateScene(scene, [chooseDialogueInput('serve-food')]);
+    const selected = scene.createSnapshot();
+    updateScene(scene, [nextDialogueInput()]);
+    const result = scene.createSnapshot();
+    updateScene(scene, [nextDialogueInput()]);
+    updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
+    const repeated = scene.createSnapshot();
+
+    // Assert
+    assert.match(selected.dialogue.text, /料理を運びます/);
+    assert.match(result.dialogue.text, /みんな届けられた/);
+    assert.equal(
+      result.events.find(event => event.id === EVENT_IDS.CAFETERIA_KONOKA_HELP).status,
+      'executing',
+    );
+    assert.equal(
+      repeated.events.find(event => event.id === EVENT_IDS.CAFETERIA_KONOKA_HELP).status,
+      'complete',
+    );
+    assert.match(repeated.dialogue.text, /麻帆良祭楽しんどる/);
+  });
+
+  test('食器を片づける選択では異なる結果を表示する', () => {
+    // Arrange
+    const scene = new MainScene();
+    startKonokaHelpEvent(scene);
+
+    // Act
+    updateScene(scene, [chooseDialogueInput('clear-dishes')]);
+    updateScene(scene, [nextDialogueInput()]);
+    const result = scene.createSnapshot();
+
+    // Assert
+    assert.match(result.dialogue.text, /次のお客さんを案内できる/);
+  });
+
+  test('10:45ちょうどは木乃香手伝いイベントを開始できる', () => {
+    // Arrange
+    const scene = new MainScene();
+    updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+    advanceClock(scene, 8);
+
+    // Act
+    updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
     const snapshot = scene.createSnapshot();
 
     // Assert
-    assert.equal(snapshot.player.areaId, AREA_IDS.PLAZA);
-    assert.equal(snapshot.dialogue, null);
-    assert.equal(snapshot.events[0].status, 'waiting');
+    assert.match(snapshot.clock, /10:45/);
+    assert.match(snapshot.dialogue.text, /食堂の手伝い/);
   });
 
-  test('移動要求の失敗時はイベントを開始しない', () => {
+  test('10:30より前は木乃香の通常会話を開始する', () => {
     // Arrange
     const scene = new MainScene();
+    updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
 
     // Act
-    updateScene(scene, [{ type: 'area.move', areaId: 'missing' }]);
+    updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
     const snapshot = scene.createSnapshot();
 
     // Assert
-    assert.equal(snapshot.player.areaId, AREA_IDS.SCHOOL_ENTRANCE);
-    assert.equal(snapshot.dialogue, null);
-    assert.equal(snapshot.events[0].status, 'waiting');
+    assert.match(snapshot.clock, /10:05/);
+    assert.match(snapshot.dialogue.text, /麻帆良祭楽しんどる/);
+    assert.equal(
+      snapshot.events.find(event => event.id === EVENT_IDS.CAFETERIA_KONOKA_HELP).status,
+      'waiting',
+    );
+  });
+
+  test('10:45を過ぎると木乃香の通常会話を開始する', () => {
+    // Arrange
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+
+    try {
+      const scene = new MainScene();
+      updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+      advanceClock(scene, 9);
+
+      // Act
+      updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
+      const snapshot = scene.createSnapshot();
+
+      // Assert
+      assert.match(snapshot.clock, /10:50/);
+      assert.match(snapshot.dialogue.text, /麻帆良祭楽しんどる/);
+      assert.equal(
+        snapshot.events.find(event => event.id === EVENT_IDS.CAFETERIA_KONOKA_HELP).status,
+        'waiting',
+      );
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('簡易巻き戻しは時刻だけを1日目10:00へ戻す', () => {
+    // Arrange
+    const scene = new MainScene();
+    updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+    updateScene(scene, [moveInput(AREA_IDS.SCHOOL_ENTRANCE)]);
+    const before = scene.createSnapshot();
+
+    // Act
+    updateScene(scene, [rewindTimeInput()]);
+    const after = scene.createSnapshot();
+
+    // Assert
+    assert.match(before.clock, /10:10/);
+    assert.equal(before.canRewindTime, true);
+    assert.match(after.clock, /10:00/);
+    assert.equal(after.canRewindTime, false);
+    assert.equal(after.player.areaId, before.player.areaId);
+    assert.deepEqual(after.actors, before.actors);
+    assert.deepEqual(after.events, before.events);
+  });
+
+  test('1日目10:00では簡易巻き戻しを実行しない', () => {
+    // Arrange
+    const scene = new MainScene();
+    const before = scene.createSnapshot();
+
+    // Act
+    updateScene(scene, [rewindTimeInput()]);
+    const after = scene.createSnapshot();
+
+    // Assert
+    assert.equal(before.canRewindTime, false);
+    assert.deepEqual(after, before);
+  });
+
+  test('会話中は簡易巻き戻しを実行しない', () => {
+    // Arrange
+    const scene = new MainScene();
+    updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+    updateScene(scene, [talkInput(ACTOR_IDS.KONOKA)]);
+    const before = scene.createSnapshot();
+
+    // Act
+    updateScene(scene, [rewindTimeInput()]);
+    const after = scene.createSnapshot();
+
+    // Assert
+    assert.match(before.clock, /10:05/);
+    assert.equal(before.canRewindTime, false);
+    assert.equal(after.clock, before.clock);
+    assert.deepEqual(after.dialogue, before.dialogue);
+    assert.deepEqual(after.actors, before.actors);
+    assert.deepEqual(after.events, before.events);
+  });
+
+  test('巻き戻し後に時刻を進めると再び簡易巻き戻し可能になる', () => {
+    // Arrange
+    const scene = new MainScene();
+    updateScene(scene, [moveInput(AREA_IDS.CAFETERIA)]);
+    updateScene(scene, [rewindTimeInput()]);
+
+    // Act
+    updateScene(scene, [moveInput(AREA_IDS.SCHOOL_ENTRANCE)]);
+    const snapshot = scene.createSnapshot();
+
+    // Assert
+    assert.match(snapshot.clock, /10:05/);
+    assert.equal(snapshot.canRewindTime, true);
   });
 });

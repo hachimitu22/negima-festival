@@ -1,6 +1,7 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
 import ClockDateTime from '../clockDateTime.js';
+import INPUT_IDS from '../../../inputIds.js';
 
 const CLOCK_STATUS = {
   STOP: 'stop',
@@ -10,12 +11,16 @@ const CLOCK_STATUS = {
 
 class ClockSystem extends GameSystem {
   #clock;
-  #status
+  #status;
+  #canRewind;
+  #rewinding;
 
   constructor() {
     super(SYSTEM_IDS.CLOCK);
     this.#clock = new ClockDateTime();
     this.#status = CLOCK_STATUS.STOP;
+    this.#canRewind = true;
+    this.#rewinding = false;
   }
 
   /**
@@ -25,6 +30,12 @@ class ClockSystem extends GameSystem {
    * @returns {void}
    */
   attach(context) {
+    context.inputDispatcher.register({
+      inputId: INPUT_IDS.CLOCK.REWIND_TO_START,
+      handler: () => {
+        this.rewindToStart();
+      },
+    });
   }
 
   /**
@@ -44,8 +55,51 @@ class ClockSystem extends GameSystem {
     }, context)
   }
 
+  cleanup() {
+    this.#rewinding = false;
+  }
+
   setStep() {
     this.#status = CLOCK_STATUS.STEP;
+  }
+
+  /**
+   * 他のゲーム状態を変更せず、時刻を1日目10:00へ戻す。
+   * @returns {boolean} 巻き戻しを実行した場合はtrue。
+   */
+  rewindToStart() {
+    if (!this.canRewindToStart()) {
+      return false;
+    }
+
+    this.#clock = new ClockDateTime();
+    this.#status = CLOCK_STATUS.STOP;
+    this.#rewinding = true;
+    return true;
+  }
+
+  /**
+   * 簡易巻き戻しが成立した更新中かを返す。
+   * @returns {boolean} 巻き戻しが成立した更新中の場合はtrue。
+   */
+  isRewinding() {
+    return this.#rewinding;
+  }
+
+  /**
+   * 現在時刻が簡易巻き戻し先より後かを返す。
+   * @returns {boolean} 1日目10:00より後の場合はtrue。
+   */
+  canRewindToStart() {
+    return this.#canRewind && this.#clock.getTime() > new ClockDateTime().getTime();
+  }
+
+  enableRewind() {
+    this.#canRewind = true;
+  }
+
+  disableRewind() {
+    this.#canRewind = false;
   }
 
   getDateTime() {

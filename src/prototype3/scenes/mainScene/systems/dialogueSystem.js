@@ -132,6 +132,9 @@ class DialogueSystem extends GameSystem {
 
     this.#activeDialogue = createDialogue({ id: ownerId, dialogue, complete });
     this.#activeDialogue.start();
+
+    // 会話中は巻き戻し不可
+    context.getSystem(SYSTEM_IDS.CLOCK).disableRewind();
   }
 
   next(params, context) {
@@ -143,6 +146,8 @@ class DialogueSystem extends GameSystem {
 
     if (this.#activeDialogue.isComplete()) {
       this.#activeDialogue = null;
+      // 会話終了後は巻き戻し可能
+      context.getSystem(SYSTEM_IDS.CLOCK).enableRewind();
     }
   }
 
