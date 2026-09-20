@@ -5,25 +5,22 @@ let s_timelineContainer = null;
 let s_timeline = null;
 let s_dataset = null;
 
-function convertNPCsToTimelineItems({ NPCs, clock }) {
-  return NPCs.flatMap((NPC) => {
-    const schedules = NPC.schedules.filter((schedule) => schedule.enabled);
-    return schedules.map(schedule => {
-      const title = `${schedule.dateTimeRange.from} - ${schedule.dateTimeRange.to}`;
-      return {
-        id: schedule.id,
-        group: NPC.id,
-        content: schedule.id,
-        title: title,
-        start: new Date(schedule.dateTimeRange.from),
-        end: new Date(schedule.dateTimeRange.to),
-        style: schedule.status === SCHEDULE_STATUS.ACTIVE ? 'background-color: green;' : 'background-color: gray;',
-      };
-    });
+function convertScheduleBookToTimelineItems(scheduleBook) {
+  return scheduleBook.schedules.map(schedule => {
+    const title = `${schedule.dateTimeRange.from} - ${schedule.dateTimeRange.to}`;
+    return {
+      id: schedule.id,
+      group: schedule.actorId,
+      content: schedule.enabled ? schedule.id : `${schedule.id}（無効）`,
+      title: title,
+      start: new Date(schedule.dateTimeRange.from),
+      end: new Date(schedule.dateTimeRange.to),
+      style: schedule.status === SCHEDULE_STATUS.ACTIVE ? 'background-color: green;' : 'background-color: gray;',
+    };
   });
 }
 
-function createScheduleTimelineView(submitInput, { NPCs, clock }) {
+function createScheduleTimelineView(submitInput, { clock, scheduleBook }) {
   if (s_timelineContainer === null) {
     // 初回描画
     const container = document.createElement('div');
@@ -34,7 +31,7 @@ function createScheduleTimelineView(submitInput, { NPCs, clock }) {
       content: actorId,
     }));
 
-    const dataset = new vis.DataSet(convertNPCsToTimelineItems({ NPCs, clock }));
+    const dataset = new vis.DataSet(convertScheduleBookToTimelineItems(scheduleBook));
     const options = {
       start: new Date('2020-06-20 00:00'),
       end: new Date('2020-06-20 24:00'),
@@ -68,7 +65,7 @@ function createScheduleTimelineView(submitInput, { NPCs, clock }) {
     s_timeline.setCurrentTime(new Date(clock));
 
     // スケジュールを更新する
-    const newItems = convertNPCsToTimelineItems({ NPCs, clock });
+    const newItems = convertScheduleBookToTimelineItems(scheduleBook);
     s_dataset.clear();
     s_dataset.add(newItems);
 

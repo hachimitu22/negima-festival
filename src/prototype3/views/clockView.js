@@ -22,7 +22,7 @@ function createClockView(submitInput, { clock, canRewindTime }) {
   rewindButton.textContent = '10:00に戻す';
   rewindButton.disabled = !canRewindTime;
   rewindButton.addEventListener('click', () => {
-    submitInput({ inputId: INPUT_IDS.CLOCK.REWIND_TO_START });
+    submitInput({ inputId: INPUT_IDS.CASSIOPEIA.REWIND });
   });
   elm.appendChild(rewindButton);
 

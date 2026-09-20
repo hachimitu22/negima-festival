@@ -1,11 +1,12 @@
 import { GameObject } from '../../../gameEngine/gameObject.js';
-import ClockDateTime from '../clockDateTime.js';
 
 /**
  * ゲーム上のアクター（キャラクター）。自動移動や位置管理を行う GameObject。
  * @public
  */
 class Actor extends GameObject {
+  #schedules;
+
   /**
    * アクターをインスタンス化する。
    * @public
@@ -25,7 +26,7 @@ class Actor extends GameObject {
     this.name = name;
     this.areaId = areaId;
     this.talks = talks || [];
-    this.schedules = schedules || [];
+    this.#schedules = schedules || [];
   }
 
   /**
@@ -35,14 +36,14 @@ class Actor extends GameObject {
    * @returns {void}
    */
   update({ areas, dateTime }) {
-    if (this.schedules.length) {
+    if (this.#schedules.length) {
       // スケジュールを更新
-      for (const schedule of this.schedules) {
+      for (const schedule of this.#schedules) {
         schedule.update(dateTime);
       }
 
       // スケジュールの時間帯はエリアを固定化
-      const schedule = this.schedules.find(schedule => {
+      const schedule = this.#schedules.find(schedule => {
         return schedule.isActive();
       });
       if (schedule) {
@@ -68,12 +69,45 @@ class Actor extends GameObject {
   }
 
   enableSchedule(scheduleId) {
-    const schedule = this.schedules.find(schedule => {
+    const schedule = this.#schedules.find(schedule => {
       return schedule.id === scheduleId;
     });
     if (schedule) {
       schedule.enable();
+      return true;
     }
+    return false;
+  }
+
+  /**
+   * 現在地と全Scheduleの可変状態を値として記録する。
+   * @returns {{ areaId: string, schedules: Array<{ scheduleId: string, enabled: boolean, status: string }> }} Actorの状態。
+   */
+  captureState() {
+    return {
+      areaId: this.areaId,
+      schedules: this.#schedules.map(schedule => ({
+        scheduleId: schedule.id,
+        ...schedule.captureState(),
+      })),
+    };
+  }
+
+  /**
+   * 現在地と各Scheduleの可変状態を記録した値へ復元する。
+   * @param {{ areaId: string, schedules: Array<{ scheduleId: string, enabled: boolean, status: string }> }} state - 記録したActor状態。
+   * @returns {void}
+   * @throws {Error} 対象Scheduleが存在しない場合。
+   */
+  restore({ areaId, schedules }) {
+    for (const { scheduleId, enabled, status } of schedules) {
+      const schedule = this.#schedules.find(item => item.id === scheduleId);
+      if (!schedule) {
+        throw new Error(`schedule-not-found: ${this.id}/${scheduleId}`);
+      }
+      schedule.restoreState({ enabled, status });
+    }
+    this.moveTo(areaId);
   }
 
   /**
@@ -87,7 +121,7 @@ class Actor extends GameObject {
       name: this.name,
       areaId: this.areaId,
       hasTalk: this.talks.length > 0,
-      schedules: this.schedules.map(schedule => {
+      schedules: this.#schedules.map(schedule => {
         return schedule.createSnapshot();
       }),
     };

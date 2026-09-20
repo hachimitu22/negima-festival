@@ -57,6 +57,17 @@ class Schedule {
     this.#enabled = true;
   }
 
+  /** 有効状態と実行状態を値として記録する。 */
+  captureState() {
+    return { enabled: this.#enabled, status: this.#status };
+  }
+
+  /** 記録した状態を時刻による再計算なしで復元する。 */
+  restoreState({ enabled, status }) {
+    this.#enabled = enabled;
+    this.#status = status;
+  }
+
   createSnapshot() {
     return {
       id: this.#id,

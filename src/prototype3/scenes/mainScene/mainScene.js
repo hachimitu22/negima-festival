@@ -10,14 +10,18 @@ import AreaSystem from './systems/areaSystem.js';
 import DialogueSystem from './systems/dialogueSystem.js';
 import EventSystem from './systems/eventSystem.js';
 import ClockSystem from './systems/clockSystem.js';
+import CassiopeiaSystem from './systems/cassiopeiaSystem.js';
 import SYSTEM_IDS from './systems/systemIds.js';
 import TALK_IDS from './talks/talkIds.js';
 import SCHEDULE_IDS from './schedules/scheduleIds.js';
 import SCHEDULES from './schedules/schedules.js';
 import Schedule from './schedule.js';
+import ScheduleKnowledge from './scheduleKnowledge.js';
 
 /** 移動と明日菜イベントを提供するプロトタイプver3のMainScene。 */
 class MainScene extends GameScene {
+  #scheduleKnowledge;
+
   /**
    * Systemと初期ゲーム状態を構築する。
    * @param {Object} options - Scene設定。
@@ -25,7 +29,12 @@ class MainScene extends GameScene {
   constructor() {
     super();
 
-    const actorSystem = new ActorSystem();
+    this.#scheduleKnowledge = new ScheduleKnowledge();
+    this.#scheduleKnowledge.learn(SCHEDULE_IDS.ASUNA.WORLD_TREE_WAITING);
+    this.#scheduleKnowledge.learn(SCHEDULE_IDS.NODOKA.PLAZA_WAITING);
+    this.#scheduleKnowledge.learn(SCHEDULE_IDS.KONOKA.CAFETERIA_HELP);
+
+    const actorSystem = new ActorSystem({ scheduleKnowledge: this.#scheduleKnowledge });
     const areaSystem = new AreaSystem({ areas: AreaList });
     const eventSystem = new EventSystem({ events: Events });
     const dialogueSystem = new DialogueSystem();
@@ -64,7 +73,14 @@ class MainScene extends GameScene {
       ],
     }));
 
+    const cassiopeiaSystem = new CassiopeiaSystem({
+      clockSystem,
+      actorSystem,
+      eventSystem,
+    });
+
     this.addSystem(clockSystem);
+    this.addSystem(cassiopeiaSystem);
     this.addSystem(actorSystem);
     this.addSystem(areaSystem);
     this.addSystem(eventSystem);
@@ -83,6 +99,12 @@ class MainScene extends GameScene {
     const dialogueSystem = this.getSystem(SYSTEM_IDS.DIALOGUE);
     const eventSystem = this.getSystem(SYSTEM_IDS.EVENT);
     const actors = actorSystem.createActorsSnapshot();
+    const scheduleSnapshots = actors.flatMap(actor => {
+      return actor.schedules.map(schedule => ({
+        ...schedule,
+        actorId: actor.id,
+      }));
+    });
     const player = actors.find(actor => actor.id === ACTOR_IDS.PLAYER);
     const { areas, moveableAreas } = areaSystem.createAreasSnapshot(player?.areaId);
 
@@ -97,6 +119,7 @@ class MainScene extends GameScene {
       moveableAreas,
       dialogue: dialogueSystem.createDialogueSnapshot(),
       events: eventSystem.createEventsSnapshot(),
+      scheduleBook: this.#scheduleKnowledge.createScheduleBook(scheduleSnapshots),
     };
   }
 }

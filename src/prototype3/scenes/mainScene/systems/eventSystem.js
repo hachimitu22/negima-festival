@@ -116,6 +116,26 @@ class EventSystem extends GameSystem {
     this.#activeEventState = null;
   }
 
+  /** 全イベントの実行状態をID付きで記録する。 */
+  captureState() {
+    return [...this.#eventStates.values()].map(state => ({
+      id: state.definition.id,
+      status: state.status,
+    }));
+  }
+
+  /** 記録したイベントの実行状態を復元する。 */
+  restoreState(eventStates) {
+    for (const { id, status } of eventStates) {
+      const state = this.#eventStates.get(id);
+      if (!state) {
+        throw new Error(`event-not-found: ${id}`);
+      }
+      state.status = status;
+    }
+    this.#activeEventState = null;
+  }
+
   onTimeReached({ dateTime }, context) {
     // イベント中は新しいイベントを開始しない
     if (this.#activeEventState) {
@@ -160,10 +180,7 @@ class EventSystem extends GameSystem {
    * @returns {Array<Object>} イベント状態一覧。
    */
   createEventsSnapshot() {
-    return [...this.#eventStates.values()].map(state => ({
-      id: state.definition.id,
-      status: state.status,
-    }));
+    return this.captureState();
   }
 }
 
