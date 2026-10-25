@@ -12,9 +12,16 @@ class ClockDateTime {
     return this.#date.getTime();
   }
 
-  add({ min }) {
+  /**
+   * 指定した時間量を加算した新しい日時を返す。
+   * @param {Object} duration - 加算する時間量。
+   * @param {number} [duration.hour=0] - 時間数。
+   * @param {number} [duration.min=0] - 分数。
+   * @returns {ClockDateTime} 加算後の日時。
+   */
+  add({ hour = 0, min = 0 }) {
     const date = new Date(this.#date);
-    date.setMinutes(date.getMinutes() + min);
+    date.setMinutes(date.getMinutes() + hour * 60 + min);
 
     return new ClockDateTime({
       year: date.getFullYear(),

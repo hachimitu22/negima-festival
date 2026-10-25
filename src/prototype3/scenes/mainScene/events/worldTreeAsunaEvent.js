@@ -1,6 +1,8 @@
 import ACTOR_IDS from '../actors/actorIds.js';
 import AREA_IDS from '../areaIds.js';
+import ClockDuration from '../clockDuration.js';
 import SCHEDULE_IDS from '../schedules/scheduleIds.js';
+import SCHEDULES from '../schedules/schedules.js';
 import SYSTEM_IDS from '../systems/systemIds.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
@@ -16,6 +18,7 @@ const WorldTreeAsunaEvent = {
     enteredAreaId: AREA_IDS.WORLD_TREE,
     // 移動先に誰が居れば
     presentActorId: ACTOR_IDS.ASUNA,
+    receptionTimeRange: SCHEDULES[SCHEDULE_IDS.ASUNA.WORLD_TREE_WAITING].dateTimeRange,
   },
   dialogue: {
     steps: [

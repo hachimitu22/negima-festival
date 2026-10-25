@@ -1,8 +1,7 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import { EventTriggerTypes } from '../events/eventDataTypes.js';
 import SYSTEM_IDS from './systemIds.js';
-import INPUT_IDS from '../../../inputIds.js';
-import ClockDateTime from '../clockDateTime.js';
+import EVENT_IDS from '../events/eventIds.js';
 
 /** 宣言されたイベントの開始条件と完了状態を管理する。 */
 class EventSystem extends GameSystem {
@@ -36,11 +35,13 @@ class EventSystem extends GameSystem {
     }
 
     // 条件に一致する待機中イベントを探す
+    const currentDateTime = context.getSystem(SYSTEM_IDS.CLOCK).getDateTime();
     const state = this.#eventStates.values().find(state =>
       state.status === 'waiting'
       && state.definition.trigger.type === EventTriggerTypes.AREA_ENTER
       && state.definition.trigger.enteringActorId === actorId
       && state.definition.trigger.enteredAreaId === areaId
+      && state.definition.trigger.receptionTimeRange.contains(currentDateTime,  { includeFrom: true, includeTo: false })
       && context.getSystem(SYSTEM_IDS.ACTOR).isActorInArea({
         actorId: state.definition.trigger.presentActorId,
         areaId: state.definition.trigger.enteredAreaId,
@@ -85,7 +86,7 @@ class EventSystem extends GameSystem {
         && trigger.type === EventTriggerTypes.TALK_START
         && trigger.initiatingActorId === initiatingActorId
         && trigger.actorId === actorId
-        && trigger.dateTimeRange.contains(currentDateTime,  { includeFrom: true, includeTo: false })
+        && trigger.receptionTimeRange.contains(currentDateTime,  { includeFrom: true, includeTo: false })
         && actorSystem.isActorInArea({ actorId: initiatingActorId, areaId: trigger.areaId })
         && actorSystem.isActorInArea({ actorId, areaId: trigger.areaId });
     });
@@ -106,12 +107,17 @@ class EventSystem extends GameSystem {
   }
 
   /**
-   * 実行中イベントを完了する。
+   * 時間変更があれば予約し、実行中イベントを完了する。
    * @param {Object} params - 会話完了情報。
    * @param {Object} context - 更新コンテキスト。
    * @returns {void}
    */
   complete(params, context) {
+    const definition = this.#activeEventState.definition;
+    if (definition.timeChange !== undefined) {
+      context.getSystem(SYSTEM_IDS.CLOCK).requestTimeChange(definition.timeChange);
+    }
+
     this.#activeEventState.status = 'complete';
     this.#activeEventState = null;
   }
@@ -136,7 +142,23 @@ class EventSystem extends GameSystem {
     this.#activeEventState = null;
   }
 
-  onTimeReached({ dateTime }, context) {
+  /**
+   * 通過したアナウンスを完了させ、到着日時のイベントを開始する。
+   * @param {Object} params - 時間変更情報。
+   * @param {ClockDateTime} params.dateTime - 変更後の日時。
+   * @param {ClockDateTime} [params.previousDateTime] - 変更前の日時。
+   * @param {Object} context - System参照を持つ更新コンテキスト。
+   * @returns {void}
+   */
+  onTimeReached({ dateTime, previousDateTime }, context) {
+    const announcement = this.#eventStates.get(EVENT_IDS.FESTIVAL_ANNOUNCEMENT);
+    if (previousDateTime && announcement?.status === 'waiting') {
+      const announcementTime = announcement.definition.trigger.time.getTime();
+      if (previousDateTime.getTime() < announcementTime && announcementTime < dateTime.getTime()) {
+        announcement.status = 'complete';
+      }
+    }
+
     // イベント中は新しいイベントを開始しない
     if (this.#activeEventState) {
       return;
@@ -148,7 +170,7 @@ class EventSystem extends GameSystem {
       if (state.definition.trigger.type !== EventTriggerTypes.TIME_REACHED) return false;
 
       const currentTime = dateTime.getTime();
-      const eventTime = new ClockDateTime(state.definition.trigger.time).getTime();
+      const eventTime = state.definition.trigger.time.getTime();
       return currentTime === eventTime;
     });
 

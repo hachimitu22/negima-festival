@@ -1,54 +1,101 @@
 import GameSystem from '../../../gameEngine/gameSystem.js';
 import SYSTEM_IDS from './systemIds.js';
 import ClockDateTime from '../clockDateTime.js';
+import ClockDuration from '../clockDuration.js';
 
-const CLOCK_STATUS = {
-  STOP: 'stop',
-  RUN: 'run',
-  STEP: 'step',
-};
-
+/** ゲーム内時計と1更新につき1件の時間変更予約を管理する。 */
 class ClockSystem extends GameSystem {
   #clock;
-  #status;
+  #reservedDateTime = null;
   #canRewind;
 
+  /** 1日目10:00の時計を生成する。 */
   constructor() {
     super(SYSTEM_IDS.CLOCK);
     this.#clock = new ClockDateTime();
-    this.#status = CLOCK_STATUS.STOP;
     this.#canRewind = true;
   }
 
   /**
-   * Systemを更新する。
+   * 予約された日時へ時計を進め、変更前後の日時を通知する。
    * @param {Object} context - フレームコンテキスト。
    * @returns {void}
    */
   update(context) {
-    if (this.#status === CLOCK_STATUS.STOP) return;
-    if (this.#status === CLOCK_STATUS.STEP) this.#status = CLOCK_STATUS.STOP;
+    if (this.#reservedDateTime === null
+      || this.#reservedDateTime.getTime() === this.#clock.getTime()) {
+      return;
+    }
 
-    this.#clock = this.#clock.add({ min: 5 });
+    const previousDateTime = this.#clock;
+    this.#clock = this.#reservedDateTime;
 
     // イベントシステムに時刻経過を通知する
     context.getSystem(SYSTEM_IDS.EVENT).onTimeReached({
       dateTime: this.getDateTime(),
-    }, context)
+      previousDateTime,
+    }, context);
   }
 
+  /**
+   * 次のupdateで反映する時間変更を予約する。
+   * @param {ClockDuration|ClockDateTime} timeChange - 加算時間量または変更先日時。
+   * @returns {void}
+   * @throws {Error} 同じ更新内で既に予約している場合。
+   * @throws {TypeError} 未対応の値を指定した場合。
+   * @throws {RangeError} 変更先が無効または現在より前の場合。
+   */
+  requestTimeChange(timeChange) {
+    if (this.#reservedDateTime !== null) {
+      throw new Error('time-change-already-requested');
+    }
+
+    let dateTime;
+    if (timeChange instanceof ClockDuration) {
+      dateTime = this.#clock.add(timeChange);
+    } else if (timeChange instanceof ClockDateTime) {
+      dateTime = timeChange;
+    } else {
+      throw new TypeError('timeChange must be ClockDuration or ClockDateTime.');
+    }
+
+    if (!Number.isFinite(dateTime.getTime()) || dateTime.getTime() < this.#clock.getTime()) {
+      throw new RangeError('timeChange must not move the clock backward or to an invalid date.');
+    }
+    this.#reservedDateTime = dateTime;
+  }
+
+  /**
+   * 移動に伴う5分の時間経過を予約する。
+   * @returns {void}
+   * @throws {Error} 同じ更新内で既に予約している場合。
+   */
   setStep() {
-    this.#status = CLOCK_STATUS.STEP;
+    this.requestTimeChange(new ClockDuration({ min: 5 }));
   }
 
-  /** 他のゲーム状態を変更せず、指定日時へ戻す。 */
+  /**
+   * 全Systemの更新後に予約を解除する。
+   * @returns {void}
+   */
+  cleanup() {
+    this.#reservedDateTime = null;
+  }
+
+  /**
+   * 他のゲーム状態を変更せず指定日時へ戻し、古い時間変更予約を取り消す。
+   * @param {ClockDateTime} dateTime - 復元する日時。
+   * @returns {boolean} 巻き戻した場合はtrue。
+   */
   rewindTo(dateTime) {
     if (!this.#canRewind || this.#clock.getTime() <= dateTime.getTime()) {
       return false;
     }
 
     this.#clock = dateTime;
-    this.#status = CLOCK_STATUS.STOP;
+    if (this.#reservedDateTime !== null) {
+      this.#reservedDateTime = dateTime;
+    }
     return true;
   }
 

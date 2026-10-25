@@ -1,3 +1,4 @@
+import ClockDateTime from '../clockDateTime.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
 
@@ -6,7 +7,7 @@ const FestivalAnnouncementEvent = Object.freeze({
   id: EVENT_IDS.FESTIVAL_ANNOUNCEMENT,
   trigger: Object.freeze({
     type: EventTriggerTypes.TIME_REACHED,
-    time: { date: 20, hour: 10, min: 15 },
+    time: new ClockDateTime({ date: 20, hour: 10, min: 15 }),
   }),
   dialogue: {
     steps: [

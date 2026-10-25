@@ -1,5 +1,8 @@
 import ACTOR_IDS from '../actors/actorIds.js';
 import AREA_IDS from '../areaIds.js';
+import ClockDuration from '../clockDuration.js';
+import SCHEDULE_IDS from '../schedules/scheduleIds.js';
+import SCHEDULES from '../schedules/schedules.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
 import SYSTEM_IDS from '../systems/systemIds.js';
@@ -85,7 +88,10 @@ const PlazaNodokaEvent = Object.freeze({
     enteredAreaId: AREA_IDS.PLAZA,
     // 移動先に誰が居れば
     presentActorId: ACTOR_IDS.NODOKA,
+    // 有効な時間帯
+    receptionTimeRange: SCHEDULES[SCHEDULE_IDS.NODOKA.PLAZA_WAITING].dateTimeRange,
   }),
+  timeChange: new ClockDuration({ hour: 1 }),
   dialogue: {
     steps: [
       // {

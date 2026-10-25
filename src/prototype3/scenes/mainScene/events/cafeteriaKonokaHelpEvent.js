@@ -1,7 +1,8 @@
 import ACTOR_IDS from '../actors/actorIds.js';
 import AREA_IDS from '../areaIds.js';
-import ClockDateTime from '../clockDateTime.js';
-import ClockDateTimeRange from '../clockDateTimeRange.js';
+import ClockDuration from '../clockDuration.js';
+import SCHEDULE_IDS from '../schedules/scheduleIds.js';
+import SCHEDULES from '../schedules/schedules.js';
 import { EventTriggerTypes } from './eventDataTypes.js';
 import EVENT_IDS from './eventIds.js';
 
@@ -13,10 +14,7 @@ const CafeteriaKonokaHelpEvent = Object.freeze({
     initiatingActorId: ACTOR_IDS.PLAYER,
     actorId: ACTOR_IDS.KONOKA,
     areaId: AREA_IDS.CAFETERIA,
-    dateTimeRange: new ClockDateTimeRange({
-      from: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
-      to: new ClockDateTime({ date: 20, hour: 10, min: 15 }),
-    }),
+    receptionTimeRange: SCHEDULES[SCHEDULE_IDS.KONOKA.CAFETERIA_HELP].dateTimeRange,
   }),
   dialogue: Object.freeze({
     steps: Object.freeze([

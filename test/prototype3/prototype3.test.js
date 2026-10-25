@@ -189,15 +189,19 @@ describe('ClockSystem', () => {
     clockSystem.setStep();
     clockSystem.update(context);
     const checkpointDateTime = clockSystem.getDateTime();
+    clockSystem.cleanup();
     clockSystem.setStep();
     clockSystem.update(context);
+    clockSystem.cleanup();
 
     // Act
     const rewound = clockSystem.rewindTo(checkpointDateTime);
     clockSystem.update(context);
+    clockSystem.cleanup();
     const sameTime = clockSystem.rewindTo(checkpointDateTime);
     clockSystem.setStep();
     clockSystem.update(context);
+    clockSystem.cleanup();
     clockSystem.disableRewind();
     const disabled = clockSystem.rewindTo(checkpointDateTime);
 
@@ -229,7 +233,7 @@ describe('CassiopeiaSystem', () => {
       id: 'event.checkpoint',
       trigger: {
         type: EventTriggerTypes.TIME_REACHED,
-        time: { date: 20, hour: 10, min: 0 },
+        time: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
       },
       dialogue: {
         steps: [{ type: 'message', message: { speaker: 'テスト', text: '会話' } }],
@@ -268,6 +272,7 @@ describe('CassiopeiaSystem', () => {
     eventSystem.restoreState([{ id: 'event.checkpoint', status: 'waiting' }]);
     clockSystem.setStep();
     clockSystem.update(context);
+    clockSystem.cleanup();
 
     // Act
     inputDispatcher.dispatchAll([rewindTimeInput()], context);
@@ -275,6 +280,7 @@ describe('CassiopeiaSystem', () => {
     const restoredEvents = eventSystem.createEventsSnapshot();
     clockSystem.setStep();
     clockSystem.update(context);
+    clockSystem.cleanup();
     npc.moveTo(AREA_IDS.WORLD_TREE);
     eventSystem.restoreState([{ id: 'event.checkpoint', status: 'waiting' }]);
     inputDispatcher.dispatchAll([rewindTimeInput()], context);
@@ -534,7 +540,7 @@ describe('EventSystem', () => {
       id: 'event.test',
       trigger: {
         type: EventTriggerTypes.TIME_REACHED,
-        time: { date: 20, hour: 10, min: 0 },
+        time: new ClockDateTime({ date: 20, hour: 10, min: 0 }),
       },
       dialogue: {
         steps: [{ type: 'message', message: { speaker: 'テスト', text: '会話' } }],
@@ -568,7 +574,7 @@ describe('EventSystem', () => {
     // Arrange
     const eventSystem = new EventSystem({ events: [{
       id: 'event.completed',
-      trigger: { type: EventTriggerTypes.TIME_REACHED, time: { date: 20, hour: 10, min: 0 } },
+      trigger: { type: EventTriggerTypes.TIME_REACHED, time: new ClockDateTime({ date: 20, hour: 10, min: 0 }) },
       dialogue: { steps: [] },
     }] });
     eventSystem.restoreState([{ id: 'event.completed', status: 'complete' }]);
