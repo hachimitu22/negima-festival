@@ -1,6 +1,4 @@
-import { withMermaid } from 'vitepress-plugin-mermaid'
-
-export default withMermaid({
+export default ({
   lang: 'ja-JP',
   title: 'ネギま！麻帆良祭',
   description: '麻帆良祭を題材にしたブラウザゲームの企画・設計文書',
