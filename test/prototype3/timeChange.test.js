@@ -47,6 +47,109 @@ function createTimedEvent(timeChange) {
   };
 }
 
+describe('ClockSystemの停止と再開', () => {
+  test('停止要求を解除すると次のupdateで時間変更を反映する', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.requestStop('dialogue');
+    clockSystem.update(context);
+    const stoppedTime = clockSystem.getDateTime();
+    clockSystem.requestResume('dialogue');
+    const resumedTime = clockSystem.getDateTime();
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(stoppedTime.getTime(), new ClockDateTime().getTime());
+    assert.equal(resumedTime.getTime(), stoppedTime.getTime());
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime({ min: 5 }).getTime());
+  });
+
+  test('他の要求元の停止要求が残る間は停止を維持する', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.requestStop('dialogue');
+    clockSystem.requestStop('event');
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.requestResume('dialogue');
+    clockSystem.update(context);
+    const partiallyResumedTime = clockSystem.getDateTime();
+    clockSystem.requestResume('event');
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(partiallyResumedTime.getTime(), new ClockDateTime().getTime());
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime({ min: 5 }).getTime());
+  });
+
+  test('同じ要求元の重複した停止要求は一度の解除で取り消せる', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.requestStop('dialogue');
+    clockSystem.requestStop('dialogue');
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.requestResume('dialogue');
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime({ min: 5 }).getTime());
+  });
+
+  test('未登録の要求元を解除しても他の停止要求を維持する', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.requestStop('dialogue');
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.requestResume('unknown');
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime().getTime());
+  });
+
+  test('解除済みの要求元を再度解除しても時間変更できる', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.requestStop('dialogue');
+    clockSystem.requestResume('dialogue');
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.requestResume('dialogue');
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime({ min: 5 }).getTime());
+  });
+
+  test('cleanup後も停止要求を保持する', () => {
+    // Arrange
+    const { clockSystem, context } = createTimeChangeContext();
+    clockSystem.requestStop('dialogue');
+    clockSystem.setStep();
+
+    // Act
+    clockSystem.cleanup();
+    clockSystem.setStep();
+    clockSystem.update(context);
+    const stoppedTime = clockSystem.getDateTime();
+    clockSystem.requestResume('dialogue');
+    clockSystem.update(context);
+
+    // Assert
+    assert.equal(stoppedTime.getTime(), new ClockDateTime().getTime());
+    assert.equal(clockSystem.getDateTime().getTime(), new ClockDateTime({ min: 5 }).getTime());
+  });
+});
+
 describe('ClockSystemの時間変更予約', () => {
   test('時と分の予約はupdateで反映する', () => {
     // Arrange

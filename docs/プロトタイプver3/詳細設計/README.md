@@ -79,7 +79,9 @@ DialogueSystemから完了コールバックを受けたEventSystemは、時間�
 
 - `requestTimeChange(timeChange)`は`ClockDuration`または`ClockDateTime`を受け取る。前者は現在日時に時・分を加算して変更先を求め、後者はその日時を変更先とする。予約時には時計を変更しない。
 - 予約先日時を1変数に保持し、未予約は`null`とする。入力処理中に予約し、1回の`GameScene.update()`で2回目の予約は`time-change-already-requested`の例外とし、初回の予約を維持する。0時間0分や現在と同じ日時も予約1件として数える。
-- `update(context)`は予約先日時へ時計を進め、変更前後の日時をEventSystemへ通知する。同じ日時なら更新・通知を行わない。予約値は反映後も保持し、`cleanup()`で`null`へ戻す。
+- `requestStop(requesterId)`は時計の停止要求を受け付け、要求元IDを`#stopRequesterIds`の`Set`へ重複なく保持する。
+- `requestResume(requesterId)`は指定した要求元IDの停止要求を解除する。未登録のIDは何も変更せず、両メソッドとも戻り値はない。要求元の登録・解除では時計を変更せず、時間変更の反映は`update(context)`に委ねる。停止要求は`cleanup()`をまたいで保持する。
+- `update(context)`は停止要求がない場合に予約先日時へ時計を進め、変更前後の日時をEventSystemへ通知する。同じ日時なら更新・通知を行わない。予約値は反映後も保持し、`cleanup()`で`null`へ戻す。
 - `setStep()`は5分の`ClockDuration`を予約する。移動とイベント完了は同じ予約枠を使い、従来のSTOP・RUN・STEP状態は廃止する。
 - 未対応の値は`TypeError`、無効な日時または現在より前の変更先は`RangeError`とし、予約を保持しない。
 - `rewindTo(dateTime)`に成功した場合、既存の予約先も復元日時へ置き換える。これにより古い時間変更を取り消し、同一更新内の予約枠は消費したままにする。巻き戻しを拒否した場合は予約も維持する。

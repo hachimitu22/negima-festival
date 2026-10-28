@@ -8,12 +8,14 @@ class ClockSystem extends GameSystem {
   #clock;
   #reservedDateTime = null;
   #canRewind;
+  #stopRequesterIds;
 
   /** 1日目10:00の時計を生成する。 */
   constructor() {
     super(SYSTEM_IDS.CLOCK);
     this.#clock = new ClockDateTime();
     this.#canRewind = true;
+    this.#stopRequesterIds = new Set();
   }
 
   /**
@@ -22,6 +24,9 @@ class ClockSystem extends GameSystem {
    * @returns {void}
    */
   update(context) {
+    if (this.#isStopped) {
+      return;
+    }
     if (this.#reservedDateTime === null
       || this.#reservedDateTime.getTime() === this.#clock.getTime()) {
       return;
@@ -113,6 +118,28 @@ class ClockSystem extends GameSystem {
 
   disableRewind() {
     this.#canRewind = false;
+  }
+
+  /**
+   * 時計の停止を要求し、要求元IDを記録する。
+   * @param {string} requesterId - 停止を要求する処理やSystemの識別子。
+   * @returns {void}
+   */
+  requestStop(requesterId) {
+    this.#stopRequesterIds.add(requesterId);
+  }
+
+  /**
+   * 指定した要求元の停止要求を解除する。他の停止要求が残る場合は停止を維持する。
+   * @param {string} requesterId - 停止要求を解除する処理やSystemの識別子。
+   * @returns {void}
+   */
+  requestResume(requesterId) {
+    this.#stopRequesterIds.delete(requesterId);
+  }
+
+  get #isStopped() {
+    return this.#stopRequesterIds.size > 0;
   }
 
   getDateTime() {

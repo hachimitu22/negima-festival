@@ -98,6 +98,7 @@ function createDialogue({ id, dialogue, complete }) {
 /** 一度に一つの会話と、その要求結果を管理する。 */
 class DialogueSystem extends GameSystem {
   #activeDialogue = null;
+  #handlers = [];
   // #results = new Map();
 
   /** DialogueSystemを生成する。 */
@@ -109,11 +110,15 @@ class DialogueSystem extends GameSystem {
     // 入力受付設定
     context.inputDispatcher.register({
       inputId: INPUT_IDS.DIALOGUE.NEXT,
-      handler: this.next.bind(this),
+      handler: (params, context) => {
+        this.#handlers.push(() => this.next(params, context));
+      },
     });
     context.inputDispatcher.register({
       inputId: INPUT_IDS.DIALOGUE.CHOOSE,
-      handler: this.choice.bind(this),
+      handler: (params, context) => {
+        this.#handlers.push(() => this.choice(params, context));
+      },
     });
   }
 
@@ -135,6 +140,7 @@ class DialogueSystem extends GameSystem {
 
     // 会話中は巻き戻し不可
     context.getSystem(SYSTEM_IDS.CLOCK).disableRewind();
+    context.getSystem(SYSTEM_IDS.CLOCK).requestStop(SYSTEM_IDS.DIALOGUE);
   }
 
   next(params, context) {
@@ -148,6 +154,7 @@ class DialogueSystem extends GameSystem {
       this.#activeDialogue = null;
       // 会話終了後は巻き戻し可能
       context.getSystem(SYSTEM_IDS.CLOCK).enableRewind();
+      context.getSystem(SYSTEM_IDS.CLOCK).requestResume(SYSTEM_IDS.DIALOGUE);
     }
   }
 
@@ -187,6 +194,8 @@ class DialogueSystem extends GameSystem {
    * @returns {void}
    */
   update(context) {
+    this.#handlers.forEach(handler => handler());
+    this.#handlers = [];
   }
 }
 
